@@ -2326,6 +2326,13 @@ async function registerTeam() {
   if (btn) { btn.disabled = true; btn.textContent = 'REGISTERING...'; }
 
   try {
+    // Detect file:// access — API won't work without the server
+    if (window.location.protocol === 'file:') {
+      showToast('❌ Open via http://localhost:3000 — not as a file');
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
+      return;
+    }
+
     const res = await fetch(`${API_BASE}/registrations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2335,7 +2342,17 @@ async function registerTeam() {
         players: [p1, p2, p3, p4]
       })
     });
-    const data = await res.json();
+
+    // Safely parse JSON — some error responses may not be valid JSON
+    let data;
+    try {
+      data = await res.json();
+    } catch(jsonErr) {
+      // Response wasn't valid JSON
+      showToast('❌ Server error (status ' + res.status + ')');
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
+      return;
+    }
 
     if (data.success) {
       // Update local slot count
@@ -2347,7 +2364,7 @@ async function registerTeam() {
     }
   } catch(e) {
     console.error('Registration error:', e);
-    showToast('❌ Registration failed — check your connection');
+    showToast('❌ Cannot reach server — is it running?');
   }
 
   if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
