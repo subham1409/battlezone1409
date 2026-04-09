@@ -19,7 +19,8 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static frontend files
-app.use('/frontend', express.static(path.join(__dirname, '../frontend')));
+// Main index.html is at the project root, not in /frontend
+app.use(express.static(path.join(__dirname, '..')));
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
 
 // ─── Routes ──────────────────────────────────────────────────
@@ -42,7 +43,7 @@ app.get('/api/health', (req, res) => {
 
 // ─── Root redirect ────────────────────────────────────────────
 app.get('/', (req, res) => {
-  res.redirect('/frontend/index.html');
+  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 // ─── Start Server ─────────────────────────────────────────────

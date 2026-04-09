@@ -2104,7 +2104,7 @@ function authFinish() {
 // BATTLEZONE FRONTEND — API-Connected Version
 // Backend API base URL — change if your server runs on a different port
 // =====================================================================
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 // ========= STATE =========
 let currentPage = 'home';
@@ -2322,7 +2322,7 @@ async function registerTeam() {
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // Disable button to prevent double-submit
-  const btn = document.querySelector('.register-btn');
+  const btn = document.querySelector('.submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'REGISTERING...'; }
 
   try {
@@ -2346,11 +2346,11 @@ async function registerTeam() {
       showToast('⚠️ ' + (data.message || 'Registration failed'));
     }
   } catch(e) {
-    // Fallback: show success anyway (offline mode)
-    document.getElementById('success-modal').classList.add('open');
+    console.error('Registration error:', e);
+    showToast('❌ Registration failed — check your connection');
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = 'REGISTER SQUAD'; }
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
 }
 
 function closeModal() {
