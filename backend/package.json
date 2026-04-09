@@ -10,12 +10,18 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "firebase-admin": "^13.7.0",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["bgmi", "tournament", "esports", "api"],
+  "keywords": [
+    "bgmi",
+    "tournament",
+    "esports",
+    "api"
+  ],
   "author": "BATTLEZONE",
   "license": "MIT"
 }

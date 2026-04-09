@@ -1,5 +1,5 @@
 /**
- * Auth Routes
+ * Auth Routes (Firebase Firestore)
  * POST /api/auth/login  — Admin login, returns JWT
  * POST /api/auth/verify — Verify token validity
  */

@@ -6,6 +6,9 @@
 <title>BATTLEZONE — BGMI Esports</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 :root {
   --bg-primary: #080a0e;
@@ -1207,9 +1210,396 @@ body::after {
 /* SCROLLBAR FOR LEADERBOARD PANEL */
 .leaderboard-panel::-webkit-scrollbar { width: 2px; }
 .leaderboard-panel::-webkit-scrollbar-thumb { background: var(--border-accent); }
+
+/* ===== AUTH SCREEN ===== */
+#auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 24px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+#auth-screen.hidden { display: none; }
+
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: var(--accent-orange);
+  text-shadow: 0 0 40px rgba(255,120,0,0.5);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.auth-tagline {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 48px;
+  font-family: var(--font-mono);
+}
+.auth-box {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.auth-box-header {
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(255,120,0,0.06), transparent);
+}
+.auth-box-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.auth-box-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+}
+.auth-step { display: none; padding: 22px; }
+.auth-step.active { display: block; }
+
+/* Choice buttons */
+.auth-choice-btn {
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+.auth-choice-btn:last-child { margin-bottom: 0; }
+.auth-choice-btn:hover { border-color: var(--border-accent); background: rgba(255,120,0,0.06); }
+.auth-choice-btn .btn-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.auth-choice-btn.primary-btn { background: var(--accent-orange); border-color: var(--accent-orange); color: #000; }
+.auth-choice-btn.primary-btn:hover { background: #ff9500; }
+.auth-choice-btn.primary-btn .btn-icon { background: rgba(0,0,0,0.15); }
+.btn-text-wrap { text-align: left; }
+.btn-main-text { font-size: 14px; font-weight: 700; display: block; }
+.btn-sub-text { font-size: 11px; opacity: 0.65; display: block; margin-top: 1px; font-weight: 500; }
+
+/* Auth inputs */
+.auth-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+.auth-input-wrap {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+}
+.auth-input-wrap:focus-within { border-color: var(--border-accent); }
+.auth-prefix {
+  padding: 14px 12px 14px 16px;
+  color: var(--accent-orange);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+  background: rgba(255,120,0,0.05);
+  white-space: nowrap;
+}
+.auth-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 14px 16px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.auth-input::placeholder { color: var(--text-muted); font-size: 13px; }
+.auth-input.no-prefix { padding: 14px 16px; border-radius: 12px; }
+
+.auth-otp-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.otp-digit {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  padding: 14px 4px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  caret-color: var(--accent-orange);
+}
+.otp-digit:focus { border-color: var(--border-accent); background: rgba(255,120,0,0.06); }
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--accent-orange);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.auth-submit-btn:hover { background: #ff9500; }
+.auth-submit-btn:active { transform: scale(0.98); }
+.auth-submit-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+.auth-back-link {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.auth-back-link span { color: var(--accent-orange); font-weight: 600; }
+
+.auth-phone-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 10px;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+.auth-resend {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.auth-resend span { color: var(--accent-orange); cursor: pointer; font-weight: 600; }
+
+.pw-strength {
+  height: 3px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  margin: -10px 0 14px;
+  overflow: hidden;
+}
+.pw-strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s, background 0.3s;
+  width: 0%;
+  background: var(--accent-red);
+}
+
+.optional-tag {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 6px;
+  background: rgba(255,255,255,0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* Password toggle */
+.auth-input-wrap .pw-toggle {
+  padding: 0 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center;
+}
+.auth-input-wrap .pw-toggle:hover { color: var(--text-secondary); }
+
+/* reCAPTCHA container */
+#recaptcha-container { margin-bottom: 12px; }
+#recaptcha-container > div { border-radius: 8px; overflow: hidden; }
+
+.auth-step-indicator {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.auth-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+}
+.auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
+.auth-dot.done { background: var(--accent-green); }
+
+/* ===== CHAT PAGE FIX — input always at bottom ===== */
+#chat-page.active {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  bottom: 68px;
+  display: flex !important;
+  flex-direction: column;
+  z-index: 20;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+#chat-page.active .chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 12px;
+  min-height: unset;
+}
+#chat-page.active .chat-input-area {
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 0;
+  bottom: auto;
+}
+#chat-page.active .emoji-row {
+  flex-shrink: 0;
+}
 </style>
 </head>
 <body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div class="auth-logo">⚔ BATTLEZONE</div>
+  <div class="auth-tagline">India's #1 BGMI Esports Arena</div>
+
+  <div class="auth-step-indicator">
+    <div class="auth-dot active" id="dot-0"></div>
+    <div class="auth-dot" id="dot-1"></div>
+    <div class="auth-dot" id="dot-2"></div>
+    <div class="auth-dot" id="dot-3"></div>
+  </div>
+
+  <div class="auth-box">
+    <div class="auth-box-header">
+      <div class="auth-box-title" id="auth-box-title">Choose How to Enter</div>
+      <div class="auth-box-sub" id="auth-box-sub">Login to unlock full tournament access</div>
+    </div>
+
+    <!-- Step 0: Choice -->
+    <div class="auth-step active" id="auth-step-0">
+      <button class="auth-choice-btn primary-btn" onclick="authStartPhone()">
+        <div class="btn-icon">📱</div>
+        <div class="btn-text-wrap">
+          <span class="btn-main-text">Login with Phone</span>
+          <span class="btn-sub-text">OTP verification via SMS</span>
+        </div>
+      </button>
+      <button class="auth-choice-btn" onclick="authGuest()">
+        <div class="btn-icon" style="background:rgba(255,255,255,0.05)">👤</div>
+        <div class="btn-text-wrap">
+          <span class="btn-main-text">Continue as Guest</span>
+          <span class="btn-sub-text">Browse without an account</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Step 1: Phone Number -->
+    <div class="auth-step" id="auth-step-1">
+      <label class="auth-label">Your Mobile Number</label>
+      <div class="auth-input-wrap">
+        <div class="auth-prefix">🇮🇳 +91</div>
+        <input class="auth-input" id="auth-phone" type="tel" maxlength="10" placeholder="9876543210" oninput="this.value=this.value.replace(/\D/g,'')">
+      </div>
+      <div id="recaptcha-container"></div>
+      <button class="auth-submit-btn" id="send-otp-btn" onclick="authSendOTP()">⚡ SEND OTP</button>
+      <div class="auth-phone-hint">We'll send a 6-digit code to this number.<br>Standard SMS rates may apply.</div>
+      <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div class="auth-step" id="auth-step-2">
+      <label class="auth-label">Enter 6-Digit OTP</label>
+      <div class="auth-otp-row">
+        <input class="otp-digit" id="otp-0" type="tel" maxlength="1" oninput="otpNext(this,0)">
+        <input class="otp-digit" id="otp-1" type="tel" maxlength="1" oninput="otpNext(this,1)">
+        <input class="otp-digit" id="otp-2" type="tel" maxlength="1" oninput="otpNext(this,2)">
+        <input class="otp-digit" id="otp-3" type="tel" maxlength="1" oninput="otpNext(this,3)">
+        <input class="otp-digit" id="otp-4" type="tel" maxlength="1" oninput="otpNext(this,4)">
+        <input class="otp-digit" id="otp-5" type="tel" maxlength="1" oninput="otpNext(this,5)">
+      </div>
+      <button class="auth-submit-btn" id="verify-otp-btn" onclick="authVerifyOTP()">✅ VERIFY OTP</button>
+      <div class="auth-resend">Didn't get it? <span onclick="authResendOTP()">Resend OTP</span></div>
+      <div class="auth-back-link" onclick="authGoStep(1)">← <span>Change number</span></div>
+    </div>
+
+    <!-- Step 3: Profile Setup -->
+    <div class="auth-step" id="auth-step-3">
+      <label class="auth-label">Username</label>
+      <div class="auth-input-wrap" style="margin-bottom:16px">
+        <input class="auth-input no-prefix" id="auth-username" type="text" maxlength="20" placeholder="KillZone99" style="padding:14px 16px">
+      </div>
+
+      <label class="auth-label">Password</label>
+      <div class="auth-input-wrap" style="margin-bottom:4px" id="pw-wrap">
+        <input class="auth-input no-prefix" id="auth-password" type="password" maxlength="32" placeholder="Min 8 chars, 1 number, 1 symbol" style="padding:14px 16px" oninput="checkPwStrength(this.value)">
+        <div class="pw-toggle" onclick="togglePw()" id="pw-toggle">👁</div>
+      </div>
+      <div class="pw-strength"><div class="pw-strength-fill" id="pw-bar"></div></div>
+
+      <label class="auth-label">BGMI Player ID <span class="optional-tag">Optional</span></label>
+      <div class="auth-input-wrap" style="margin-bottom:16px">
+        <input class="auth-input no-prefix" id="auth-bgmi" type="tel" maxlength="12" placeholder="e.g. 5561234567" style="padding:14px 16px">
+      </div>
+
+      <button class="auth-submit-btn" onclick="authFinish()">🎮 ENTER THE ZONE</button>
+    </div>
+  </div>
+</div>
 
 <div id="app">
   <div id="content">
@@ -1347,7 +1737,7 @@ body::after {
           <div class="online-badge"><div class="online-dot"></div>247 online now</div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);text-align:right;font-family:var(--font-mono)">
-          You:<br><span style="color:var(--accent-orange)">Player#7734</span>
+          You:<br><span style="color:var(--accent-orange)" id="chat-you-label">Player#7734</span>
         </div>
       </div>
       <div class="emoji-row">
@@ -1527,10 +1917,194 @@ body::after {
 
 <script>
 // =====================================================================
+// FIREBASE CONFIG
+// =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDummy_placeholder",
+  authDomain: "esportnetwork-833c2.firebaseapp.com",
+  projectId: "esportnetwork-833c2",
+  storageBucket: "esportnetwork-833c2.appspot.com",
+  messagingSenderId: "106051167606891733287",
+  appId: "1:106051167606891733287:web:placeholder"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// =====================================================================
+// AUTH STATE
+// =====================================================================
+let confirmationResult = null;
+let appVerifier = null;
+let currentAuthStep = 0;
+let currentUser = { isGuest: true, username: 'Player#7734', bgmiId: null, phone: null };
+
+function authGoStep(step) {
+  document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('auth-step-' + step).classList.add('active');
+  currentAuthStep = step;
+
+  // Update dots
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('dot-' + i);
+    d.className = 'auth-dot' + (i === step ? ' active' : i < step ? ' done' : '');
+  }
+
+  const titles = [
+    ['Choose How to Enter', 'Login to unlock full tournament access'],
+    ['Phone Verification', 'Enter your Indian mobile number'],
+    ['Enter OTP', 'Check your SMS for the code'],
+    ['Set Up Profile', 'Almost there — customize your identity']
+  ];
+  document.getElementById('auth-box-title').textContent = titles[step][0];
+  document.getElementById('auth-box-sub').textContent = titles[step][1];
+}
+
+function authGuest() {
+  currentUser = { isGuest: true, username: 'Guest', bgmiId: null, phone: null };
+  document.getElementById('auth-screen').classList.add('hidden');
+  showToast('👤 Entered as Guest — Limited access');
+}
+
+function authStartPhone() {
+  authGoStep(1);
+  // Init invisible reCAPTCHA
+  if (!appVerifier) {
+    try {
+      appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal',
+        callback: () => {},
+        'expired-callback': () => { appVerifier.clear(); appVerifier = null; }
+      });
+      appVerifier.render();
+    } catch(e) {
+      console.warn('reCAPTCHA init failed:', e);
+    }
+  }
+}
+
+async function authSendOTP() {
+  const phone = document.getElementById('auth-phone').value.trim();
+  if (phone.length !== 10) { showToast('⚠️ Enter a valid 10-digit number'); return; }
+  
+  const btn = document.getElementById('send-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'SENDING...';
+
+  try {
+    const fullPhone = '+91' + phone;
+    confirmationResult = await auth.signInWithPhoneNumber(fullPhone, appVerifier);
+    authGoStep(2);
+    setTimeout(() => document.getElementById('otp-0').focus(), 300);
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Failed to send OTP: ' + (e.message || 'Try again'));
+    btn.disabled = false;
+    btn.textContent = '⚡ SEND OTP';
+  }
+}
+
+async function authResendOTP() {
+  if (appVerifier) { try { appVerifier.clear(); } catch(e){} appVerifier = null; }
+  authGoStep(1);
+  authStartPhone();
+}
+
+function otpNext(el, idx) {
+  el.value = el.value.replace(/\D/g, '');
+  if (el.value && idx < 5) {
+    document.getElementById('otp-' + (idx + 1)).focus();
+  }
+  // Handle paste
+  if (el.value.length > 1) {
+    const digits = el.value.replace(/\D/g,'').slice(0,6);
+    for (let i = 0; i < 6; i++) {
+      document.getElementById('otp-' + i).value = digits[i] || '';
+    }
+    document.getElementById('otp-5').focus();
+    el.value = digits[idx] || '';
+  }
+}
+
+async function authVerifyOTP() {
+  const otp = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
+  if (otp.length !== 6) { showToast('⚠️ Enter all 6 digits'); return; }
+
+  const btn = document.getElementById('verify-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'VERIFYING...';
+
+  try {
+    const result = await confirmationResult.confirm(otp);
+    currentUser.phone = result.user.phoneNumber;
+    authGoStep(3);
+    btn.disabled = false;
+    btn.textContent = '✅ VERIFY OTP';
+  } catch(e) {
+    showToast('❌ Wrong OTP — try again');
+    btn.disabled = false;
+    btn.textContent = '✅ VERIFY OTP';
+  }
+}
+
+function checkPwStrength(pw) {
+  const bar = document.getElementById('pw-bar');
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const pct = (score / 4) * 100;
+  bar.style.width = pct + '%';
+  bar.style.background = score <= 1 ? 'var(--accent-red)' : score === 2 ? '#ff9500' : score === 3 ? '#ffd700' : 'var(--accent-green)';
+}
+
+function togglePw() {
+  const inp = document.getElementById('auth-password');
+  const t = document.getElementById('pw-toggle');
+  if (inp.type === 'password') { inp.type = 'text'; t.textContent = '🙈'; }
+  else { inp.type = 'password'; t.textContent = '👁'; }
+}
+
+function authFinish() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const bgmiId = document.getElementById('auth-bgmi').value.trim();
+
+  if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
+  
+  let pwScore = 0;
+  if (password.length >= 8) pwScore++;
+  if (/[0-9]/.test(password)) pwScore++;
+  if (/[^A-Za-z0-9]/.test(password)) pwScore++;
+  if (pwScore < 2) { showToast('⚠️ Password too weak — add numbers & symbols'); return; }
+
+  currentUser = {
+    isGuest: false,
+    username: username,
+    bgmiId: bgmiId || null,
+    phone: currentUser.phone
+  };
+
+  // Update UI with real username
+  document.getElementById('auth-screen').classList.add('hidden');
+  
+  // Update UI with real username
+  const initials = username.slice(0,2).toUpperCase();
+  document.querySelectorAll('.header-greeting strong').forEach(el => el.textContent = username);
+  document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
+  document.querySelector('.profile-avatar').textContent = initials;
+  if (bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + bgmiId);
+  const chatLabel = document.getElementById('chat-you-label');
+  if (chatLabel) chatLabel.textContent = username;
+  
+  showToast('🎮 Welcome ' + username + '! You\'re in the zone!');
+}
+
+// =====================================================================
 // BATTLEZONE FRONTEND — API-Connected Version
 // Backend API base URL — change if your server runs on a different port
 // =====================================================================
-const API_BASE = 'https://your-backend-url.onrender.com/api';
+const API_BASE = 'http://localhost:3000/api';
 
 // ========= STATE =========
 let currentPage = 'home';
@@ -1830,7 +2404,7 @@ async function sendMessage() {
   input.value = '';
   const now = new Date();
   const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0') + (now.getHours() >= 12 ? ' PM' : ' AM');
-  const m = { id: ++msgId, user:'Player#7734', color:'#ff7800', initials:'P7', text: clean, time, own:true };
+  const m = { id: ++msgId, user: currentUser.username || 'Player#7734', color:'#ff7800', initials: (currentUser.username||'P7').slice(0,2).toUpperCase(), text: clean, time, own:true };
   messages.push(m);
   addMessageToDOM(m, true);
 
@@ -1839,7 +2413,7 @@ async function sendMessage() {
     await fetch(`${API_BASE}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user: 'Player#7734', text: clean, color: '#ff7800', initials: 'P7' })
+      body: JSON.stringify({ user: currentUser.username || 'Player#7734', text: clean, color: '#ff7800', initials: (currentUser.username||'P7').slice(0,2).toUpperCase() })
     });
   } catch(e) {} // Silently ignore — message already shown locally
   
