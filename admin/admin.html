@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BATTLEZONE — Admin Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary:   #060810;
+  --bg-secondary: #0b0d15;
+  --bg-card:      #0f1220;
+  --bg-sidebar:   #090b14;
+  --accent:       #ff7800;
+  --accent-dim:   rgba(255,120,0,0.12);
+  --accent-glow:  rgba(255,120,0,0.35);
+  --green:        #00ff9d;
+  --green-dim:    rgba(0,255,157,0.1);
+  --red:          #ff3a5c;
+  --red-dim:      rgba(255,58,92,0.12);
+  --blue:         #3a8dff;
+  --blue-dim:     rgba(58,141,255,0.12);
+  --yellow:       #ffd600;
+  --text-primary: #eef0f5;
+  --text-sec:     #6e7d96;
+  --text-muted:   #343f52;
+  --border:       rgba(255,255,255,0.06);
+  --border-acc:   rgba(255,120,0,0.25);
+  --font-display: 'Orbitron', monospace;
+  --font-body:    'Rajdhani', sans-serif;
+  --font-mono:    'Share Tech Mono', monospace;
+  --sidebar-w:    240px;
+  --radius:       12px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  font-size:15px;
+}
+
+/* ── NOISE + GRID ─────────────────────────────────────────── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.35;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,120,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,120,0,0.025) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+}
+
+/* ── LOGIN SCREEN ─────────────────────────────────────────── */
+#login-screen{
+  position:fixed;inset:0;z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-primary);
+}
+.login-box{
+  width:100%;max-width:400px;padding:0 24px;
+  position:relative;z-index:1;
+}
+.login-logo{
+  font-family:var(--font-display);font-size:22px;font-weight:900;
+  letter-spacing:0.15em;color:var(--accent);
+  text-shadow:0 0 30px var(--accent-glow);
+  text-align:center;margin-bottom:6px;
+}
+.login-sub{
+  text-align:center;color:var(--text-sec);font-size:12px;
+  letter-spacing:0.1em;text-transform:uppercase;margin-bottom:32px;
+  font-family:var(--font-mono);
+}
+.login-card{
+  background:var(--bg-card);
+  border:1px solid var(--border-acc);
+  border-radius:16px;padding:32px;
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,120,0,0.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.login-card h2{
+  font-family:var(--font-display);font-size:13px;font-weight:700;
+  letter-spacing:0.12em;color:var(--text-sec);text-transform:uppercase;
+  margin-bottom:24px;text-align:center;
+}
+.form-field{margin-bottom:16px;}
+.form-field label{
+  display:block;font-size:11px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--text-sec);margin-bottom:6px;
+}
+.form-field input{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:8px;
+  padding:11px 14px;color:var(--text-primary);
+  font-family:var(--font-body);font-size:14px;
+  transition:all 0.2s;outline:none;
+}
+.form-field input:focus{
+  border-color:var(--accent);
+  background:rgba(255,120,0,0.04);
+  box-shadow:0 0 0 3px rgba(255,120,0,0.1);
+}
+.btn-primary{
+  width:100%;padding:13px;
+  background:var(--accent);border:none;border-radius:8px;
+  color:#000;font-family:var(--font-display);font-size:11px;
+  font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;margin-top:8px;
+}
+.btn-primary:hover{background:#ff9430;box-shadow:0 4px 20px rgba(255,120,0,0.4);}
+.btn-primary:active{transform:scale(0.98);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+.login-err{
+  margin-top:12px;padding:10px 14px;
+  background:var(--red-dim);border:1px solid rgba(255,58,92,0.3);
+  border-radius:8px;color:var(--red);font-size:13px;text-align:center;
+  display:none;
+}
+
+/* ── APP LAYOUT ───────────────────────────────────────────── */
+#app{
+  position:fixed;inset:0;z-index:1;
+  display:flex;
+  display:none; /* Hidden until login */
+}
+
+/* ── SIDEBAR ──────────────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-brand{
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo{
+  font-family:var(--font-display);font-size:13px;font-weight:900;
+  letter-spacing:0.12em;color:var(--accent);
+  text-shadow:0 0 20px rgba(255,120,0,0.3);
+}
+.sidebar-sub{
+  font-size:9px;letter-spacing:0.15em;color:var(--text-sec);
+  text-transform:uppercase;font-family:var(--font-mono);
+  margin-top:3px;
+}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-group{margin-bottom:4px;}
+.nav-group-label{
+  padding:8px 20px 4px;
+  font-size:9px;letter-spacing:0.15em;color:var(--text-muted);
+  text-transform:uppercase;font-family:var(--font-mono);
+}
+.nav-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  padding:10px 20px;background:none;border:none;
+  color:var(--text-sec);cursor:pointer;transition:all 0.15s;
+  font-family:var(--font-body);font-size:14px;font-weight:600;
+  letter-spacing:0.02em;position:relative;text-align:left;
+}
+.nav-btn:hover{color:var(--text-primary);background:rgba(255,255,255,0.03);}
+.nav-btn.active{
+  color:var(--accent);background:rgba(255,120,0,0.08);
+}
+.nav-btn.active::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--accent);border-radius:0 2px 2px 0;
+}
+.nav-btn svg{width:16px;height:16px;flex-shrink:0;}
+.nav-badge{
+  margin-left:auto;background:var(--accent);color:#000;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;
+  font-family:var(--font-mono);
+}
+.sidebar-footer{
+  padding:16px 20px;border-top:1px solid var(--border);
+}
+.admin-info{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+}
+.admin-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--accent-dim);border:1px solid var(--border-acc);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--accent);
+  font-family:var(--font-display);
+}
+.admin-name{font-size:13px;font-weight:700;color:var(--text-primary);}
+.admin-role{font-size:10px;color:var(--text-sec);letter-spacing:0.05em;}
+.btn-logout{
+  width:100%;padding:9px;background:rgba(255,58,92,0.1);
+  border:1px solid rgba(255,58,92,0.2);border-radius:8px;
+  color:var(--red);font-family:var(--font-body);font-size:12px;
+  font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn-logout:hover{background:rgba(255,58,92,0.2);}
+
+/* ── MAIN CONTENT ─────────────────────────────────────────── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#topbar{
+  padding:16px 28px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(9,11,20,0.8);backdrop-filter:blur(12px);
+  flex-shrink:0;
+}
+.page-title{
+  font-family:var(--font-display);font-size:14px;font-weight:700;
+  letter-spacing:0.1em;color:var(--text-primary);
+}
+.page-title span{color:var(--text-sec);}
+.topbar-actions{display:flex;gap:10px;align-items:center;}
+.btn-action{
+  padding:9px 16px;background:var(--accent);border:none;border-radius:8px;
+  color:#000;font-family:var(--font-display);font-size:10px;
+  font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;
+}
+.btn-action:hover{background:#ff9430;box-shadow:0 4px 16px rgba(255,120,0,0.3);}
+.btn-action.secondary{
+  background:var(--accent-dim);border:1px solid var(--border-acc);
+  color:var(--accent);
+}
+.btn-action.secondary:hover{background:rgba(255,120,0,0.2);}
+
+#content-area{
+  flex:1;overflow-y:auto;padding:24px 28px;
+}
+#content-area::-webkit-scrollbar{width:4px;}
+#content-area::-webkit-scrollbar-thumb{background:var(--accent-dim);}
+
+/* ── PANELS ───────────────────────────────────────────────── */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ── STAT GRID ────────────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--sc-color,rgba(255,120,0,0.04)) 0%,transparent 60%);
+  pointer-events:none;
+}
+.stat-card.green{--sc-color:rgba(0,255,157,0.06);border-color:rgba(0,255,157,0.12);}
+.stat-card.blue{--sc-color:rgba(58,141,255,0.06);border-color:rgba(58,141,255,0.12);}
+.stat-card.red{--sc-color:rgba(255,58,92,0.06);border-color:rgba(255,58,92,0.12);}
+.stat-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-sec);font-family:var(--font-mono);}
+.stat-value{font-family:var(--font-display);font-size:28px;font-weight:700;margin:8px 0 4px;color:var(--text-primary);}
+.stat-card:not(.green):not(.blue):not(.red) .stat-value{color:var(--accent);}
+.stat-card.green .stat-value{color:var(--green);}
+.stat-card.blue .stat-value{color:var(--blue);}
+.stat-card.red .stat-value{color:var(--red);}
+.stat-trend{font-size:12px;color:var(--text-sec);}
+
+/* ── SECTION HEADER ───────────────────────────────────────── */
+.sec-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.sec-title{
+  font-family:var(--font-display);font-size:11px;font-weight:700;
+  letter-spacing:0.15em;text-transform:uppercase;color:var(--text-sec);
+  display:flex;align-items:center;gap:8px;
+}
+.sec-title::before{
+  content:'';display:inline-block;width:3px;height:14px;
+  background:var(--accent);border-radius:2px;
+}
+
+/* ── TABLE ────────────────────────────────────────────────── */
+.tbl-wrap{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:24px;
+}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  padding:12px 16px;text-align:left;
+  background:rgba(255,120,0,0.04);
+  font-size:10px;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text-sec);font-family:var(--font-mono);
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,0.02);}
+tbody td{padding:12px 16px;font-size:14px;color:var(--text-primary);}
+.td-mono{font-family:var(--font-mono);font-size:12px;color:var(--text-sec);}
+.td-name{font-weight:700;}
+.td-actions{display:flex;gap:8px;white-space:nowrap;}
+
+/* ── BADGES ───────────────────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:6px;
+  font-size:10px;font-weight:700;letter-spacing:0.06em;
+  text-transform:uppercase;font-family:var(--font-mono);
+}
+.badge-open{background:rgba(0,255,157,0.1);color:var(--green);border:1px solid rgba(0,255,157,0.2);}
+.badge-full{background:rgba(255,58,92,0.1);color:var(--red);border:1px solid rgba(255,58,92,0.2);}
+.badge-upcoming{background:rgba(255,120,0,0.1);color:var(--accent);border:1px solid rgba(255,120,0,0.2);}
+.badge-confirmed{background:rgba(0,255,157,0.1);color:var(--green);border:1px solid rgba(0,255,157,0.2);}
+
+/* ── ICON BUTTONS ─────────────────────────────────────────── */
+.icon-btn{
+  padding:7px 12px;border-radius:7px;border:1px solid var(--border);
+  background:transparent;cursor:pointer;font-size:12px;font-weight:700;
+  font-family:var(--font-body);transition:all 0.15s;
+  letter-spacing:0.04em;
+}
+.icon-btn.edit{color:var(--blue);border-color:rgba(58,141,255,0.25);background:var(--blue-dim);}
+.icon-btn.edit:hover{background:rgba(58,141,255,0.2);}
+.icon-btn.del{color:var(--red);border-color:rgba(255,58,92,0.25);background:var(--red-dim);}
+.icon-btn.del:hover{background:rgba(255,58,92,0.2);}
+.icon-btn.view{color:var(--green);border-color:rgba(0,255,157,0.25);background:var(--green-dim);}
+.icon-btn.view:hover{background:rgba(0,255,157,0.2);}
+
+/* ── MODAL ────────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal-box{
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  background:var(--bg-card);border:1px solid var(--border-acc);
+  border-radius:16px;position:relative;
+}
+.modal-box::-webkit-scrollbar{width:4px;}
+.modal-box::-webkit-scrollbar-thumb{background:var(--accent-dim);}
+.modal-head{
+  padding:22px 24px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--bg-card);z-index:10;
+}
+.modal-title{
+  font-family:var(--font-display);font-size:12px;font-weight:700;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);
+}
+.modal-close{
+  width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);color:var(--text-sec);
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:rgba(255,58,92,0.1);color:var(--red);}
+.modal-body{padding:24px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-row.single{grid-template-columns:1fr;}
+.fld label{
+  display:block;font-size:10px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text-sec);margin-bottom:6px;
+}
+.fld input,.fld select,.fld textarea{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:8px;
+  padding:10px 13px;color:var(--text-primary);
+  font-family:var(--font-body);font-size:14px;outline:none;transition:all 0.2s;
+}
+.fld textarea{resize:vertical;min-height:80px;}
+.fld select option{background:#1a1e2e;}
+.fld input:focus,.fld select:focus,.fld textarea:focus{
+  border-color:var(--accent);background:rgba(255,120,0,0.04);
+  box-shadow:0 0 0 3px rgba(255,120,0,0.08);
+}
+.fld .field-err{
+  font-size:11px;color:var(--red);margin-top:4px;display:none;
+}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--border);
+  display:flex;gap:10px;justify-content:flex-end;
+}
+.btn-cancel{
+  padding:10px 20px;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text-sec);font-family:var(--font-body);font-size:13px;
+  font-weight:700;cursor:pointer;transition:all 0.2s;
+}
+.btn-cancel:hover{background:rgba(255,255,255,0.08);}
+.btn-save{
+  padding:10px 24px;background:var(--accent);border:none;border-radius:8px;
+  color:#000;font-family:var(--font-display);font-size:10px;
+  font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;
+  min-width:120px;
+}
+.btn-save:hover{background:#ff9430;box-shadow:0 4px 16px rgba(255,120,0,0.3);}
+.btn-save:disabled{opacity:0.5;cursor:not-allowed;}
+
+/* ── TOAST ────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:1000;
+  padding:12px 18px;border-radius:10px;
+  font-family:var(--font-body);font-size:14px;font-weight:600;
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events:none;max-width:320px;
+}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{background:rgba(0,255,157,0.15);border:1px solid rgba(0,255,157,0.3);color:var(--green);}
+#toast.error{background:rgba(255,58,92,0.15);border:1px solid rgba(255,58,92,0.3);color:var(--red);}
+#toast.info{background:rgba(255,120,0,0.15);border:1px solid rgba(255,120,0,0.3);color:var(--accent);}
+
+/* ── LOADING SPINNER ──────────────────────────────────────── */
+.spinner{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(255,120,0,0.2);
+  border-top-color:var(--accent);
+  animation:spin 0.7s linear infinite;
+  display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-row td{text-align:center;padding:40px;color:var(--text-sec);}
+
+/* ── CHAT PANEL ───────────────────────────────────────────── */
+.chat-admin-list{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.chat-admin-msg{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  transition:background 0.15s;
+}
+.chat-admin-msg:last-child{border-bottom:none;}
+.chat-admin-msg:hover{background:rgba(255,255,255,0.02);}
+.chat-avatar{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:var(--font-display);
+}
+.chat-info{flex:1;min-width:0;}
+.chat-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.chat-user{font-size:13px;font-weight:700;color:var(--text-primary);}
+.chat-time{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);}
+.chat-text{font-size:13px;color:var(--text-sec);word-break:break-word;}
+
+/* ── RESULTS FORM ─────────────────────────────────────────── */
+.lb-entry{
+  display:grid;grid-template-columns:60px 1fr 1fr 80px auto;gap:10px;
+  align-items:center;margin-bottom:10px;
+}
+.lb-entry input{
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:7px;padding:8px 10px;color:var(--text-primary);
+  font-family:var(--font-body);font-size:13px;outline:none;
+  transition:border-color 0.2s;
+}
+.lb-entry input:focus{border-color:var(--accent);}
+.btn-add-row{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;background:var(--accent-dim);
+  border:1px solid var(--border-acc);border-radius:8px;
+  color:var(--accent);font-family:var(--font-body);font-size:13px;
+  font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:8px;
+}
+.btn-add-row:hover{background:rgba(255,120,0,0.2);}
+.btn-rm-row{
+  padding:7px 10px;background:var(--red-dim);border:1px solid rgba(255,58,92,0.2);
+  border-radius:7px;color:var(--red);cursor:pointer;font-size:13px;
+}
+
+/* ── EMPTY STATE ──────────────────────────────────────────── */
+.empty-state{
+  text-align:center;padding:60px 20px;color:var(--text-sec);
+}
+.empty-state .empty-icon{font-size:48px;margin-bottom:16px;}
+.empty-state h3{
+  font-family:var(--font-display);font-size:14px;letter-spacing:0.1em;
+  color:var(--text-sec);margin-bottom:8px;
+}
+.empty-state p{font-size:13px;color:var(--text-muted);}
+
+/* ── CONFIRM MODAL ────────────────────────────────────────── */
+#confirm-overlay{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;
+}
+#confirm-overlay.open{display:flex;}
+.confirm-box{
+  background:var(--bg-card);border:1px solid rgba(255,58,92,0.3);
+  border-radius:14px;padding:28px;max-width:380px;width:100%;text-align:center;
+  margin:20px;
+}
+.confirm-icon{font-size:40px;margin-bottom:16px;}
+.confirm-title{
+  font-family:var(--font-display);font-size:13px;font-weight:700;
+  letter-spacing:0.1em;color:var(--text-primary);margin-bottom:8px;
+}
+.confirm-msg{font-size:14px;color:var(--text-sec);margin-bottom:24px;}
+.confirm-btns{display:flex;gap:10px;justify-content:center;}
+.btn-confirm-cancel{
+  padding:10px 22px;background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text-sec);font-family:var(--font-body);font-size:13px;
+  font-weight:700;cursor:pointer;
+}
+.btn-confirm-del{
+  padding:10px 22px;background:var(--red-dim);
+  border:1px solid rgba(255,58,92,0.3);border-radius:8px;
+  color:var(--red);font-family:var(--font-body);font-size:13px;
+  font-weight:700;cursor:pointer;transition:all 0.2s;
+}
+.btn-confirm-del:hover{background:rgba(255,58,92,0.25);}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media(max-width:900px){
+  #sidebar{width:60px;}
+  .sidebar-brand,.nav-group-label,.nav-btn span,.admin-info .admin-name,.admin-info .admin-role,.btn-logout{display:none;}
+  .nav-btn{justify-content:center;padding:14px;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  #content-area{padding:16px;}
+  #topbar{padding:12px 16px;}
+}
+@media(max-width:600px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .form-row{grid-template-columns:1fr;}
+  #sidebar{display:none;}
+  .lb-entry{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">BATTLEZONE</div>
+    <div class="login-sub">⚙ Admin Command Center</div>
+    <div class="login-card">
+      <h2>🔐 Authenticate</h2>
+      <div class="form-field">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="admin" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">ENTER THE ZONE</button>
+      <div class="login-err" id="login-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ═══════════════════════════════════════════════ -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">BATTLEZONE</div>
+      <div class="sidebar-sub">Admin Panel v1.0</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <button class="nav-btn active" onclick="showPanel('dashboard',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Management</div>
+        <button class="nav-btn" onclick="showPanel('tournaments',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Tournaments</span>
+          <span class="nav-badge" id="t-count">0</span>
+        </button>
+        <button class="nav-btn" onclick="showPanel('registrations',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Registrations</span>
+          <span class="nav-badge" id="r-count">0</span>
+        </button>
+        <button class="nav-btn" onclick="showPanel('results',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 20 22 16 18 12"/><line x1="2" y1="16" x2="22" y2="16"/><polyline points="6 4 2 8 6 12"/><line x1="22" y1="8" x2="2" y2="8"/></svg>
+          <span>Results</span>
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Moderation</div>
+        <button class="nav-btn" onclick="showPanel('chat',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat</span>
+          <span class="nav-badge" id="chat-count">0</span>
+        </button>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar">A</div>
+        <div>
+          <div class="admin-name">Admin</div>
+          <div class="admin-role">Commander</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">⏻ Logout</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="topbar">
+      <div class="page-title" id="topbar-title">Dashboard <span>/ Overview</span></div>
+      <div class="topbar-actions">
+        <button class="btn-action secondary" id="topbar-refresh" onclick="refreshCurrent()">↻ Refresh</button>
+        <button class="btn-action" id="topbar-add" onclick="openAddModal()" style="display:none">+ Add New</button>
+      </div>
+    </div>
+    <div id="content-area">
+
+      <!-- ── DASHBOARD PANEL ──────────────────────────────── -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Tournaments</div>
+            <div class="stat-value" id="dash-t">–</div>
+            <div class="stat-trend">Total active</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Registrations</div>
+            <div class="stat-value" id="dash-r">–</div>
+            <div class="stat-trend">Teams registered</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Chat Messages</div>
+            <div class="stat-value" id="dash-c">–</div>
+            <div class="stat-trend">Total messages</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Match Results</div>
+            <div class="stat-value" id="dash-res">–</div>
+            <div class="stat-trend">Published results</div>
+          </div>
+        </div>
+
+        <div class="sec-header">
+          <div class="sec-title">Recent Tournaments</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Map</th><th>Slots</th><th>Status</th></tr></thead>
+            <tbody id="dash-t-list"><tr class="loading-row"><td colspan="6"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── TOURNAMENTS PANEL ────────────────────────────── -->
+      <div class="panel" id="panel-tournaments">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Date & Time</th><th>Map</th><th>Fee / Prize</th><th>Slots</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="t-list"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── REGISTRATIONS PANEL ──────────────────────────── -->
+      <div class="panel" id="panel-registrations">
+        <div class="sec-header">
+          <div class="sec-title">All Registered Teams</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Team</th><th>Players</th><th>Tournament</th><th>Registered</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="r-list"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── RESULTS PANEL ────────────────────────────────── -->
+      <div class="panel" id="panel-results">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Match Name</th><th>Date</th><th>Map</th><th>Winner</th><th>Prize</th><th>Actions</th></tr></thead>
+            <tbody id="res-list"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── CHAT PANEL ───────────────────────────────────── -->
+      <div class="panel" id="panel-chat">
+        <div class="sec-header">
+          <div class="sec-title">Live Chat Messages</div>
+          <button class="btn-action secondary" onclick="loadChat()">↻ Reload</button>
+        </div>
+        <div class="chat-admin-list" id="chat-list">
+          <div class="loading-row" style="text-align:center;padding:40px"><span class="spinner"></span></div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ TOURNAMENT MODAL ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="t-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="t-modal-title">ADD TOURNAMENT</div>
+      <button class="modal-close" onclick="closeModal('t-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="t-edit-id">
+      <div class="form-row">
+        <div class="fld">
+          <label>Tournament Name *</label>
+          <input type="text" id="t-name" placeholder="e.g. BATTLEZONE WEEKLY">
+          <div class="field-err" id="err-t-name">Name is required</div>
+        </div>
+        <div class="fld">
+          <label>Map *</label>
+          <select id="t-map">
+            <option value="">Select map</option>
+            <option>Erangel</option><option>Miramar</option><option>Sanhok</option>
+            <option>Vikendi</option><option>Karakin</option><option>Livik</option>
+          </select>
+          <div class="field-err" id="err-t-map">Map is required</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Date *</label>
+          <input type="text" id="t-date" placeholder="e.g. Apr 20, 2025">
+          <div class="field-err" id="err-t-date">Date is required</div>
+        </div>
+        <div class="fld">
+          <label>Time *</label>
+          <input type="text" id="t-time" placeholder="e.g. 8:00 PM">
+          <div class="field-err" id="err-t-time">Time is required</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Entry Fee *</label>
+          <input type="text" id="t-fee" placeholder="e.g. ₹50">
+          <div class="field-err" id="err-t-fee">Fee is required</div>
+        </div>
+        <div class="fld">
+          <label>Prize Pool *</label>
+          <input type="text" id="t-prize" placeholder="e.g. ₹5,000">
+          <div class="field-err" id="err-t-prize">Prize is required</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Total Slots *</label>
+          <input type="number" id="t-total" placeholder="e.g. 25" min="2" max="100">
+          <div class="field-err" id="err-t-total">Total slots required</div>
+        </div>
+        <div class="fld">
+          <label>Status</label>
+          <select id="t-status">
+            <option value="open">🟢 Open</option>
+            <option value="upcoming">🟠 Upcoming</option>
+            <option value="full">🔴 Full</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('t-modal')">Cancel</button>
+      <button class="btn-save" id="t-save-btn" onclick="saveTournament()">SAVE TOURNAMENT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT MODAL ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="res-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="res-modal-title">PUBLISH RESULT</div>
+      <button class="modal-close" onclick="closeModal('res-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="res-edit-id">
+      <div class="form-row single">
+        <div class="fld">
+          <label>Match Name *</label>
+          <input type="text" id="res-name" placeholder="e.g. BATTLEZONE WEEKLY #13">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Date *</label>
+          <input type="text" id="res-date" placeholder="e.g. Apr 10, 2025">
+        </div>
+        <div class="fld">
+          <label>Map *</label>
+          <select id="res-map">
+            <option value="">Select map</option>
+            <option>Erangel</option><option>Miramar</option><option>Sanhok</option>
+            <option>Vikendi</option><option>Karakin</option><option>Livik</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Winner Team *</label>
+          <input type="text" id="res-winner" placeholder="Team name">
+        </div>
+        <div class="fld">
+          <label>Prize</label>
+          <input type="text" id="res-prize" placeholder="e.g. ₹5,000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fld">
+          <label>Total Teams</label>
+          <input type="number" id="res-teams" placeholder="25">
+        </div>
+        <div class="fld">
+          <label>Top Kill Count</label>
+          <input type="text" id="res-kills" placeholder="e.g. 47 kills">
+        </div>
+      </div>
+      <div class="sec-header" style="margin-top:16px;margin-bottom:8px">
+        <div class="sec-title">Leaderboard Entries</div>
+        <button class="btn-add-row" onclick="addLbRow()">+ Add Row</button>
+      </div>
+      <div id="lb-entries"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('res-modal')">Cancel</button>
+      <button class="btn-save" id="res-save-btn" onclick="saveResult()">PUBLISH RESULT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM MODAL ══════════════════════════════════════════ -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">CONFIRM DELETE</div>
+    <div class="confirm-msg" id="confirm-msg">Are you sure? This action cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-del" id="confirm-yes">DELETE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const API = 'http://localhost:3000/api';
+let TOKEN = '';
+let currentPanel = 'dashboard';
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const btn  = document.getElementById('login-btn');
+  const err  = document.getElementById('login-err');
+
+  if (!user || !pass) { showLoginErr('Enter username and password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'AUTHENTICATING...';
+  err.style.display = 'none';
+
+  try {
+    const res  = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      TOKEN = data.token;
+      localStorage.setItem('bz_token', TOKEN);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadDashboard();
+    } else {
+      showLoginErr(data.message || 'Invalid credentials.');
+    }
+  } catch(e) {
+    showLoginErr('Cannot reach server. Is the backend running?');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'ENTER THE ZONE';
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+// Auto-restore session on page load
+async function checkSession() {
+  const saved = localStorage.getItem('bz_token');
+  if (!saved) return;
+  try {
+    const res  = await fetch(`${API}/auth/verify`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${saved}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      TOKEN = saved;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadDashboard();
+    }
+  } catch(e) {}
+}
+
+function doLogout() {
+  TOKEN = '';
+  localStorage.removeItem('bz_token');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════════════════
+async function apiCall(method, path, body) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok && res.status === 403) { doLogout(); throw new Error('Session expired'); }
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentPanel = name;
+
+  // Update topbar
+  const titles = { dashboard: 'Dashboard <span>/ Overview</span>', tournaments: 'Tournaments <span>/ Manage</span>', registrations: 'Registrations <span>/ Teams</span>', results: 'Results <span>/ Leaderboard</span>', chat: 'Chat <span>/ Moderation</span>' };
+  document.getElementById('topbar-title').innerHTML = titles[name] || name;
+
+  // Show/hide Add button
+  const addBtn = document.getElementById('topbar-add');
+  if (name === 'tournaments') { addBtn.style.display = ''; addBtn.onclick = () => openTModal(); }
+  else if (name === 'results') { addBtn.style.display = ''; addBtn.onclick = () => openResModal(); }
+  else addBtn.style.display = 'none';
+
+  // Load panel data
+  const loaders = { dashboard: loadDashboard, tournaments: loadTournaments, registrations: loadRegistrations, results: loadResults, chat: loadChat };
+  if (loaders[name]) loaders[name]();
+}
+
+function refreshCurrent() { showPanel(currentPanel); }
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const [tRes, rRes, cRes, resRes] = await Promise.all([
+      apiCall('GET', '/tournaments'),
+      apiCall('GET', '/registrations'),
+      apiCall('GET', '/chat'),
+      apiCall('GET', '/results')
+    ]);
+
+    document.getElementById('dash-t').textContent = tRes.count || 0;
+    document.getElementById('dash-r').textContent = rRes.count || 0;
+    document.getElementById('dash-c').textContent = cRes.count || 0;
+    document.getElementById('dash-res').textContent = resRes.count || 0;
+    document.getElementById('t-count').textContent  = tRes.count || 0;
+    document.getElementById('r-count').textContent  = rRes.count || 0;
+    document.getElementById('chat-count').textContent = cRes.count || 0;
+
+    // Recent tournaments table
+    const tbody = document.getElementById('dash-t-list');
+    if (!tRes.data || tRes.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">No tournaments yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tRes.data.slice(0, 5).map(t => `
+      <tr>
+        <td class="td-mono">${t.num}</td>
+        <td class="td-name">${t.name}</td>
+        <td class="td-mono">${t.date} ${t.time}</td>
+        <td>${t.map}</td>
+        <td>${t.slots}/${t.total}</td>
+        <td><span class="badge badge-${t.status}">${t.status.toUpperCase()}</span></td>
+      </tr>`).join('');
+  } catch(e) {
+    showToast('Failed to load dashboard data', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOURNAMENTS
+// ═══════════════════════════════════════════════════════════════
+async function loadTournaments() {
+  const tbody = document.getElementById('t-list');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>';
+  try {
+    const data = await apiCall('GET', '/tournaments');
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏆</div><h3>NO TOURNAMENTS</h3><p>Add your first tournament using the button above.</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(t => `
+      <tr>
+        <td class="td-mono">${t.num}</td>
+        <td class="td-name">${t.name}</td>
+        <td class="td-mono" style="font-size:12px">${t.date}<br>${t.time}</td>
+        <td>${t.map}</td>
+        <td class="td-mono">${t.fee} / <span style="color:var(--accent)">${t.prize}</span></td>
+        <td>${t.slots}/${t.total}</td>
+        <td><span class="badge badge-${t.status}">${t.status.toUpperCase()}</span></td>
+        <td><div class="td-actions">
+          <button class="icon-btn edit" onclick="editTournament(${t.id})">✏ Edit</button>
+          <button class="icon-btn del" onclick="deleteTournament(${t.id},'${escH(t.name)}')">✕ Del</button>
+        </div></td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--red)">Failed to load tournaments</td></tr>';
+  }
+}
+
+// Add tournament modal
+function openTModal(t) {
+  document.getElementById('t-edit-id').value = t ? t.id : '';
+  document.getElementById('t-modal-title').textContent = t ? 'EDIT TOURNAMENT' : 'ADD TOURNAMENT';
+  document.getElementById('t-name').value   = t ? t.name : '';
+  document.getElementById('t-map').value    = t ? t.map : '';
+  document.getElementById('t-date').value   = t ? t.date : '';
+  document.getElementById('t-time').value   = t ? t.time : '';
+  document.getElementById('t-fee').value    = t ? t.fee : '';
+  document.getElementById('t-prize').value  = t ? t.prize : '';
+  document.getElementById('t-total').value  = t ? t.total : '';
+  document.getElementById('t-status').value = t ? t.status : 'open';
+  // Clear errors
+  document.querySelectorAll('#t-modal .field-err').forEach(e => e.style.display='none');
+  openModal('t-modal');
+}
+
+function openAddModal() { openTModal(); }
+
+async function editTournament(id) {
+  try {
+    const data = await apiCall('GET', `/tournaments/${id}`);
+    openTModal(data.data);
+  } catch(e) { showToast('Failed to load tournament', 'error'); }
+}
+
+async function saveTournament() {
+  const id    = document.getElementById('t-edit-id').value;
+  const name  = document.getElementById('t-name').value.trim();
+  const map   = document.getElementById('t-map').value;
+  const date  = document.getElementById('t-date').value.trim();
+  const time  = document.getElementById('t-time').value.trim();
+  const fee   = document.getElementById('t-fee').value.trim();
+  const prize = document.getElementById('t-prize').value.trim();
+  const total = document.getElementById('t-total').value.trim();
+  const status = document.getElementById('t-status').value;
+
+  // Validate
+  let valid = true;
+  const show = (errId, show) => { document.getElementById(errId).style.display = show ? 'block' : 'none'; };
+  if (!name)  { show('err-t-name', true);  valid = false; } else show('err-t-name', false);
+  if (!map)   { show('err-t-map', true);   valid = false; } else show('err-t-map', false);
+  if (!date)  { show('err-t-date', true);  valid = false; } else show('err-t-date', false);
+  if (!time)  { show('err-t-time', true);  valid = false; } else show('err-t-time', false);
+  if (!fee)   { show('err-t-fee', true);   valid = false; } else show('err-t-fee', false);
+  if (!prize) { show('err-t-prize', true); valid = false; } else show('err-t-prize', false);
+  if (!total) { show('err-t-total', true); valid = false; } else show('err-t-total', false);
+  if (!valid) return;
+
+  const btn = document.getElementById('t-save-btn');
+  btn.disabled = true; btn.textContent = 'SAVING...';
+
+  try {
+    const body = { name, map, date, time, fee, prize, total, status };
+    const data = id
+      ? await apiCall('PUT',  `/tournaments/${id}`, body)
+      : await apiCall('POST', '/tournaments', body);
+
+    if (data.success) {
+      showToast(data.message, 'success');
+      closeModal('t-modal');
+      loadTournaments();
+      loadDashboard();
+    } else {
+      showToast(data.message || 'Save failed', 'error');
+    }
+  } catch(e) {
+    showToast('Error saving tournament', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'SAVE TOURNAMENT';
+}
+
+function deleteTournament(id, name) {
+  showConfirm(`Delete "${name}"?`, 'This will permanently remove the tournament and all data.', async () => {
+    try {
+      const data = await apiCall('DELETE', `/tournaments/${id}`);
+      if (data.success) {
+        showToast(data.message, 'success');
+        loadTournaments(); loadDashboard();
+      } else showToast(data.message, 'error');
+    } catch(e) { showToast('Delete failed', 'error'); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REGISTRATIONS
+// ═══════════════════════════════════════════════════════════════
+async function loadRegistrations() {
+  const tbody = document.getElementById('r-list');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>';
+  try {
+    const data = await apiCall('GET', '/registrations');
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div><h3>NO REGISTRATIONS</h3><p>No teams have registered yet.</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(r => `
+      <tr>
+        <td class="td-mono">#${r.id}</td>
+        <td class="td-name">${escH(r.teamName)}</td>
+        <td style="font-size:12px;color:var(--text-sec)">${r.players.join(', ')}</td>
+        <td>${escH(r.tournamentName)}</td>
+        <td class="td-mono">${new Date(r.registeredAt).toLocaleDateString()}</td>
+        <td><span class="badge badge-${r.status}">${r.status.toUpperCase()}</span></td>
+        <td><button class="icon-btn del" onclick="deleteReg(${r.id},'${escH(r.teamName)}')">✕ Remove</button></td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">Failed to load registrations</td></tr>';
+  }
+}
+
+function deleteReg(id, name) {
+  showConfirm(`Remove "${name}"?`, 'The team will be unregistered from their tournament.', async () => {
+    try {
+      const data = await apiCall('DELETE', `/registrations/${id}`);
+      if (data.success) { showToast(data.message, 'success'); loadRegistrations(); loadDashboard(); }
+      else showToast(data.message, 'error');
+    } catch(e) { showToast('Remove failed', 'error'); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESULTS
+// ═══════════════════════════════════════════════════════════════
+async function loadResults() {
+  const tbody = document.getElementById('res-list');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>';
+  try {
+    const data = await apiCall('GET', '/results');
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🏅</div><h3>NO RESULTS</h3><p>Publish your first match result.</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(r => `
+      <tr>
+        <td class="td-mono">#${r.id}</td>
+        <td class="td-name">${escH(r.name)}</td>
+        <td class="td-mono">${r.date}</td>
+        <td>${r.map}</td>
+        <td style="color:var(--yellow)">🏆 ${escH(r.winner)}</td>
+        <td style="color:var(--accent)">${r.prize}</td>
+        <td><div class="td-actions">
+          <button class="icon-btn edit" onclick="editResult(${r.id})">✏ Edit</button>
+          <button class="icon-btn del" onclick="deleteResult(${r.id},'${escH(r.name)}')">✕ Del</button>
+        </div></td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--red)">Failed to load results</td></tr>';
+  }
+}
+
+let lbRowCount = 0;
+
+function openResModal(r) {
+  lbRowCount = 0;
+  document.getElementById('res-edit-id').value = r ? r.id : '';
+  document.getElementById('res-modal-title').textContent = r ? 'EDIT RESULT' : 'PUBLISH RESULT';
+  document.getElementById('res-name').value   = r ? r.name : '';
+  document.getElementById('res-date').value   = r ? r.date : '';
+  document.getElementById('res-map').value    = r ? r.map : '';
+  document.getElementById('res-winner').value = r ? r.winner : '';
+  document.getElementById('res-prize').value  = r ? r.prize : '';
+  document.getElementById('res-teams').value  = r ? r.teams : '';
+  document.getElementById('res-kills').value  = r ? r.kills : '';
+  const entriesDiv = document.getElementById('lb-entries');
+  entriesDiv.innerHTML = '';
+  if (r && r.lb) r.lb.forEach(row => addLbRow(row));
+  else addLbRow(); // Start with one empty row
+  openModal('res-modal');
+}
+
+function addLbRow(data) {
+  lbRowCount++;
+  const idx = lbRowCount;
+  const div = document.createElement('div');
+  div.className = 'lb-entry';
+  div.id = `lb-row-${idx}`;
+  div.innerHTML = `
+    <input type="number" placeholder="Rank" value="${data ? data.r : ''}" id="lb-r-${idx}" min="1">
+    <input type="text" placeholder="Team Name" value="${data ? escH(data.team) : ''}" id="lb-t-${idx}">
+    <input type="text" placeholder="Players (comma-separated)" value="${data ? escH(data.players) : ''}" id="lb-p-${idx}">
+    <input type="number" placeholder="Kills" value="${data ? data.kills : ''}" id="lb-k-${idx}" min="0">
+    <button class="btn-rm-row" onclick="document.getElementById('lb-row-${idx}').remove()">✕</button>`;
+  document.getElementById('lb-entries').appendChild(div);
+}
+
+function getLbData() {
+  const lb = [];
+  document.querySelectorAll('#lb-entries .lb-entry').forEach(row => {
+    const idx = row.id.replace('lb-row-','');
+    const r = parseInt(document.getElementById(`lb-r-${idx}`).value);
+    const t = document.getElementById(`lb-t-${idx}`).value.trim();
+    const p = document.getElementById(`lb-p-${idx}`).value.trim();
+    const k = parseInt(document.getElementById(`lb-k-${idx}`).value) || 0;
+    if (t) lb.push({ r: r || lb.length+1, team: t, players: p, kills: k });
+  });
+  return lb.sort((a,b) => a.r - b.r);
+}
+
+async function editResult(id) {
+  try {
+    const data = await apiCall('GET', `/results/${id}`);
+    openResModal(data.data);
+  } catch(e) { showToast('Failed to load result', 'error'); }
+}
+
+async function saveResult() {
+  const id     = document.getElementById('res-edit-id').value;
+  const name   = document.getElementById('res-name').value.trim();
+  const date   = document.getElementById('res-date').value.trim();
+  const map    = document.getElementById('res-map').value;
+  const winner = document.getElementById('res-winner').value.trim();
+  const prize  = document.getElementById('res-prize').value.trim();
+  const teams  = parseInt(document.getElementById('res-teams').value) || 0;
+  const kills  = document.getElementById('res-kills').value.trim();
+
+  if (!name || !date || !map || !winner) {
+    showToast('Fill all required fields', 'error'); return;
+  }
+
+  const btn = document.getElementById('res-save-btn');
+  btn.disabled = true; btn.textContent = 'SAVING...';
+
+  try {
+    const body = { name, date, map, winner, prize, teams, kills, lb: getLbData() };
+    const data = id
+      ? await apiCall('PUT',  `/results/${id}`, body)
+      : await apiCall('POST', '/results', body);
+    if (data.success) {
+      showToast(data.message, 'success');
+      closeModal('res-modal');
+      loadResults(); loadDashboard();
+    } else showToast(data.message, 'error');
+  } catch(e) { showToast('Error saving result', 'error'); }
+
+  btn.disabled = false; btn.textContent = 'PUBLISH RESULT';
+}
+
+function deleteResult(id, name) {
+  showConfirm(`Delete "${name}"?`, 'The result and leaderboard will be permanently removed.', async () => {
+    try {
+      const data = await apiCall('DELETE', `/results/${id}`);
+      if (data.success) { showToast(data.message, 'success'); loadResults(); loadDashboard(); }
+      else showToast(data.message, 'error');
+    } catch(e) { showToast('Delete failed', 'error'); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+async function loadChat() {
+  const list = document.getElementById('chat-list');
+  list.innerHTML = '<div style="text-align:center;padding:40px"><span class="spinner"></span></div>';
+  try {
+    const data = await apiCall('GET', '/chat');
+    if (!data.data || data.data.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><h3>NO MESSAGES</h3><p>Chat is empty.</p></div>';
+      return;
+    }
+    list.innerHTML = [...data.data].reverse().map(m => `
+      <div class="chat-admin-msg" id="chat-msg-${m.id}">
+        <div class="chat-avatar" style="background:${m.color}22;border:1px solid ${m.color}44;color:${m.color}">${m.initials}</div>
+        <div class="chat-info">
+          <div class="chat-meta">
+            <span class="chat-user">${escH(m.user)}</span>
+            <span class="chat-time">${m.time}</span>
+          </div>
+          <div class="chat-text">${escH(m.text)}</div>
+        </div>
+        <button class="icon-btn del" style="flex-shrink:0;margin-left:auto" onclick="deleteMsg(${m.id})">✕</button>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red)">Failed to load chat</div>';
+  }
+}
+
+function deleteMsg(id) {
+  showConfirm('Delete message?', 'This message will be permanently removed from chat.', async () => {
+    try {
+      const data = await apiCall('DELETE', `/chat/${id}`);
+      if (data.success) {
+        const el = document.getElementById(`chat-msg-${id}`);
+        if (el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }
+        showToast('Message deleted', 'success');
+        loadDashboard();
+      } else showToast(data.message, 'error');
+    } catch(e) { showToast('Delete failed', 'error'); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Click outside to close modal
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+let confirmCallback = null;
+function showConfirm(title, msg, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  confirmCallback = null;
+}
+document.getElementById('confirm-yes').onclick = () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+};
+
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+function escH(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+checkSession();
+</script>
+</body>
+</html>
