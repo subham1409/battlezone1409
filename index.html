@@ -717,6 +717,14 @@ body::after {
   border-color: rgba(255,120,0,0.2);
   border-radius: 12px;
   border-top-right-radius: 4px;
+  border-top-left-radius: 12px;
+}
+.msg-bubble {
+  border-top-left-radius: 4px !important;
+}
+.chat-msg.own .msg-bubble {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 4px !important;
 }
 .msg-time {
   font-family: var(--font-mono);
@@ -725,6 +733,7 @@ body::after {
   margin-top: 3px;
   text-align: right;
 }
+.chat-msg.own .msg-content { align-items: flex-end; display: flex; flex-direction: column; }
 .chat-msg.own .msg-sender { text-align: right; color: var(--accent-orange); }
 .report-btn {
   font-size: 10px;
@@ -774,19 +783,7 @@ body::after {
 }
 .send-btn:hover { background: #ff9500; transform: scale(1.05); }
 .send-btn svg { width: 16px; height: 16px; }
-.emoji-row {
-  display: flex;
-  gap: 8px;
-  padding: 8px 14px 0;
-  overflow-x: auto;
-}
-.emoji-row span {
-  font-size: 18px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.1s;
-}
-.emoji-row span:hover { transform: scale(1.3); }
+.emoji-row { display: none; }
 
 /* === RESULTS PAGE === */
 .results-filter {
@@ -1507,8 +1504,16 @@ body::after {
   bottom: auto;
 }
 #chat-page.active .emoji-row {
-  flex-shrink: 0;
+  display: none;
 }
+/* When keyboard is open, chat page expands to fill viewport and nav hides */
+body.keyboard-open #bottom-nav {
+  display: none;
+}
+body.keyboard-open #chat-page.active {
+  bottom: 0;
+}
+
 </style>
 
 
@@ -1944,7 +1949,26 @@ const chatRef = db.ref('chat');
 let confirmationResult = null;
 let appVerifier = null;
 let currentAuthStep = 0;
-let currentUser = { isGuest: true, username: 'Player#7734', bgmiId: null, phone: null };
+
+function generateGamerName() {
+  const prefixes = ['Shadow','Ghost','Blaze','Neon','Storm','Viper','Reaper','Phantom','Rogue','Iron','Toxic','Hyper','Stealth','Apex','Nova','Feral','Chaos','Dark','Void','Nitro'];
+  const suffixes = ['Sniper','Hunter','Slayer','Blade','Wolf','Hawk','Fox','Strike','Frag','Rush','Clutch','Demon','Wraith','Titan','Gunner','Ace','Ninja','Killer','Beast','Specter'];
+  const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const s = suffixes[Math.floor(Math.random() * suffixes.length)];
+  const n = Math.floor(Math.random() * 900) + 100;
+  return p + s + n;
+}
+
+let currentUser = { isGuest: true, username: generateGamerName(), bgmiId: null, phone: null };
+
+function authGuest() {
+  const gamerName = generateGamerName();
+  currentUser = { isGuest: true, username: gamerName, bgmiId: null, phone: null };
+  document.getElementById('auth-screen').classList.add('hidden');
+  const chatLabel = document.getElementById('chat-you-label');
+  if (chatLabel) chatLabel.textContent = gamerName;
+  showToast('👤 Joined as ' + gamerName);
+}
 
 function authGoStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
@@ -1965,12 +1989,6 @@ function authGoStep(step) {
   ];
   document.getElementById('auth-box-title').textContent = titles[step][0];
   document.getElementById('auth-box-sub').textContent = titles[step][1];
-}
-
-function authGuest() {
-  currentUser = { isGuest: true, username: 'Guest', bgmiId: null, phone: null };
-  document.getElementById('auth-screen').classList.add('hidden');
-  showToast('👤 Entered as Guest — Limited access');
 }
 
 function authStartPhone() {
@@ -2223,6 +2241,19 @@ function switchPage(page) {
   
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
+
+  if (page === 'chat') {
+    // Update the "You:" label with current username
+    const chatLabel = document.getElementById('chat-you-label');
+    if (chatLabel) chatLabel.textContent = currentUser.username;
+    // Init Firebase chat listener once
+    if (!chatListenerAttached) initFirebaseChat();
+    // Scroll to bottom
+    setTimeout(() => {
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }, 100);
+  }
 }
 
 function showHome() {
@@ -2375,6 +2406,8 @@ function closeModal() {
 // ========= CHAT — Firebase Realtime Database =========
 const profanity = ['fuck','shit','bastard','ass','bitch'];
 let chatListenerAttached = false;
+// Unique session key stored in memory so own messages are always recognized
+const SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 function initFirebaseChat() {
   const container = document.getElementById('chat-messages');
@@ -2384,8 +2417,8 @@ function initFirebaseChat() {
     const m = snapshot.val();
     if (!m) return;
 
-    // Mark as own if sender matches current user
-    m.own = (m.user === (currentUser.username || 'Player#7734'));
+    // Mark as own if sessionId matches
+    m.own = (m.sessionId === SESSION_ID);
 
     addMessageToDOM(m, true);
   });
@@ -2432,8 +2465,10 @@ async function sendMessage() {
   if (!raw) return;
   const clean = filterProfanity(raw);
   input.value = '';
+  // Keep focus on input so keyboard stays open and bar stays put
+  input.focus();
 
-  const username = currentUser.username || 'Player#7734';
+  const username = currentUser.username || generateGamerName();
   const initials = username.slice(0, 2).toUpperCase();
   const now = new Date();
   const hours = now.getHours();
@@ -2441,10 +2476,17 @@ async function sendMessage() {
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const time = (hours % 12 || 12) + ':' + mins + ' ' + ampm;
 
+  // Deterministic color from username
+  const gamerColors = ['#ff7800','#00ff9d','#00cfff','#ff3a6e','#a78bfa','#ffd700','#ff6b35','#39ff14'];
+  let hash = 0;
+  for (let c of username) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+  const userColor = gamerColors[hash % gamerColors.length];
+
   try {
     await chatRef.push({
       user: username,
-      color: '#ff7800',
+      sessionId: SESSION_ID,
+      color: userColor,
       initials: initials,
       text: clean,
       time: time,
@@ -2550,6 +2592,28 @@ function showToast(msg) {
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+// ========= KEYBOARD DETECTION — hide bottom bar when typing =========
+(function() {
+  if (!window.visualViewport) return;
+  const threshold = 150; // px shrink = keyboard open
+  const initialHeight = window.visualViewport.height;
+
+  function onViewportResize() {
+    const shrink = initialHeight - window.visualViewport.height;
+    if (shrink > threshold) {
+      document.body.classList.add('keyboard-open');
+      // Scroll chat to bottom when keyboard opens
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+    } else {
+      document.body.classList.remove('keyboard-open');
+    }
+  }
+
+  window.visualViewport.addEventListener('resize', onViewportResize);
+  window.visualViewport.addEventListener('scroll', onViewportResize);
+})();
 </script>
 </body>
 </html>
