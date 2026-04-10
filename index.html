@@ -771,6 +771,11 @@ body::after {
 }
 .chat-input:focus { border-color: var(--border-accent); }
 .chat-input::placeholder { color: var(--text-muted); }
+/* Remove native search clear button */
+.chat-input::-webkit-search-cancel-button,
+.chat-input::-webkit-search-decoration,
+.chat-input::-webkit-search-results-button,
+.chat-input::-webkit-search-results-decoration { display: none; -webkit-appearance: none; }
 .send-btn {
   width: 40px; height: 40px;
   background: var(--accent-orange);
@@ -1763,7 +1768,7 @@ body.keyboard-open #chat-page.active {
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
-        <input type="text" class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="200" onkeydown="if(event.key==='Enter')sendMessage()">
+        <input type="search" class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" name="chat-msg-field" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage()}" onsearch="return false">
         <button class="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
