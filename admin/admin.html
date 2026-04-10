@@ -422,7 +422,7 @@ body::after {
       or host it on your server to use the admin panel.
     </div>
     <div style="margin-top:14px;font-size:11px;color:#3d4a5c;font-family:'Share Tech Mono',monospace">
-      Credentials: admin / battlezone@123
+      Credentials: admin / battle123
     </div>
   </div>
 
@@ -453,6 +453,7 @@ body::after {
   <div class="admin-tabs">
     <button class="tab-btn active" onclick="switchTab('news')">📰 News</button>
     <button class="tab-btn" onclick="switchTab('tournaments')">🏆 Tournaments</button>
+    <button class="tab-btn" onclick="switchTab('results')">🥇 Results</button>
     <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
   </div>
 
@@ -562,23 +563,168 @@ body::after {
 
   <!-- ===== TOURNAMENTS TAB ===== -->
   <div id="tab-tournaments" class="tab-panel">
-    <div class="section-card">
+
+    <!-- Tournament Form -->
+    <div class="section-card" id="tournament-form-card">
       <div class="section-card-header">
-        <div class="section-card-title">Tournaments</div>
+        <div class="section-card-title" id="t-form-title">Add Tournament</div>
+        <button class="action-btn edit" id="t-cancel-btn" style="display:none" onclick="cancelEditTournament()">✕ Cancel</button>
       </div>
-      <div class="section-card-body" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:13px">
-        🏆 Tournament management via the backend API.<br><br>
-        Use your Node.js server at <code style="color:var(--accent-orange)">/api/tournaments</code>
+      <div class="section-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Tournament Name *</label>
+            <input type="text" id="t-name" placeholder="e.g. BGMI Pro League S5" maxlength="100">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Map / Game Mode</label>
+            <input type="text" id="t-map" placeholder="e.g. Erangel, Miramar, Sanhok" maxlength="80">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Date</label>
+            <input type="text" id="t-date" placeholder="e.g. Sat, 20 Apr 2026" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Time</label>
+            <input type="text" id="t-time" placeholder="e.g. 8:00 PM IST" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Prize Pool</label>
+            <input type="text" id="t-prize" placeholder="e.g. ₹50,000" maxlength="40">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Entry Fee</label>
+            <input type="text" id="t-entry" placeholder="e.g. ₹200/team" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Max Teams (Total Slots)</label>
+            <input type="number" id="t-maxteams" placeholder="e.g. 25" min="1" max="256">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Status</label>
+            <select id="t-status">
+              <option value="UPCOMING">UPCOMING</option>
+              <option value="LIVE">LIVE</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Slots Left</label>
+            <input type="number" id="t-slots" placeholder="e.g. 8" min="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>Room ID</label>
+          <input type="text" id="t-room" placeholder="Room ID (shown only after registration)" maxlength="60">
+        </div>
+        <div class="field">
+          <label>Description / Rules</label>
+          <textarea id="t-desc" placeholder="Rules, format, prize breakdown…" style="min-height:100px" maxlength="2000"></textarea>
+        </div>
+        <button class="btn-primary" id="t-submit-btn" onclick="submitTournament()" style="max-width:220px">⚡ Save Tournament</button>
       </div>
     </div>
-  </div>
+
+    <!-- Tournament List -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-title">All Tournaments</div>
+        <span id="t-count-label" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">0 tournaments</span>
+      </div>
+      <div id="tournament-admin-list">
+        <div class="empty-state"><div class="empty-state-icon">📡</div><div class="empty-state-text">Loading…</div></div>
+      </div>
+    </div>
+
+  </div><!-- end tab-tournaments -->
+
+  <!-- ===== RESULTS TAB ===== -->
+  <div id="tab-results" class="tab-panel">
+
+    <!-- Results Form -->
+    <div class="section-card" id="result-form-card">
+      <div class="section-card-header">
+        <div class="section-card-title" id="r-form-title">Add Result</div>
+        <button class="action-btn edit" id="r-cancel-btn" style="display:none" onclick="cancelEditResult()">✕ Cancel</button>
+      </div>
+      <div class="section-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Match Name *</label>
+            <input type="text" id="r-name" placeholder="e.g. BGMI Pro League — Finals" maxlength="100">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Date</label>
+            <input type="text" id="r-date" placeholder="e.g. Apr 18, 2026" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Map</label>
+            <input type="text" id="r-map" placeholder="e.g. Erangel, Miramar" maxlength="40">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>#1 Winner Team</label>
+            <input type="text" id="r-p1" placeholder="Team name" maxlength="60">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>#2 Runner-up</label>
+            <input type="text" id="r-p2" placeholder="Team name" maxlength="60">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>#3 Third Place</label>
+            <input type="text" id="r-p3" placeholder="Team name" maxlength="60">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Total Kills</label>
+            <input type="number" id="r-kills" placeholder="e.g. 120" min="0">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Total Teams</label>
+            <input type="number" id="r-teams" placeholder="e.g. 16" min="0">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Prize Given</label>
+            <input type="text" id="r-prize" placeholder="e.g. ₹50,000" maxlength="40">
+          </div>
+        </div>
+        <div class="field">
+          <label>Summary / Notes</label>
+          <textarea id="r-summary" placeholder="Match highlights, MVP, special notes…" style="min-height:90px" maxlength="1500"></textarea>
+        </div>
+        <button class="btn-primary" id="r-submit-btn" onclick="submitResult()" style="max-width:200px">⚡ Save Result</button>
+      </div>
+    </div>
+
+    <!-- Results List -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-title">All Results</div>
+        <span id="r-count-label" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">0 results</span>
+      </div>
+      <div id="results-admin-list">
+        <div class="empty-state"><div class="empty-state-icon">📡</div><div class="empty-state-text">Loading…</div></div>
+      </div>
+    </div>
+
+  </div><!-- end tab-results -->
 
   <!-- ===== CHAT TAB ===== -->
   <div id="tab-chat" class="tab-panel">
     <div class="section-card">
       <div class="section-card-header">
-        <div class="section-card-title">Recent Chat Messages</div>
-        <button class="action-btn delete" onclick="clearChat()">🗑 Clear All</button>
+        <div class="section-card-title">Latest 50 Chat Messages</div>
+        <div style="display:flex;gap:8px">
+          <button class="action-btn edit" onclick="loadChatAdmin()">🔄 Refresh</button>
+          <button class="action-btn delete" onclick="clearChat()">🗑 Clear All</button>
+        </div>
       </div>
       <div id="chat-admin-list">
         <div class="empty-state">
@@ -619,7 +765,7 @@ const firebaseConfig = {
   measurementId: "G-RRKPCPNBMP"
 };
 
-let db, storage, newsRef, chatRef;
+let db, storage, newsRef, chatRef, tournamentsRef, resultsRef;
 
 function initFirebase() {
   try {
@@ -629,6 +775,8 @@ function initFirebase() {
     storage = firebase.storage();
     newsRef = db.ref('news');
     chatRef = db.ref('chat');
+    tournamentsRef = db.ref('tournaments');
+    resultsRef = db.ref('results');
     return true;
   } catch(e) {
     console.error('Firebase init failed:', e);
@@ -650,7 +798,7 @@ window.addEventListener('load', function() {
 
 // ===== AUTH (simple local check) =====
 var ADMIN_USER = 'admin';
-var ADMIN_PASS = 'battlezone@123';
+var ADMIN_PASS = 'battle123';
 
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
@@ -665,6 +813,8 @@ function doLogin() {
     document.getElementById('admin-app').classList.add('visible');
     loadNewsAdmin();
     loadChatAdmin();
+    loadTournamentsAdmin();
+    loadResultsAdmin();
     showToast('✅ Welcome back, Admin!');
   } else {
     showToast('❌ Wrong credentials');
@@ -685,6 +835,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   event.currentTarget.classList.add('active');
+  if (tab === 'tournaments') loadTournamentsAdmin();
+  if (tab === 'results') loadResultsAdmin();
+  if (tab === 'chat') loadChatAdmin();
 }
 
 // ===== IMAGE HANDLING =====
@@ -889,13 +1042,14 @@ async function togglePin(id, currentPinned) {
 
 function loadNewsAdmin() {
   if (!newsRef) { document.getElementById('news-admin-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Firebase not connected</div></div>'; return; }
-  newsRef.orderByChild('ts').once('value', snapshot => {
+  newsRef.once('value', snapshot => {
     newsData = [];
-    snapshot.forEach(child => {
-      newsData.unshift({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => newsData.push({ id: child.key, ...child.val() }));
+    newsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     renderNewsAdmin();
     updateStats();
+  }, err => {
+    document.getElementById('news-admin-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
   });
 }
 
@@ -945,6 +1099,247 @@ function updateStats() {
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-pinned').textContent = pinned;
   document.getElementById('stat-today').textContent = today;
+}
+
+// ===== TOURNAMENT ADMIN =====
+let tourData = [];
+let editingTourId = null;
+
+async function submitTournament() {
+  if (!tournamentsRef) { showToast('❌ Firebase not connected'); return; }
+  const name = document.getElementById('t-name').value.trim();
+  if (!name) { showToast('⚠️ Tournament name required'); return; }
+  const payload = {
+    name,
+    map: document.getElementById('t-map').value.trim(),
+    date: document.getElementById('t-date').value.trim(),
+    time: document.getElementById('t-time').value.trim(),
+    prize: document.getElementById('t-prize').value.trim(),
+    entryFee: document.getElementById('t-entry').value.trim(),
+    maxTeams: parseInt(document.getElementById('t-maxteams').value) || 0,
+    slotsLeft: parseInt(document.getElementById('t-slots').value) || 0,
+    status: document.getElementById('t-status').value,
+    roomId: document.getElementById('t-room').value.trim(),
+    description: document.getElementById('t-desc').value.trim(),
+    ts: Date.now()
+  };
+  const btn = document.getElementById('t-submit-btn');
+  btn.disabled = true;
+  try {
+    if (editingTourId) {
+      await tournamentsRef.child(editingTourId).update(payload);
+      showToast('✅ Tournament updated!');
+      cancelEditTournament();
+    } else {
+      await tournamentsRef.push(payload);
+      showToast('🚀 Tournament added!');
+      resetTournamentForm();
+    }
+    loadTournamentsAdmin();
+  } catch(e) { showToast('❌ ' + e.message); }
+  btn.disabled = false;
+}
+
+function resetTournamentForm() {
+  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('t-status').value = 'UPCOMING';
+}
+
+function editTournament(id) {
+  const t = tourData.find(x => x.id === id); if (!t) return;
+  editingTourId = id;
+  document.getElementById('t-name').value = t.name || '';
+  document.getElementById('t-map').value = t.map || '';
+  document.getElementById('t-date').value = t.date || '';
+  document.getElementById('t-time').value = t.time || '';
+  document.getElementById('t-prize').value = t.prize || '';
+  document.getElementById('t-entry').value = t.entryFee || '';
+  document.getElementById('t-maxteams').value = t.maxTeams || '';
+  document.getElementById('t-slots').value = t.slotsLeft || '';
+  document.getElementById('t-status').value = t.status || 'UPCOMING';
+  document.getElementById('t-room').value = t.roomId || '';
+  document.getElementById('t-desc').value = t.description || '';
+  document.getElementById('t-form-title').textContent = 'Edit Tournament';
+  document.getElementById('t-submit-btn').textContent = '✏️ Update Tournament';
+  document.getElementById('t-cancel-btn').style.display = 'inline-block';
+  document.getElementById('tournament-form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditTournament() {
+  editingTourId = null;
+  resetTournamentForm();
+  document.getElementById('t-form-title').textContent = 'Add Tournament';
+  document.getElementById('t-submit-btn').textContent = '⚡ Save Tournament';
+  document.getElementById('t-cancel-btn').style.display = 'none';
+}
+
+let deleteTourId = null;
+function deleteTournament(id) {
+  deleteTourId = id;
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDeleteTournament;
+}
+async function confirmDeleteTournament() {
+  if (!deleteTourId) return;
+  try { await tournamentsRef.child(deleteTourId).remove(); showToast('🗑 Deleted'); loadTournamentsAdmin(); } catch(e) { showToast('❌ ' + e.message); }
+  deleteTourId = null;
+  document.getElementById('delete-modal').classList.remove('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore
+}
+
+function loadTournamentsAdmin() {
+  if (!tournamentsRef) return;
+  const list = document.getElementById('tournament-admin-list');
+  list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
+  tournamentsRef.once('value', snap => {
+    tourData = [];
+    snap.forEach(c => tourData.push({ id: c.key, ...c.val() }));
+    tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    renderTournamentsAdmin();
+  }, err => {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
+  });
+}
+
+function renderTournamentsAdmin() {
+  const list = document.getElementById('tournament-admin-list');
+  document.getElementById('t-count-label').textContent = tourData.length + ' tournament' + (tourData.length !== 1 ? 's' : '');
+  if (!tourData.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏆</div><div class="empty-state-text">No tournaments yet — add one above!</div></div>'; return; }
+  const statusColor = { UPCOMING:'#ff7800', LIVE:'#00ff9d', COMPLETED:'#7a8699', CANCELLED:'#ff3a3a' };
+  let html = '<table class="news-table"><thead><tr><th>Name</th><th>Date</th><th>Prize</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  tourData.forEach(t => {
+    const col = statusColor[t.status] || '#7a8699';
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text-primary);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(t.name)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${escHTML(t.date||'—')}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--accent-orange)">${escHTML(t.prize||'—')}</td>
+      <td><span class="tag-badge" style="color:${col};border-color:${col}33;background:${col}18">${escHTML(t.status||'—')}</span></td>
+      <td style="white-space:nowrap">
+        <button class="action-btn edit" onclick="editTournament('${t.id}')">✏️ Edit</button>
+        <button class="action-btn delete" onclick="deleteTournament('${t.id}')">🗑 Del</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  list.innerHTML = html;
+}
+
+// ===== RESULTS ADMIN =====
+let resultsData = [];
+let editingResultId = null;
+
+async function submitResult() {
+  if (!resultsRef) { showToast('❌ Firebase not connected'); return; }
+  const name = document.getElementById('r-name').value.trim();
+  if (!name) { showToast('⚠️ Match name required'); return; }
+  const payload = {
+    name,
+    date: document.getElementById('r-date').value.trim(),
+    map: document.getElementById('r-map').value.trim(),
+    place1: document.getElementById('r-p1').value.trim(),
+    place2: document.getElementById('r-p2').value.trim(),
+    place3: document.getElementById('r-p3').value.trim(),
+    totalKills: parseInt(document.getElementById('r-kills').value) || 0,
+    totalTeams: parseInt(document.getElementById('r-teams').value) || 0,
+    prize: document.getElementById('r-prize').value.trim(),
+    summary: document.getElementById('r-summary').value.trim(),
+    ts: Date.now()
+  };
+  const btn = document.getElementById('r-submit-btn');
+  btn.disabled = true;
+  try {
+    if (editingResultId) {
+      await resultsRef.child(editingResultId).update(payload);
+      showToast('✅ Result updated!');
+      cancelEditResult();
+    } else {
+      await resultsRef.push(payload);
+      showToast('🚀 Result added!');
+      resetResultForm();
+    }
+    loadResultsAdmin();
+  } catch(e) { showToast('❌ ' + e.message); }
+  btn.disabled = false;
+}
+
+function resetResultForm() {
+  ['r-name','r-date','r-map','r-p1','r-p2','r-p3','r-kills','r-teams','r-prize','r-summary'].forEach(id => document.getElementById(id).value = '');
+}
+
+function editResult(id) {
+  const r = resultsData.find(x => x.id === id); if (!r) return;
+  editingResultId = id;
+  document.getElementById('r-name').value = r.name || '';
+  document.getElementById('r-date').value = r.date || '';
+  document.getElementById('r-map').value = r.map || '';
+  document.getElementById('r-p1').value = r.place1 || '';
+  document.getElementById('r-p2').value = r.place2 || '';
+  document.getElementById('r-p3').value = r.place3 || '';
+  document.getElementById('r-kills').value = r.totalKills || '';
+  document.getElementById('r-teams').value = r.totalTeams || '';
+  document.getElementById('r-prize').value = r.prize || '';
+  document.getElementById('r-summary').value = r.summary || '';
+  document.getElementById('r-form-title').textContent = 'Edit Result';
+  document.getElementById('r-submit-btn').textContent = '✏️ Update Result';
+  document.getElementById('r-cancel-btn').style.display = 'inline-block';
+  document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditResult() {
+  editingResultId = null;
+  resetResultForm();
+  document.getElementById('r-form-title').textContent = 'Add Result';
+  document.getElementById('r-submit-btn').textContent = '⚡ Save Result';
+  document.getElementById('r-cancel-btn').style.display = 'none';
+}
+
+let deleteResultId = null;
+function deleteResult(id) {
+  deleteResultId = id;
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDeleteResult;
+}
+async function confirmDeleteResult() {
+  if (!deleteResultId) return;
+  try { await resultsRef.child(deleteResultId).remove(); showToast('🗑 Deleted'); loadResultsAdmin(); } catch(e) { showToast('❌ ' + e.message); }
+  deleteResultId = null;
+  document.getElementById('delete-modal').classList.remove('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDelete;
+}
+
+function loadResultsAdmin() {
+  if (!resultsRef) return;
+  const list = document.getElementById('results-admin-list');
+  list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
+  resultsRef.once('value', snap => {
+    resultsData = [];
+    snap.forEach(c => resultsData.push({ id: c.key, ...c.val() }));
+    resultsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    renderResultsAdmin();
+  }, err => {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
+  });
+}
+
+function renderResultsAdmin() {
+  const list = document.getElementById('results-admin-list');
+  document.getElementById('r-count-label').textContent = resultsData.length + ' result' + (resultsData.length !== 1 ? 's' : '');
+  if (!resultsData.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🥇</div><div class="empty-state-text">No results yet — add one above!</div></div>'; return; }
+  let html = '<table class="news-table"><thead><tr><th>Match</th><th>Date</th><th>#1 Winner</th><th>Prize</th><th>Actions</th></tr></thead><tbody>';
+  resultsData.forEach(r => {
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text-primary);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(r.name)}</td>
+      <td style="font-family:var(--font-mono);font-size:11px">${escHTML(r.date||'—')}</td>
+      <td style="color:var(--accent-green);font-weight:700">${escHTML(r.place1||'—')}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--accent-orange)">${escHTML(r.prize||'—')}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn edit" onclick="editResult('${r.id}')">✏️ Edit</button>
+        <button class="action-btn delete" onclick="deleteResult('${r.id}')">🗑 Del</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  list.innerHTML = html;
 }
 
 // ===== CHAT ADMIN =====

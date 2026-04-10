@@ -2379,66 +2379,99 @@ function showTournamentSkeleton() {
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
 }
 
-// ========= INIT — Load from API =========
+// ========= STATUS MAPPER =========
+function mapTournamentStatus(s) {
+  if (!s) return 'open';
+  s = s.toUpperCase();
+  if (s === 'LIVE') return 'open';
+  if (s === 'UPCOMING') return 'upcoming';
+  if (s === 'COMPLETED' || s === 'CANCELLED') return 'full';
+  return 'open';
+}
+
+// ========= INIT — Load from Firebase =========
 window.onload = async function() {
   showTournamentSkeleton();
 
-  // Load tournaments from backend
-  const tData = await apiFetch('/tournaments');
-  if (tData && tData.length > 0) {
-    // Map backend fields to the shape the UI expects
-    tournaments = tData.map(t => ({
-      id: t.id,
-      num: t.num || `#T-${t.id}`,
-      name: t.name,
-      date: t.date,
-      time: t.time,
-      map: t.map,
-      fee: t.fee,
-      prize: t.prize,
-      slots: t.slots || 0,
-      total: t.total || 25,
-      status: t.status || 'open'
-    }));
-  } else {
-    // Fallback demo data if backend is offline
+  // ---- Load tournaments from Firebase ----
+  try {
+    const tSnap = await db.ref('tournaments').once('value');
+    const tArr = [];
+    tSnap.forEach(c => tArr.push({ _key: c.key, ...c.val() }));
+    tArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    if (tArr.length > 0) {
+      tournaments = tArr.map((t, i) => ({
+        id: t._key,
+        num: t.num || ('MATCH #' + String(i + 1).padStart(2, '0')),
+        name: t.name || '',
+        date: t.date || '',
+        time: t.time || '',
+        map: t.map || t.game || '',
+        fee: t.entryFee || t.fee || 'FREE',
+        prize: t.prize || '',
+        slots: Math.max(0, (t.maxTeams || 0) - (t.slotsLeft || 0)),
+        total: t.maxTeams || 25,
+        status: mapTournamentStatus(t.status)
+      }));
+    } else {
+      tournaments = [
+        { id:'demo1', num:'MATCH #01', name:'Chicken Dinner Classic', date:'Sat, 12 Apr', time:'8:00 PM IST', map:'Erangel', fee:'FREE', prize:'₹5,000', slots:12, total:25, status:'open' },
+        { id:'demo2', num:'MATCH #02', name:'Desert Storm: Miramar', date:'Sun, 13 Apr', time:'6:00 PM IST', map:'Miramar', fee:'₹50', prize:'₹10,000', slots:20, total:25, status:'upcoming' },
+        { id:'demo3', num:'MATCH #03', name:'Sanhok Slaughter', date:'Mon, 14 Apr', time:'9:00 PM IST', map:'Sanhok', fee:'₹100', prize:'₹20,000', slots:24, total:25, status:'open' },
+      ];
+    }
+  } catch(e) {
+    console.warn('Firebase tournaments load failed:', e);
     tournaments = [
-      { id:1, num:'MATCH #01', name:'Chicken Dinner Classic', date:'Sat, 12 Apr', time:'8:00 PM IST', map:'Erangel', fee:'FREE', prize:'₹5,000', slots:12, total:25, status:'open' },
-      { id:2, num:'MATCH #02', name:'Desert Storm: Miramar', date:'Sun, 13 Apr', time:'6:00 PM IST', map:'Miramar', fee:'₹50', prize:'₹10,000', slots:20, total:25, status:'upcoming' },
-      { id:3, num:'MATCH #03', name:'Sanhok Slaughter', date:'Mon, 14 Apr', time:'9:00 PM IST', map:'Sanhok', fee:'₹100', prize:'₹20,000', slots:24, total:25, status:'open' },
+      { id:'demo1', num:'MATCH #01', name:'Chicken Dinner Classic', date:'Sat, 12 Apr', time:'8:00 PM IST', map:'Erangel', fee:'FREE', prize:'₹5,000', slots:12, total:25, status:'open' },
     ];
   }
 
-  // Load results from backend
-  const rData = await apiFetch('/results');
-  if (rData && rData.length > 0) {
-    results = rData.map(r => ({
-      id: r.id,
-      name: r.name,
-      date: r.date,
-      map: r.map,
-      winner: r.winner,
-      kills: typeof r.kills === 'string' ? parseInt(r.kills) : r.kills,
-      teams: r.teams || 0,
-      prize: r.prize,
-      lb: (r.lb || []).map(row => ({
-        r: row.r,
-        team: row.team,
-        players: row.players,
-        kills: row.kills,
-        place: '#' + row.r
-      }))
-    }));
-  } else {
-    results = [
-      { id:1, name:'Miramar Mayhem', date:'29 Mar 2026', map:'Miramar', winner:'Ghost Legion', kills:52, teams:20, prize:'₹8,000', lb:[
-        {r:1,team:'Ghost Legion',players:'ShadowX, KillR, Phantom, NightFox',kills:52,place:'#1'},
-        {r:2,team:'Phoenix Squad',players:'P7734, FireStorm, AceBlaze, Hunter',kills:28,place:'#2'},
-      ]},
-    ];
+  // ---- Load results from Firebase ----
+  try {
+    const rSnap = await db.ref('results').once('value');
+    const rArr = [];
+    rSnap.forEach(c => rArr.push({ _key: c.key, ...c.val() }));
+    rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    if (rArr.length > 0) {
+      results = rArr.map(r => {
+        // Build leaderboard from place fields + optional lb array
+        let lb = [];
+        if (r.lb && Array.isArray(r.lb)) {
+          lb = r.lb.map(row => ({ r: row.r, team: row.team, players: row.players || '', kills: row.kills || 0, place: '#' + row.r }));
+        } else {
+          if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
+          if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
+          if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
+        }
+        return {
+          id: r._key,
+          name: r.name || '',
+          date: r.date || '',
+          map: r.map || '',
+          winner: r.place1 || r.winner || '',
+          kills: r.totalKills || r.kills || 0,
+          teams: r.totalTeams || r.teams || 0,
+          prize: r.prize || '',
+          lb
+        };
+      });
+    } else {
+      results = [
+        { id:'demo1', name:'Miramar Mayhem', date:'29 Mar 2026', map:'Miramar', winner:'Ghost Legion', kills:52, teams:20, prize:'₹8,000', lb:[
+          { r:1, team:'Ghost Legion', players:'ShadowX, KillR, Phantom, NightFox', kills:52, place:'#1' },
+          { r:2, team:'Phoenix Squad', players:'P7734, FireStorm, AceBlaze, Hunter', kills:28, place:'#2' },
+        ]},
+      ];
+    }
+  } catch(e) {
+    console.warn('Firebase results load failed:', e);
+    results = [];
   }
 
-  // Chat is now powered by Firebase Realtime Database — listener set up below
+  // Chat — Firebase listener
   initFirebaseChat();
 
   renderTournaments();
