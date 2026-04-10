@@ -9,6 +9,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root {
   --bg-primary: #080a0e;
@@ -1509,6 +1510,9 @@ body::after {
   flex-shrink: 0;
 }
 </style>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -1920,15 +1924,19 @@ body::after {
 // FIREBASE CONFIG
 // =====================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDummy_placeholder",
+  apiKey: "AIzaSyAGHy9nE9asRkyy6ZZjE9q2Sj0tgF7V8_8",
   authDomain: "esportnetwork-833c2.firebaseapp.com",
+  databaseURL: "https://esportnetwork-833c2-default-rtdb.firebaseio.com",
   projectId: "esportnetwork-833c2",
-  storageBucket: "esportnetwork-833c2.appspot.com",
-  messagingSenderId: "106051167606891733287",
-  appId: "1:106051167606891733287:web:placeholder"
+  storageBucket: "esportnetwork-833c2.firebasestorage.app",
+  messagingSenderId: "1083526135565",
+  appId: "1:1083526135565:web:69d8a8205665534514fa44",
+  measurementId: "G-RRKPCPNBMP"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.database();
+const chatRef = db.ref('chat');
 
 // =====================================================================
 // AUTH STATE
@@ -2197,22 +2205,11 @@ window.onload = async function() {
     ];
   }
 
-  // Load chat messages from backend
-  const cData = await apiFetch('/chat');
-  if (cData && cData.length > 0) {
-    messages = cData.map(m => ({ ...m, own: false }));
-    msgId = Math.max(...messages.map(m => m.id), 100);
-  } else {
-    // Fallback demo chat
-    messages = [
-      {id:1, user:'KillZone99', color:'#00c97a', initials:'KZ', text:'Let\'s gooo! 🔥 Who\'s ready for tonight?', time:'8:42 PM', own:false},
-      {id:2, user:'ShadowX', color:'#ff4488', initials:'SX', text:'Ghost Legion is in. See you in the zone 💀', time:'8:43 PM', own:false},
-    ];
-  }
+  // Chat is now powered by Firebase Realtime Database — listener set up below
+  initFirebaseChat();
 
   renderTournaments();
   renderResults();
-  renderMessages();
 };
 
 // ========= NAVIGATION =========
@@ -2375,18 +2372,34 @@ function closeModal() {
   showHome();
 }
 
-// ========= CHAT =========
+// ========= CHAT — Firebase Realtime Database =========
 const profanity = ['fuck','shit','bastard','ass','bitch'];
+let chatListenerAttached = false;
+
+function initFirebaseChat() {
+  const container = document.getElementById('chat-messages');
+
+  // Listen for last 60 messages and any new ones in real time
+  chatRef.limitToLast(60).on('child_added', snapshot => {
+    const m = snapshot.val();
+    if (!m) return;
+
+    // Mark as own if sender matches current user
+    m.own = (m.user === (currentUser.username || 'Player#7734'));
+
+    addMessageToDOM(m, true);
+  });
+
+  chatListenerAttached = true;
+}
 
 function renderMessages() {
-  const container = document.getElementById('chat-messages');
-  container.innerHTML = '';
-  messages.forEach(m => addMessageToDOM(m, false));
-  container.scrollTop = container.scrollHeight;
+  // No-op: Firebase listener handles rendering live
 }
 
 function addMessageToDOM(m, scroll) {
   const container = document.getElementById('chat-messages');
+  if (!container) return;
   const div = document.createElement('div');
   div.className = 'chat-msg' + (m.own ? ' own' : '');
   div.innerHTML = `
@@ -2394,7 +2407,7 @@ function addMessageToDOM(m, scroll) {
     <div class="msg-content">
       <div class="msg-sender" style="color:${m.own ? 'var(--accent-orange)' : m.color}">${m.user}</div>
       <div class="msg-bubble">${escapeHTML(m.text)}</div>
-      <div class="msg-time">${m.time}${!m.own ? ' &nbsp;<span class="report-btn" onclick="reportMsg('+m.id+')">⚑ report</span>' : ''}</div>
+      <div class="msg-time">${m.time}</div>
     </div>`;
   container.appendChild(div);
   if (scroll) container.scrollTop = container.scrollHeight;
@@ -2419,35 +2432,27 @@ async function sendMessage() {
   if (!raw) return;
   const clean = filterProfanity(raw);
   input.value = '';
-  const now = new Date();
-  const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0') + (now.getHours() >= 12 ? ' PM' : ' AM');
-  const m = { id: ++msgId, user: currentUser.username || 'Player#7734', color:'#ff7800', initials: (currentUser.username||'P7').slice(0,2).toUpperCase(), text: clean, time, own:true };
-  messages.push(m);
-  addMessageToDOM(m, true);
 
-  // Post to backend (fire and forget)
+  const username = currentUser.username || 'Player#7734';
+  const initials = username.slice(0, 2).toUpperCase();
+  const now = new Date();
+  const hours = now.getHours();
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const time = (hours % 12 || 12) + ':' + mins + ' ' + ampm;
+
   try {
-    await fetch(`${API_BASE}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user: currentUser.username || 'Player#7734', text: clean, color: '#ff7800', initials: (currentUser.username||'P7').slice(0,2).toUpperCase() })
+    await chatRef.push({
+      user: username,
+      color: '#ff7800',
+      initials: initials,
+      text: clean,
+      time: time,
+      ts: firebase.database.ServerValue.TIMESTAMP
     });
-  } catch(e) {} // Silently ignore — message already shown locally
-  
-  // Simulate reply after 2s
-  if (Math.random() > 0.5) {
-    const bots = [
-      {user:'KillZone99', color:'#00c97a', initials:'KZ', responses:['GG bro! 🔥','Let\'s squad up!','Erangel is life 🗺','Noobs everywhere today 😂']},
-      {user:'ShadowX', color:'#ff4488', initials:'SX', responses:['Ghost Legion accepts the challenge 😤','See you in final circle 💀','That\'s what losers say lmao 🏆']},
-    ];
-    const bot = bots[Math.floor(Math.random()*bots.length)];
-    const resp = bot.responses[Math.floor(Math.random()*bot.responses.length)];
-    setTimeout(() => {
-      const t2 = new Date(); const tt = t2.getHours()+':'+String(t2.getMinutes()).padStart(2,'0')+(t2.getHours()>=12?' PM':' AM');
-      const bm = {id:++msgId, user:bot.user, color:bot.color, initials:bot.initials, text:resp, time:tt, own:false};
-      messages.push(bm);
-      addMessageToDOM(bm, true);
-    }, 1800 + Math.random()*1200);
+  } catch(e) {
+    showToast('❌ Failed to send — check connection');
+    console.error('Chat send error:', e);
   }
 }
 
