@@ -942,52 +942,71 @@ body::after {
   font-weight: 300;
   line-height: 1;
 }
-.lb-row {
-  display: flex;
-  align-items: center;
-  padding: 12px 18px;
+.lb-standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+.lb-standings-table thead tr {
+  background: rgba(255,0,0,0.15);
+  border-bottom: 2px solid rgba(255,40,40,0.5);
+}
+.lb-standings-table thead th {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-red);
+  padding: 10px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+.lb-standings-table thead th:nth-child(2) { text-align: left; padding-left: 14px; }
+.lb-standings-table tbody tr {
   border-bottom: 1px solid var(--border);
-  gap: 12px;
   transition: background 0.15s;
 }
-.lb-row:hover { background: rgba(255,255,255,0.02); }
-.lb-rank {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  width: 24px;
+.lb-standings-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.lb-standings-table tbody tr.row-gold { background: rgba(255,215,0,0.06); }
+.lb-standings-table tbody tr.row-silver { background: rgba(192,192,192,0.04); }
+.lb-standings-table tbody tr.row-bronze { background: rgba(205,127,50,0.04); }
+.lb-standings-table tbody td {
+  padding: 11px 10px;
   text-align: center;
-  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
 }
-.lb-rank.gold { color: #ffd700; }
-.lb-rank.silver { color: #c0c0c0; }
-.lb-rank.bronze { color: #cd7f32; }
-.lb-rank.other { color: var(--text-muted); }
-.lb-team { flex: 1; }
-.lb-team-name {
+.lb-standings-table tbody td.td-rank {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  width: 40px;
+}
+.td-rank.gold { color: #ffd700; }
+.td-rank.silver { color: #c0c0c0; }
+.td-rank.bronze { color: #cd7f32; }
+.td-rank.other { color: var(--text-muted); }
+.lb-standings-table tbody td.td-team {
+  text-align: left;
+  padding-left: 14px;
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: 13px;
   color: var(--text-primary);
+  max-width: 130px;
 }
-.lb-team-players {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-.lb-kills {
-  text-align: right;
-}
-.lb-kill-count {
+.lb-standings-table tbody td.td-total {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--accent-orange);
+  font-size: 14px;
+  font-weight: 900;
 }
-.lb-kill-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
+.td-total.gold { color: #ffd700; }
+.td-total.silver { color: #c0c0c0; }
+.td-total.bronze { color: #cd7f32; }
+.td-total.other { color: var(--text-primary); }
 
 /* === DASHBOARD === */
 .profile-hero {
@@ -2501,7 +2520,7 @@ window.onload = async function() {
         // Build leaderboard from place fields + optional lb array
         let lb = [];
         if (r.lb && Array.isArray(r.lb)) {
-          lb = r.lb.map(row => ({ r: row.r, team: row.team, players: row.players || '', kills: row.kills || 0, place: '#' + row.r }));
+          lb = r.lb.map(row => ({ r: row.r, team: row.team||'', players: row.players||'', matches: row.matches||0, wwcd: row.wwcd||0, place: row.place||0, kills: row.kills||0, total: row.total||0 }));
         } else {
           if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
           if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
@@ -2869,24 +2888,44 @@ function setFilter(el, val) {
 function openLeaderboard(id) {
   const r = results.find(x => x.id === id);
   if (!r) return;
-  document.getElementById('lb-title').textContent = r.name + ' — Leaderboard';
-  const rows = document.getElementById('lb-rows');
-  rows.innerHTML = '';
-  r.lb.forEach(row => {
-    const rankClass = row.r===1?'gold':row.r===2?'silver':row.r===3?'bronze':'other';
-    rows.innerHTML += `
-    <div class="lb-row">
-      <div class="lb-rank ${rankClass}">${row.r===1?'🥇':row.r===2?'🥈':row.r===3?'🥉':'#'+row.r}</div>
-      <div class="lb-team">
-        <div class="lb-team-name">${row.team}</div>
-        <div class="lb-team-players">${row.players}</div>
-      </div>
-      <div class="lb-kills">
-        <div class="lb-kill-count">${row.kills}</div>
-        <div class="lb-kill-label">kills</div>
-      </div>
-    </div>`;
+  document.getElementById('lb-title').textContent = r.name;
+
+  const container = document.getElementById('lb-rows');
+  const lb = r.lb || [];
+
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <table class="lb-standings-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Team</th>
+        <th>Matches</th>
+        <th>WWCD</th>
+        <th>Place</th>
+        <th>Kills</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  lb.forEach(row => {
+    const rc = row.r===1?'gold':row.r===2?'silver':row.r===3?'bronze':'other';
+    const rankLabel = row.r===1?'🥇':row.r===2?'🥈':row.r===3?'🥉':'#'+row.r;
+    const total = (row.wwcd||0)*10 + (row.place||0) + (row.kills||0);
+    const displayTotal = row.total !== undefined ? row.total : total;
+    html += `<tr class="row-${rc}">
+      <td class="td-rank ${rc}">${rankLabel}</td>
+      <td class="td-team">${row.team||''}</td>
+      <td>${row.matches||0}</td>
+      <td>${row.wwcd||0}</td>
+      <td>${row.place||row.kills||0}</td>
+      <td>${row.kills||0}</td>
+      <td class="td-total ${rc}">${displayTotal}</td>
+    </tr>`;
   });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
   document.getElementById('lb-overlay').classList.add('open');
 }
 

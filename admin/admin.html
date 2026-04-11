@@ -669,24 +669,6 @@ body::after {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="field" style="margin-bottom:0">
-            <label>#1 Winner Team</label>
-            <input type="text" id="r-p1" placeholder="Team name" maxlength="60">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>#2 Runner-up</label>
-            <input type="text" id="r-p2" placeholder="Team name" maxlength="60">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>#3 Third Place</label>
-            <input type="text" id="r-p3" placeholder="Team name" maxlength="60">
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-          <div class="field" style="margin-bottom:0">
-            <label>Total Kills</label>
-            <input type="number" id="r-kills" placeholder="e.g. 120" min="0">
-          </div>
-          <div class="field" style="margin-bottom:0">
             <label>Total Teams</label>
             <input type="number" id="r-teams" placeholder="e.g. 16" min="0">
           </div>
@@ -694,22 +676,34 @@ body::after {
             <label>Prize Given</label>
             <input type="text" id="r-prize" placeholder="e.g. ₹50,000" maxlength="40">
           </div>
-        </div>
-        <div class="field">
-          <label>Summary / Notes</label>
-          <textarea id="r-summary" placeholder="Match highlights, MVP, special notes…" style="min-height:90px" maxlength="1500"></textarea>
-        </div>
-
-        <!-- Add More Teams Section -->
-        <div style="margin-bottom:16px;padding:14px;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase">🏅 Additional Placements</div>
-            <button type="button" onclick="addResultTeamRow()" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.25);color:var(--accent-green);border-radius:8px;padding:6px 12px;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">+ Add Team</button>
+          <div class="field" style="margin-bottom:0">
+            <label>Summary / Notes</label>
+            <input type="text" id="r-summary" placeholder="Brief notes…" maxlength="200">
           </div>
-          <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:10px">Add teams ranked #4 and beyond for the full leaderboard</div>
-          <div id="extra-teams-list" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
 
+        <!-- Standings Builder -->
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-orange);text-transform:uppercase">🏆 Team Standings</div>
+            <button type="button" onclick="addResultTeamRow()" style="background:rgba(255,120,0,0.12);border:1px solid rgba(255,120,0,0.3);color:var(--accent-orange);border-radius:8px;padding:6px 14px;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">+ Add Team</button>
+          </div>
+          <!-- Table header -->
+          <div style="display:grid;grid-template-columns:44px 1fr 60px 60px 60px 60px 60px 32px;gap:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border:1px solid rgba(255,40,40,0.3);border-radius:8px 8px 0 0;margin-bottom:2px">
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">RANK</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444">TEAM</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">MATCHES</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">WWCD</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">PLACE</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">KILLS</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">TOTAL</div>
+            <div></div>
+          </div>
+          <div id="extra-teams-list" style="display:flex;flex-direction:column;gap:3px;background:var(--bg-secondary);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:6px"></div>
+        </div>
+
+        <!-- hidden compat fields -->
+        <input type="hidden" id="r-p1"><input type="hidden" id="r-p2"><input type="hidden" id="r-p3"><input type="hidden" id="r-kills">
         <button class="btn-primary" id="r-submit-btn" onclick="submitResult()" style="max-width:200px">⚡ Save Result</button>
       </div>
     </div>
@@ -1238,55 +1232,79 @@ function renderTournamentsAdmin() {
 // ===== RESULTS ADMIN =====
 let resultsData = [];
 let editingResultId = null;
-let extraTeamCount = 0;
+let teamRowCount = 0;
 
-function addResultTeamRow(teamName, kills, rank) {
-  extraTeamCount++;
-  const rowId = 'extra-team-' + extraTeamCount;
-  const rankNum = rank || (3 + extraTeamCount);
+const INPUT_BASE = 'background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.09);border-radius:6px;padding:7px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;width:100%;text-align:center';
+const INPUT_NAME = 'background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.09);border-radius:6px;padding:7px 10px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%';
+
+function addResultTeamRow(data) {
+  teamRowCount++;
+  const rowId = 'tr-' + teamRowCount;
+  const rankNum = data ? data.r : teamRowCount;
+  const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
+  const rankColor = rc==='gold'?'#ffd700':rc==='silver'?'#c0c0c0':rc==='bronze'?'#cd7f32':'#3d4a5c';
+  const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
   const container = document.getElementById('extra-teams-list');
   const row = document.createElement('div');
   row.id = rowId;
-  row.style.cssText = 'display:grid;grid-template-columns:48px 1fr 80px 32px;gap:8px;align-items:center';
+  row.setAttribute('data-rank', rankNum);
+  row.style.cssText = 'display:grid;grid-template-columns:44px 1fr 60px 60px 60px 60px 60px 32px;gap:6px;align-items:center;padding:4px 2px';
   row.innerHTML = `
-    <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent-orange);text-align:center;background:rgba(255,120,0,0.1);border:1px solid rgba(255,120,0,0.2);border-radius:6px;padding:6px 4px">#${rankNum}</div>
-    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(teamName||'')}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:500;outline:none;width:100%" data-role="et-name">
-    <input type="number" placeholder="Kills" min="0" value="${kills||''}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;width:100%" data-role="et-kills">
-    <button type="button" onclick="removeResultTeamRow('${rowId}')" style="background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.2);color:var(--accent-red);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${rankColor};text-align:center;padding:6px 2px" data-role="rank-label">${rankLabel}</div>
+    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(data&&data.team||'')}" style="${INPUT_NAME}" data-role="et-team">
+    <input type="number" placeholder="0" min="0" value="${data&&data.matches||''}" style="${INPUT_BASE}" data-role="et-matches">
+    <input type="number" placeholder="0" min="0" value="${data&&data.wwcd||''}" style="${INPUT_BASE}" data-role="et-wwcd">
+    <input type="number" placeholder="0" min="0" value="${data&&data.place||''}" style="${INPUT_BASE}" data-role="et-place">
+    <input type="number" placeholder="0" min="0" value="${data&&data.kills||''}" style="${INPUT_BASE}" data-role="et-kills">
+    <input type="number" placeholder="0" min="0" value="${data&&data.total||''}" style="${INPUT_BASE};font-weight:700;color:${rankColor}" data-role="et-total">
+    <button type="button" onclick="removeTeamRow('${rowId}')" style="background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.2);color:var(--accent-red);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
   `;
   container.appendChild(row);
-  renumberExtraTeams();
+  renumberTeamRows();
 }
 
-function removeResultTeamRow(rowId) {
+function removeTeamRow(rowId) {
   const el = document.getElementById(rowId);
   if (el) el.remove();
-  renumberExtraTeams();
+  renumberTeamRows();
 }
 
-function renumberExtraTeams() {
+function renumberTeamRows() {
   const rows = document.querySelectorAll('#extra-teams-list > div');
   rows.forEach((row, i) => {
-    const rankEl = row.querySelector('div');
-    if (rankEl) rankEl.textContent = '#' + (4 + i);
+    const rankNum = i + 1;
+    row.setAttribute('data-rank', rankNum);
+    const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
+    const rankColor = rc==='gold'?'#ffd700':rc==='silver'?'#c0c0c0':rc==='bronze'?'#cd7f32':'#3d4a5c';
+    const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
+    const labelEl = row.querySelector('[data-role="rank-label"]');
+    const totalEl = row.querySelector('[data-role="et-total"]');
+    if (labelEl) { labelEl.textContent = rankLabel; labelEl.style.color = rankColor; }
+    if (totalEl) totalEl.style.color = rankColor;
   });
 }
 
-function clearExtraTeams() {
+function clearTeamRows() {
   document.getElementById('extra-teams-list').innerHTML = '';
-  extraTeamCount = 0;
+  teamRowCount = 0;
 }
 
-function getExtraTeams() {
+function getAllTeams() {
   const rows = document.querySelectorAll('#extra-teams-list > div');
   const teams = [];
   rows.forEach((row, i) => {
-    const nameEl = row.querySelector('[data-role="et-name"]');
-    const killsEl = row.querySelector('[data-role="et-kills"]');
-    const name = nameEl ? nameEl.value.trim() : '';
-    if (name) {
-      teams.push({ r: 4 + i, team: name, kills: parseInt(killsEl?.value) || 0 });
-    }
+    const get = role => { const el = row.querySelector('[data-role="'+role+'"]'); return el ? el.value.trim() : ''; };
+    const team = get('et-team');
+    if (!team) return;
+    teams.push({
+      r:       i + 1,
+      team:    team,
+      matches: parseInt(get('et-matches')) || 0,
+      wwcd:    parseInt(get('et-wwcd'))    || 0,
+      place:   parseInt(get('et-place'))   || 0,
+      kills:   parseInt(get('et-kills'))   || 0,
+      total:   parseInt(get('et-total'))   || 0
+    });
   });
   return teams;
 }
@@ -1296,30 +1314,24 @@ async function submitResult() {
   const name = document.getElementById('r-name').value.trim();
   if (!name) { showToast('⚠️ Match name required'); return; }
 
-  // Build lb array from top 3 + extra teams
-  const lb = [];
-  const p1 = document.getElementById('r-p1').value.trim();
-  const p2 = document.getElementById('r-p2').value.trim();
-  const p3 = document.getElementById('r-p3').value.trim();
-  if (p1) lb.push({ r: 1, team: p1, kills: 0 });
-  if (p2) lb.push({ r: 2, team: p2, kills: 0 });
-  if (p3) lb.push({ r: 3, team: p3, kills: 0 });
-  getExtraTeams().forEach(t => lb.push(t));
+  const lb = getAllTeams();
+  const winner = lb.length > 0 ? lb[0].team : '';
 
   const payload = {
     name,
-    date: document.getElementById('r-date').value.trim(),
-    map: document.getElementById('r-map').value.trim(),
-    place1: p1,
-    place2: p2,
-    place3: p3,
-    lb: lb,
-    totalKills: parseInt(document.getElementById('r-kills').value) || 0,
-    totalTeams: parseInt(document.getElementById('r-teams').value) || 0,
-    prize: document.getElementById('r-prize').value.trim(),
-    summary: document.getElementById('r-summary').value.trim(),
-    ts: Date.now()
+    date:       document.getElementById('r-date').value.trim(),
+    map:        document.getElementById('r-map').value.trim(),
+    place1:     lb[0] ? lb[0].team : '',
+    place2:     lb[1] ? lb[1].team : '',
+    place3:     lb[2] ? lb[2].team : '',
+    winner:     winner,
+    lb:         lb,
+    totalTeams: parseInt(document.getElementById('r-teams').value) || lb.length,
+    prize:      document.getElementById('r-prize').value.trim(),
+    summary:    document.getElementById('r-summary').value.trim(),
+    ts:         Date.now()
   };
+
   const btn = document.getElementById('r-submit-btn');
   btn.disabled = true;
   try {
@@ -1338,8 +1350,10 @@ async function submitResult() {
 }
 
 function resetResultForm() {
-  ['r-name','r-date','r-map','r-p1','r-p2','r-p3','r-kills','r-teams','r-prize','r-summary'].forEach(id => document.getElementById(id).value = '');
-  clearExtraTeams();
+  ['r-name','r-date','r-map','r-teams','r-prize','r-summary'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  clearTeamRows();
 }
 
 function editResult(id) {
@@ -1348,10 +1362,6 @@ function editResult(id) {
   document.getElementById('r-name').value = r.name || '';
   document.getElementById('r-date').value = r.date || '';
   document.getElementById('r-map').value = r.map || '';
-  document.getElementById('r-p1').value = r.place1 || '';
-  document.getElementById('r-p2').value = r.place2 || '';
-  document.getElementById('r-p3').value = r.place3 || '';
-  document.getElementById('r-kills').value = r.totalKills || '';
   document.getElementById('r-teams').value = r.totalTeams || '';
   document.getElementById('r-prize').value = r.prize || '';
   document.getElementById('r-summary').value = r.summary || '';
@@ -1359,12 +1369,9 @@ function editResult(id) {
   document.getElementById('r-submit-btn').textContent = '✏️ Update Result';
   document.getElementById('r-cancel-btn').style.display = 'inline-block';
 
-  // Load extra teams (rank 4+) from lb array
-  clearExtraTeams();
+  clearTeamRows();
   if (r.lb && Array.isArray(r.lb)) {
-    r.lb.filter(row => row.r >= 4).forEach(row => {
-      addResultTeamRow(row.team, row.kills, row.r);
-    });
+    r.lb.forEach(row => addResultTeamRow(row));
   }
 
   document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
