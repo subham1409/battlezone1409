@@ -2337,13 +2337,13 @@ async function authSendOTP() {
     await db.ref('otp/' + emailKey).set({ otp, expiry });
 
     // Send OTP via EmailJS — variable names match the EmailJS OTP template
-    const now = new Date();
     const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    await emailjs.send('battlezone_service', 'battlezone_otp', {
+    const ejsResult = await emailjs.send('battlezone_service', 'battlezone_otp', {
       email: email,
       passcode: otp,
       time: expireTime
     });
+    console.log('EmailJS result:', ejsResult);
 
     // Show OTP step
     document.getElementById('otp-sent-email').textContent = email;
@@ -2351,8 +2351,10 @@ async function authSendOTP() {
     setTimeout(() => document.getElementById('otp-0').focus(), 300);
     showToast('📧 OTP sent! Check your inbox.');
   } catch(e) {
-    console.error(e);
-    showToast('❌ Failed to send OTP: ' + (e.message || 'Try again'));
+    console.error('EmailJS error full:', e);
+    // Show exact error in toast so user can see it
+    const errMsg = (typeof e === 'object' && e.text) ? e.text : (e.message || JSON.stringify(e));
+    showToast('❌ ' + errMsg);
     btn.disabled = false;
     btn.textContent = '⚡ SEND OTP';
   }
