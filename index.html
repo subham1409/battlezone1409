@@ -1891,22 +1891,55 @@ body.keyboard-open #chat-page.active {
             <div class="form-label">Team Name</div>
             <input type="text" class="form-input" placeholder="e.g., PhoenixSquad" id="team-name-input">
           </div>
-          <div class="field-group">
-            <div class="form-label">Player 1 BGMI ID (Captain)</div>
-            <input type="text" class="form-input" placeholder="5561234567" id="p1-input">
+
+          <!-- Contact Info -->
+          <div style="margin:4px 0 2px;padding:10px 12px;background:rgba(255,120,0,0.06);border:1px solid rgba(255,120,0,0.15);border-radius:10px;">
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:10px;">📞 Contact Details</div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Phone Number <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="phone1-wrap">
+                <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+                <input type="tel" class="form-input" placeholder="9876543210" id="phone1-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone1-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone1-wrap').style.borderColor='rgba(255,255,255,0.07)'">
+              </div>
+            </div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Phone Number 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
+              <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="phone2-wrap">
+                <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+                <input type="tel" class="form-input" placeholder="9876543210" id="phone2-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone2-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone2-wrap').style.borderColor='rgba(255,255,255,0.07)'">
+              </div>
+            </div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="email" class="form-input" placeholder="captain@example.com" id="email1-input">
+            </div>
+            <div class="field-group">
+              <div class="form-label">Email 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
+              <input type="email" class="form-input" placeholder="player2@example.com" id="email2-input">
+            </div>
           </div>
-          <div class="field-group">
-            <div class="form-label">Player 2 BGMI ID</div>
-            <input type="text" class="form-input" placeholder="5569876543" id="p2-input">
+
+          <!-- BGMI IDs -->
+          <div style="margin:4px 0 2px;padding:10px 12px;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.1);border-radius:10px;">
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase;margin-bottom:10px;">🎮 Player BGMI IDs</div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Player 1 BGMI ID <span style="color:var(--accent-orange);font-size:9px;font-weight:700;letter-spacing:0.08em">(Captain)</span> <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="tel" class="form-input" placeholder="5561234567" id="p1-input" maxlength="12">
+            </div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Player 2 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="tel" class="form-input" placeholder="5569876543" id="p2-input" maxlength="12">
+            </div>
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Player 3 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="tel" class="form-input" placeholder="5564561234" id="p3-input" maxlength="12">
+            </div>
+            <div class="field-group">
+              <div class="form-label">Player 4 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="tel" class="form-input" placeholder="5562348765" id="p4-input" maxlength="12">
+            </div>
           </div>
-          <div class="field-group">
-            <div class="form-label">Player 3 BGMI ID</div>
-            <input type="text" class="form-input" placeholder="5564561234" id="p3-input">
-          </div>
-          <div class="field-group">
-            <div class="form-label">Player 4 BGMI ID</div>
-            <input type="text" class="form-input" placeholder="5562348765" id="p4-input">
-          </div>
+
           <button class="submit-btn" onclick="registerTeam()">⚡ Register Squad</button>
         </div>
       </div>
@@ -2520,7 +2553,7 @@ function renderTournaments() {
     const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
 
     container.innerHTML += `
-    <div class="tournament-card" onclick="openDetail(${t.id})">
+    <div class="tournament-card" onclick="openDetail('${t.id}')">
       <div class="tournament-card-top">
         <div>
           <div class="tournament-badge ${badgeClass}">${badgeLabel}</div>
@@ -2548,7 +2581,7 @@ function renderTournaments() {
             <div class="slot-fill ${almostFull ? 'almost' : ''}" style="width:${pct}%"></div>
           </div>
         </div>
-        <button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail(${t.id})">${full ? 'FULL' : 'JOIN NOW'}</button>
+        <button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${t.id}')">${full ? 'FULL' : 'JOIN NOW'}</button>
       </div>
     </div>`;
   });
@@ -2566,6 +2599,10 @@ function openDetail(id) {
   document.getElementById('d-map').textContent = '🗺 ' + t.map;
   document.getElementById('d-datetime').textContent = t.date + ' • ' + t.time;
   document.getElementById('team-name-input').value = '';
+  document.getElementById('phone1-input').value = '';
+  document.getElementById('phone2-input').value = '';
+  document.getElementById('email1-input').value = '';
+  document.getElementById('email2-input').value = '';
   document.getElementById('p1-input').value = '';
   document.getElementById('p2-input').value = '';
   document.getElementById('p3-input').value = '';
@@ -2587,14 +2624,19 @@ function toggleRules() {
 
 async function registerTeam() {
   const name = document.getElementById('team-name-input').value.trim();
+  const phone1 = document.getElementById('phone1-input').value.trim();
+  const phone2 = document.getElementById('phone2-input').value.trim();
+  const email1 = document.getElementById('email1-input').value.trim();
+  const email2 = document.getElementById('email2-input').value.trim();
   const p1 = document.getElementById('p1-input').value.trim();
   const p2 = document.getElementById('p2-input').value.trim();
   const p3 = document.getElementById('p3-input').value.trim();
   const p4 = document.getElementById('p4-input').value.trim();
-  if (!name || !p1 || !p2 || !p3 || !p4) {
-    showToast('⚠️ Fill all fields to register');
-    return;
-  }
+
+  if (!name) { showToast('⚠️ Enter your team name'); return; }
+  if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
+  if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
+  if (!p1 || !p2 || !p3 || !p4) { showToast('⚠️ Enter all 4 BGMI Player IDs'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // Disable button to prevent double-submit
@@ -2602,48 +2644,51 @@ async function registerTeam() {
   if (btn) { btn.disabled = true; btn.textContent = 'REGISTERING...'; }
 
   try {
-    // Detect file:// access — API won't work without the server
-    if (window.location.protocol === 'file:') {
-      showToast('❌ Open via http://localhost:3000 — not as a file');
-      if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
-      return;
-    }
-
-    const res = await fetch(`${API_BASE}/registrations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tournamentId: currentDetail.id,
-        teamName: name,
-        players: [p1, p2, p3, p4]
-      })
+    const now = new Date();
+    const timeStr = now.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short',
+      year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // Safely parse JSON — some error responses may not be valid JSON
-    let data;
-    try {
-      data = await res.json();
-    } catch(jsonErr) {
-      // Response wasn't valid JSON
-      showToast('❌ Server error (status ' + res.status + ')');
-      if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
-      return;
+    // 1: Save registration entry under /registrations/{tournamentId}/
+    await db.ref('registrations/' + currentDetail.id).push({
+      tournamentId:   currentDetail.id,
+      tournamentName: currentDetail.name,
+      teamName:       name,
+      phone1:         '+91' + phone1,
+      phone2:         phone2 ? '+91' + phone2 : '',
+      email1:         email1,
+      email2:         email2 || '',
+      players:        [p1, p2, p3, p4],
+      registeredAt:   timeStr,
+      ts:             firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // 2: Increment registrationCount on the tournament node atomically
+    await db.ref('tournaments/' + currentDetail.id).transaction(current => {
+      if (current === null) return current;
+      current.registrationCount = (current.registrationCount || 0) + 1;
+      if (typeof current.slotsLeft === 'number' && current.slotsLeft > 0) {
+        current.slotsLeft = current.slotsLeft - 1;
+      }
+      return current;
+    });
+
+    // 3: Update local slot count for UI
+    const t = tournaments.find(x => x.id === currentDetail.id);
+    if (t) {
+      t.slots = Math.min(t.slots + 1, t.total);
+      if (t.slots >= t.total) t.status = 'full';
     }
 
-    if (data.success) {
-      // Update local slot count
-      const t = tournaments.find(x => x.id === currentDetail.id);
-      if (t) { t.slots = Math.min(t.slots + 1, t.total); if (t.slots >= t.total) t.status = 'full'; }
-      document.getElementById('success-modal').classList.add('open');
-    } else {
-      showToast('⚠️ ' + (data.message || 'Registration failed'));
-    }
+    document.getElementById('success-modal').classList.add('open');
+
   } catch(e) {
     console.error('Registration error:', e);
-    showToast('❌ Cannot reach server — is it running?');
+    showToast('Registration failed: ' + (e.message || 'Check connection'));
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Register Squad'; }
 }
 
 function closeModal() {

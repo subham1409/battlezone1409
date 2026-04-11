@@ -487,7 +487,7 @@ body::after {
         <!-- Image Upload -->
         <div style="margin-bottom:16px">
           <div class="field" style="margin-bottom:0">
-            <label>Article Image</label>
+            <label>Article Image <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Optional)</span></label>
           </div>
           <div class="img-upload-area" id="img-upload-area">
             <input type="file" id="img-file-input" accept="image/*" onchange="handleFileSelect(event)">
@@ -699,6 +699,17 @@ body::after {
           <label>Summary / Notes</label>
           <textarea id="r-summary" placeholder="Match highlights, MVP, special notes…" style="min-height:90px" maxlength="1500"></textarea>
         </div>
+
+        <!-- Add More Teams Section -->
+        <div style="margin-bottom:16px;padding:14px;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase">🏅 Additional Placements</div>
+            <button type="button" onclick="addResultTeamRow()" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.25);color:var(--accent-green);border-radius:8px;padding:6px 12px;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">+ Add Team</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:10px">Add teams ranked #4 and beyond for the full leaderboard</div>
+          <div id="extra-teams-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
         <button class="btn-primary" id="r-submit-btn" onclick="submitResult()" style="max-width:200px">⚡ Save Result</button>
       </div>
     </div>
@@ -1227,18 +1238,82 @@ function renderTournamentsAdmin() {
 // ===== RESULTS ADMIN =====
 let resultsData = [];
 let editingResultId = null;
+let extraTeamCount = 0;
+
+function addResultTeamRow(teamName, kills, rank) {
+  extraTeamCount++;
+  const rowId = 'extra-team-' + extraTeamCount;
+  const rankNum = rank || (3 + extraTeamCount);
+  const container = document.getElementById('extra-teams-list');
+  const row = document.createElement('div');
+  row.id = rowId;
+  row.style.cssText = 'display:grid;grid-template-columns:48px 1fr 80px 32px;gap:8px;align-items:center';
+  row.innerHTML = `
+    <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent-orange);text-align:center;background:rgba(255,120,0,0.1);border:1px solid rgba(255,120,0,0.2);border-radius:6px;padding:6px 4px">#${rankNum}</div>
+    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(teamName||'')}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:500;outline:none;width:100%" data-role="et-name">
+    <input type="number" placeholder="Kills" min="0" value="${kills||''}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;width:100%" data-role="et-kills">
+    <button type="button" onclick="removeResultTeamRow('${rowId}')" style="background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.2);color:var(--accent-red);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+  `;
+  container.appendChild(row);
+  renumberExtraTeams();
+}
+
+function removeResultTeamRow(rowId) {
+  const el = document.getElementById(rowId);
+  if (el) el.remove();
+  renumberExtraTeams();
+}
+
+function renumberExtraTeams() {
+  const rows = document.querySelectorAll('#extra-teams-list > div');
+  rows.forEach((row, i) => {
+    const rankEl = row.querySelector('div');
+    if (rankEl) rankEl.textContent = '#' + (4 + i);
+  });
+}
+
+function clearExtraTeams() {
+  document.getElementById('extra-teams-list').innerHTML = '';
+  extraTeamCount = 0;
+}
+
+function getExtraTeams() {
+  const rows = document.querySelectorAll('#extra-teams-list > div');
+  const teams = [];
+  rows.forEach((row, i) => {
+    const nameEl = row.querySelector('[data-role="et-name"]');
+    const killsEl = row.querySelector('[data-role="et-kills"]');
+    const name = nameEl ? nameEl.value.trim() : '';
+    if (name) {
+      teams.push({ r: 4 + i, team: name, kills: parseInt(killsEl?.value) || 0 });
+    }
+  });
+  return teams;
+}
 
 async function submitResult() {
   if (!resultsRef) { showToast('❌ Firebase not connected'); return; }
   const name = document.getElementById('r-name').value.trim();
   if (!name) { showToast('⚠️ Match name required'); return; }
+
+  // Build lb array from top 3 + extra teams
+  const lb = [];
+  const p1 = document.getElementById('r-p1').value.trim();
+  const p2 = document.getElementById('r-p2').value.trim();
+  const p3 = document.getElementById('r-p3').value.trim();
+  if (p1) lb.push({ r: 1, team: p1, kills: 0 });
+  if (p2) lb.push({ r: 2, team: p2, kills: 0 });
+  if (p3) lb.push({ r: 3, team: p3, kills: 0 });
+  getExtraTeams().forEach(t => lb.push(t));
+
   const payload = {
     name,
     date: document.getElementById('r-date').value.trim(),
     map: document.getElementById('r-map').value.trim(),
-    place1: document.getElementById('r-p1').value.trim(),
-    place2: document.getElementById('r-p2').value.trim(),
-    place3: document.getElementById('r-p3').value.trim(),
+    place1: p1,
+    place2: p2,
+    place3: p3,
+    lb: lb,
     totalKills: parseInt(document.getElementById('r-kills').value) || 0,
     totalTeams: parseInt(document.getElementById('r-teams').value) || 0,
     prize: document.getElementById('r-prize').value.trim(),
@@ -1264,6 +1339,7 @@ async function submitResult() {
 
 function resetResultForm() {
   ['r-name','r-date','r-map','r-p1','r-p2','r-p3','r-kills','r-teams','r-prize','r-summary'].forEach(id => document.getElementById(id).value = '');
+  clearExtraTeams();
 }
 
 function editResult(id) {
@@ -1282,6 +1358,15 @@ function editResult(id) {
   document.getElementById('r-form-title').textContent = 'Edit Result';
   document.getElementById('r-submit-btn').textContent = '✏️ Update Result';
   document.getElementById('r-cancel-btn').style.display = 'inline-block';
+
+  // Load extra teams (rank 4+) from lb array
+  clearExtraTeams();
+  if (r.lb && Array.isArray(r.lb)) {
+    r.lb.filter(row => row.r >= 4).forEach(row => {
+      addResultTeamRow(row.team, row.kills, row.r);
+    });
+  }
+
   document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
 }
 
