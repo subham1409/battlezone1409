@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <!-- EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -2256,7 +2255,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-emailjs.init('h8MDWFsp-SO1U35kP');
 
 const db = firebase.database();
 const chatRef = db.ref('chat');
@@ -2324,33 +2322,31 @@ async function authSendOTP() {
   btn.disabled = true;
   btn.textContent = 'SENDING...';
 
-  // Generate OTP and store in Firebase
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiry = Date.now() + 10 * 60 * 1000;
   const emailKey = email.replace(/[.#$[\]]/g, '_');
   const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   try {
-    // Store OTP in Firebase first
+    // Store OTP in Firebase
     await db.ref('otp/' + emailKey).set({ otp, expiry });
 
-    // Send via EmailJS
-    await emailjs.send('battlezone_service', 'battlezone_otp', {
-      email: email,
-      passcode: otp,
-      time: expireTime
+    // Call Vercel serverless function
+    const res = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, expireTime })
     });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed to send email');
 
-    // Success - show OTP input step
     document.getElementById('otp-sent-email').textContent = email;
     authGoStep(2);
     setTimeout(() => document.getElementById('otp-0').focus(), 300);
     showToast('📧 OTP sent! Check your inbox.');
   } catch(e) {
-    console.error('OTP send error:', JSON.stringify(e));
-    const msg = (e && e.text) ? e.text : (e && e.message) ? e.message : JSON.stringify(e);
-    showToast('❌ ' + msg);
-    // Clean up Firebase entry on failure
+    console.error('OTP error:', e);
+    showToast('❌ ' + (e.message || 'Failed to send OTP'));
     try { await db.ref('otp/' + emailKey).remove(); } catch(_) {}
     btn.disabled = false;
     btn.textContent = '⚡ SEND OTP';
@@ -2408,7 +2404,6 @@ async function authVerifyOTP() {
       btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
     }
 
-    // OTP correct — clean up and proceed
     await db.ref('otp/' + emailKey).remove();
     currentUser.email = email;
     authGoStep(3);
