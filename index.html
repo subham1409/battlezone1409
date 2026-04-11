@@ -2363,8 +2363,10 @@ function authFinish() {
     email: currentUser.email || null
   };
 
-  // Update UI with real username
-  document.getElementById('auth-screen').classList.add('hidden');
+  // Hide auth screen
+  const authScr = document.getElementById('auth-screen');
+  authScr.style.display = 'none';
+  authScr.classList.add('hidden');
   
   // Update UI with real username
   const initials = username.slice(0,2).toUpperCase();
@@ -2444,7 +2446,6 @@ window.onload = async function() {
         currentUser.isGuest = false;
         currentUser.email = result.user.email;
         // Go to profile setup step
-        document.getElementById('auth-screen').style.display = 'flex';
         authGoStep(3);
         showToast('✅ Email verified! Set up your profile.');
       } catch(e) {
