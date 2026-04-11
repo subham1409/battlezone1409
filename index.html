@@ -2363,10 +2363,13 @@ function authFinish() {
     email: currentUser.email || null
   };
 
-  // Hide auth screen
+  // Hide auth screen completely
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = 'none';
   authScr.classList.add('hidden');
+  // Reset all steps back to 0 for next time
+  document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('auth-step-0').classList.add('active');
   
   // Update UI with real username
   const initials = username.slice(0,2).toUpperCase();
@@ -2445,9 +2448,16 @@ window.onload = async function() {
         window.history.replaceState(null, '', window.location.pathname);
         currentUser.isGuest = false;
         currentUser.email = result.user.email;
-        // Go to profile setup step
-        authGoStep(3);
-        showToast('✅ Email verified! Set up your profile.');
+        // Make sure auth screen is visible then go to profile step
+        const authScr = document.getElementById('auth-screen');
+        authScr.style.display = 'flex';
+        authScr.classList.remove('hidden');
+        // Small delay so DOM is ready
+        setTimeout(() => {
+          authGoStep(3);
+          showToast('✅ Email verified! Set up your profile.');
+        }, 100);
+        return; // stop here, don't fall through
       } catch(e) {
         console.error(e);
         showToast('❌ Sign-in link invalid or expired. Please try again.');
