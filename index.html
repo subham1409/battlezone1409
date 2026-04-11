@@ -163,6 +163,7 @@ body::after {
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px 12px;
+  min-height: 62px;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -1818,11 +1819,11 @@ body.keyboard-open #chat-page.active {
 
     <!-- Step 0: Choice -->
     <div class="auth-step active" id="auth-step-0">
-      <button class="auth-choice-btn primary-btn" onclick="authStartPhone()">
-        <div class="btn-icon">📱</div>
+      <button class="auth-choice-btn primary-btn" onclick="authStartEmail()">
+        <div class="btn-icon">✉️</div>
         <div class="btn-text-wrap">
-          <span class="btn-main-text">Login with Phone</span>
-          <span class="btn-sub-text">OTP verification via SMS</span>
+          <span class="btn-main-text">Login with Email</span>
+          <span class="btn-sub-text">Magic link sent to your inbox</span>
         </div>
       </button>
       <button class="auth-choice-btn" onclick="authGuest()">
@@ -1834,33 +1835,26 @@ body.keyboard-open #chat-page.active {
       </button>
     </div>
 
-    <!-- Step 1: Phone Number -->
+    <!-- Step 1: Email -->
     <div class="auth-step" id="auth-step-1">
-      <label class="auth-label">Your Mobile Number</label>
+      <label class="auth-label">Your Email Address</label>
       <div class="auth-input-wrap">
-        <div class="auth-prefix">🇮🇳 +91</div>
-        <input class="auth-input" id="auth-phone" type="tel" maxlength="10" placeholder="9876543210" oninput="this.value=this.value.replace(/\D/g,'')">
+        <input class="auth-input no-prefix" id="auth-email" type="email" placeholder="you@example.com" style="padding:14px 16px">
       </div>
-      <div id="recaptcha-container"></div>
-      <button class="auth-submit-btn" id="send-otp-btn" onclick="authSendOTP()">⚡ SEND OTP</button>
-      <div class="auth-phone-hint">We'll send a 6-digit code to this number.<br>Standard SMS rates may apply.</div>
+      <button class="auth-submit-btn" id="send-link-btn" onclick="authSendEmailLink()">⚡ SEND MAGIC LINK</button>
+      <div class="auth-phone-hint">We'll send a sign-in link to your email.<br>No password needed!</div>
       <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
     </div>
 
-    <!-- Step 2: OTP -->
+    <!-- Step 2: Waiting for email click -->
     <div class="auth-step" id="auth-step-2">
-      <label class="auth-label">Enter 6-Digit OTP</label>
-      <div class="auth-otp-row">
-        <input class="otp-digit" id="otp-0" type="tel" maxlength="1" oninput="otpNext(this,0)">
-        <input class="otp-digit" id="otp-1" type="tel" maxlength="1" oninput="otpNext(this,1)">
-        <input class="otp-digit" id="otp-2" type="tel" maxlength="1" oninput="otpNext(this,2)">
-        <input class="otp-digit" id="otp-3" type="tel" maxlength="1" oninput="otpNext(this,3)">
-        <input class="otp-digit" id="otp-4" type="tel" maxlength="1" oninput="otpNext(this,4)">
-        <input class="otp-digit" id="otp-5" type="tel" maxlength="1" oninput="otpNext(this,5)">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:16px">📬</div>
+        <div style="font-family:var(--font-display);font-size:14px;color:var(--text-primary);margin-bottom:10px">CHECK YOUR INBOX</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">A magic link has been sent to<br><strong id="sent-email-display" style="color:var(--accent-orange)"></strong><br><br>Tap the link in the email to log in.<br>Then come back here!</div>
       </div>
-      <button class="auth-submit-btn" id="verify-otp-btn" onclick="authVerifyOTP()">✅ VERIFY OTP</button>
-      <div class="auth-resend">Didn't get it? <span onclick="authResendOTP()">Resend OTP</span></div>
-      <div class="auth-back-link" onclick="authGoStep(1)">← <span>Change number</span></div>
+      <div class="auth-resend" style="margin-top:16px">Didn't get it? <span onclick="authGoStep(1)">Try again</span></div>
+      <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
     </div>
 
     <!-- Step 3: Profile Setup -->
@@ -1869,13 +1863,6 @@ body.keyboard-open #chat-page.active {
       <div class="auth-input-wrap" style="margin-bottom:16px">
         <input class="auth-input no-prefix" id="auth-username" type="text" maxlength="20" placeholder="KillZone99" style="padding:14px 16px">
       </div>
-
-      <label class="auth-label">Password</label>
-      <div class="auth-input-wrap" style="margin-bottom:4px" id="pw-wrap">
-        <input class="auth-input no-prefix" id="auth-password" type="password" maxlength="32" placeholder="Min 8 chars, 1 number, 1 symbol" style="padding:14px 16px" oninput="checkPwStrength(this.value)">
-        <div class="pw-toggle" onclick="togglePw()" id="pw-toggle">👁</div>
-      </div>
-      <div class="pw-strength"><div class="pw-strength-fill" id="pw-bar"></div></div>
 
       <label class="auth-label">BGMI Player ID <span class="optional-tag">Optional</span></label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
@@ -1893,16 +1880,9 @@ body.keyboard-open #chat-page.active {
     <!-- ===== HOME PAGE ===== -->
     <div id="home-page" class="page active">
       <div class="top-header">
-        <div class="header-greeting-stack">
-          <span class="hg-hi">Hi 👋</span>
-          <strong class="hg-name" id="home-player-name">Player#7734</strong>
-        </div>
+
         <div class="header-logo" style="position:absolute;left:50%;transform:translateX(-50%)">⚔ BATTLEZONE</div>
-        <div class="profile-btn" onclick="switchPage('dashboard')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ff7800" stroke-width="2">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
-          </svg>
-        </div>
+
       </div>
 
       <!-- Calendar Banner -->
@@ -2274,8 +2254,6 @@ const chatRef = db.ref('chat');
 // =====================================================================
 // AUTH STATE
 // =====================================================================
-let confirmationResult = null;
-let appVerifier = null;
 let currentAuthStep = 0;
 
 function generateGamerName() {
@@ -2313,92 +2291,43 @@ function authGoStep(step) {
 
   const titles = [
     ['Choose How to Enter', 'Login to unlock full tournament access'],
-    ['Phone Verification', 'Enter your Indian mobile number'],
-    ['Enter OTP', 'Check your SMS for the code'],
+    ['Email Verification', 'Enter your email address'],
+    ['Check Your Email', 'Magic link sent — tap it to log in'],
     ['Set Up Profile', 'Almost there — customize your identity']
   ];
   document.getElementById('auth-box-title').textContent = titles[step][0];
   document.getElementById('auth-box-sub').textContent = titles[step][1];
 }
 
-function authStartPhone() {
+function authStartEmail() {
   authGoStep(1);
-  // Init invisible reCAPTCHA
-  if (!appVerifier) {
-    try {
-      appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal',
-        callback: () => {},
-        'expired-callback': () => { appVerifier.clear(); appVerifier = null; }
-      });
-      appVerifier.render();
-    } catch(e) {
-      console.warn('reCAPTCHA init failed:', e);
-    }
-  }
+  setTimeout(() => { const el = document.getElementById('auth-email'); if(el) el.focus(); }, 300);
 }
 
-async function authSendOTP() {
-  const phone = document.getElementById('auth-phone').value.trim();
-  if (phone.length !== 10) { showToast('⚠️ Enter a valid 10-digit number'); return; }
-  
-  const btn = document.getElementById('send-otp-btn');
+async function authSendEmailLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    showToast('⚠️ Enter a valid email address'); return;
+  }
+  const btn = document.getElementById('send-link-btn');
   btn.disabled = true;
   btn.textContent = 'SENDING...';
-
+  const actionCodeSettings = {
+    url: 'https://battlezone1409.vercel.app/',
+    handleCodeInApp: true
+  };
   try {
-    const fullPhone = '+91' + phone;
-    confirmationResult = await auth.signInWithPhoneNumber(fullPhone, appVerifier);
+    await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+    localStorage.setItem('emailForSignIn', email);
+    const disp = document.getElementById('sent-email-display');
+    if (disp) disp.textContent = email;
     authGoStep(2);
-    setTimeout(() => document.getElementById('otp-0').focus(), 300);
+    showToast('📬 Magic link sent! Check your email.');
   } catch(e) {
     console.error(e);
-    showToast('❌ Failed to send OTP: ' + (e.message || 'Try again'));
+    showToast('❌ Failed to send link: ' + (e.message || 'Try again'));
     btn.disabled = false;
-    btn.textContent = '⚡ SEND OTP';
-  }
-}
-
-async function authResendOTP() {
-  if (appVerifier) { try { appVerifier.clear(); } catch(e){} appVerifier = null; }
-  authGoStep(1);
-  authStartPhone();
-}
-
-function otpNext(el, idx) {
-  el.value = el.value.replace(/\D/g, '');
-  if (el.value && idx < 5) {
-    document.getElementById('otp-' + (idx + 1)).focus();
-  }
-  // Handle paste
-  if (el.value.length > 1) {
-    const digits = el.value.replace(/\D/g,'').slice(0,6);
-    for (let i = 0; i < 6; i++) {
-      document.getElementById('otp-' + i).value = digits[i] || '';
-    }
-    document.getElementById('otp-5').focus();
-    el.value = digits[idx] || '';
-  }
-}
-
-async function authVerifyOTP() {
-  const otp = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
-  if (otp.length !== 6) { showToast('⚠️ Enter all 6 digits'); return; }
-
-  const btn = document.getElementById('verify-otp-btn');
-  btn.disabled = true;
-  btn.textContent = 'VERIFYING...';
-
-  try {
-    const result = await confirmationResult.confirm(otp);
-    currentUser.phone = result.user.phoneNumber;
-    authGoStep(3);
-    btn.disabled = false;
-    btn.textContent = '✅ VERIFY OTP';
-  } catch(e) {
-    showToast('❌ Wrong OTP — try again');
-    btn.disabled = false;
-    btn.textContent = '✅ VERIFY OTP';
+    btn.textContent = '⚡ SEND MAGIC LINK';
   }
 }
 
@@ -2423,22 +2352,15 @@ function togglePw() {
 
 function authFinish() {
   const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value;
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
 
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
-  
-  let pwScore = 0;
-  if (password.length >= 8) pwScore++;
-  if (/[0-9]/.test(password)) pwScore++;
-  if (/[^A-Za-z0-9]/.test(password)) pwScore++;
-  if (pwScore < 2) { showToast('⚠️ Password too weak — add numbers & symbols'); return; }
 
   currentUser = {
     isGuest: false,
     username: username,
     bgmiId: bgmiId || null,
-    phone: currentUser.phone
+    email: currentUser.email || null
   };
 
   // Update UI with real username
@@ -2507,6 +2429,31 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // ---- Handle email magic link sign-in return ----
+  if (auth.isSignInWithEmailLink(window.location.href)) {
+    let email = localStorage.getItem('emailForSignIn');
+    if (!email) {
+      email = window.prompt('Please confirm your email address to complete sign-in:');
+    }
+    if (email) {
+      try {
+        const result = await auth.signInWithEmailLink(email, window.location.href);
+        localStorage.removeItem('emailForSignIn');
+        // Clean URL
+        window.history.replaceState(null, '', window.location.pathname);
+        currentUser.isGuest = false;
+        currentUser.email = result.user.email;
+        // Go to profile setup step
+        document.getElementById('auth-screen').style.display = 'flex';
+        authGoStep(3);
+        showToast('✅ Email verified! Set up your profile.');
+      } catch(e) {
+        console.error(e);
+        showToast('❌ Sign-in link invalid or expired. Please try again.');
+      }
+    }
+  }
+
   showTournamentSkeleton();
 
   // ---- Load tournaments from Firebase ----
