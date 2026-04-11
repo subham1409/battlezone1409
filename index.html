@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -1822,8 +1824,8 @@ body.keyboard-open #chat-page.active {
       <button class="auth-choice-btn primary-btn" onclick="authStartEmail()">
         <div class="btn-icon">✉️</div>
         <div class="btn-text-wrap">
-          <span class="btn-main-text">Login with Email</span>
-          <span class="btn-sub-text">Magic link sent to your inbox</span>
+          <span class="btn-main-text">Login with Email OTP</span>
+          <span class="btn-sub-text">6-digit code sent to your inbox</span>
         </div>
       </button>
       <button class="auth-choice-btn" onclick="authGuest()">
@@ -1835,26 +1837,32 @@ body.keyboard-open #chat-page.active {
       </button>
     </div>
 
-    <!-- Step 1: Email -->
+    <!-- Step 1: Email input -->
     <div class="auth-step" id="auth-step-1">
       <label class="auth-label">Your Email Address</label>
       <div class="auth-input-wrap">
-        <input class="auth-input no-prefix" id="auth-email" type="email" placeholder="you@example.com" style="padding:14px 16px">
+        <input class="auth-input no-prefix" id="auth-email" type="email" placeholder="you@example.com" style="padding:14px 16px" onkeydown="if(event.key==='Enter') authSendOTP()">
       </div>
-      <button class="auth-submit-btn" id="send-link-btn" onclick="authSendEmailLink()">⚡ SEND MAGIC LINK</button>
-      <div class="auth-phone-hint">We'll send a sign-in link to your email.<br>No password needed!</div>
+      <button class="auth-submit-btn" id="send-otp-btn" onclick="authSendOTP()">⚡ SEND OTP</button>
+      <div class="auth-phone-hint">We'll send a 6-digit code to your email.<br>Valid for 10 minutes.</div>
       <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
     </div>
 
-    <!-- Step 2: Waiting for email click -->
+    <!-- Step 2: OTP input -->
     <div class="auth-step" id="auth-step-2">
-      <div style="text-align:center;padding:20px 0">
-        <div style="font-size:48px;margin-bottom:16px">📬</div>
-        <div style="font-family:var(--font-display);font-size:14px;color:var(--text-primary);margin-bottom:10px">CHECK YOUR INBOX</div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">A magic link has been sent to<br><strong id="sent-email-display" style="color:var(--accent-orange)"></strong><br><br>Tap the link in the email to log in.<br>Then come back here!</div>
+      <label class="auth-label">Enter 6-Digit OTP</label>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-family:var(--font-mono)">Sent to: <span id="otp-sent-email" style="color:var(--accent-orange)"></span></div>
+      <div class="auth-otp-row">
+        <input class="otp-digit" id="otp-0" type="tel" maxlength="1" oninput="otpNext(this,0)">
+        <input class="otp-digit" id="otp-1" type="tel" maxlength="1" oninput="otpNext(this,1)">
+        <input class="otp-digit" id="otp-2" type="tel" maxlength="1" oninput="otpNext(this,2)">
+        <input class="otp-digit" id="otp-3" type="tel" maxlength="1" oninput="otpNext(this,3)">
+        <input class="otp-digit" id="otp-4" type="tel" maxlength="1" oninput="otpNext(this,4)">
+        <input class="otp-digit" id="otp-5" type="tel" maxlength="1" oninput="otpNext(this,5)">
       </div>
-      <div class="auth-resend" style="margin-top:16px">Didn't get it? <span onclick="authGoStep(1)">Try again</span></div>
-      <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
+      <button class="auth-submit-btn" id="verify-otp-btn" onclick="authVerifyOTP()">✅ VERIFY OTP</button>
+      <div class="auth-resend">Didn't get it? <span onclick="authResendOTP()">Resend OTP</span></div>
+      <div class="auth-back-link" onclick="authGoStep(1)">← <span>Change email</span></div>
     </div>
 
     <!-- Step 3: Profile Setup -->
@@ -2248,6 +2256,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+// Init EmailJS — replace with your actual Public Key from emailjs.com
+emailjs.init('h8MDWFsp-SO1U35kP');
 const db = firebase.database();
 const chatRef = db.ref('chat');
 
@@ -2292,7 +2302,7 @@ function authGoStep(step) {
   const titles = [
     ['Choose How to Enter', 'Login to unlock full tournament access'],
     ['Email Verification', 'Enter your email address'],
-    ['Check Your Email', 'Magic link sent — tap it to log in'],
+    ['Enter OTP', 'Check your inbox for the 6-digit code'],
     ['Set Up Profile', 'Almost there — customize your identity']
   ];
   document.getElementById('auth-box-title').textContent = titles[step][0];
@@ -2304,30 +2314,108 @@ function authStartEmail() {
   setTimeout(() => { const el = document.getElementById('auth-email'); if(el) el.focus(); }, 300);
 }
 
-async function authSendEmailLink() {
+// Generate a random 6-digit OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function authSendOTP() {
   const email = document.getElementById('auth-email').value.trim();
   if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
     showToast('⚠️ Enter a valid email address'); return;
   }
-  const btn = document.getElementById('send-link-btn');
+  const btn = document.getElementById('send-otp-btn');
   btn.disabled = true;
   btn.textContent = 'SENDING...';
-  const actionCodeSettings = {
-    url: 'https://battlezone1409.vercel.app/',
-    handleCodeInApp: true
-  };
+
+  const otp = generateOTP();
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
   try {
-    await auth.sendSignInLinkToEmail(email, actionCodeSettings);
-    localStorage.setItem('emailForSignIn', email);
-    const disp = document.getElementById('sent-email-display');
-    if (disp) disp.textContent = email;
+    // Store OTP in Firebase under otp/{sanitized email}
+    const emailKey = email.replace(/[.#$[\]]/g, '_');
+    await db.ref('otp/' + emailKey).set({ otp, expiry });
+
+    // Send OTP via EmailJS — variable names match the EmailJS OTP template
+    const now = new Date();
+    const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    await emailjs.send('battlezone_service', 'battlezone_otp', {
+      email: email,
+      passcode: otp,
+      time: expireTime
+    });
+
+    // Show OTP step
+    document.getElementById('otp-sent-email').textContent = email;
     authGoStep(2);
-    showToast('📬 Magic link sent! Check your email.');
+    setTimeout(() => document.getElementById('otp-0').focus(), 300);
+    showToast('📧 OTP sent! Check your inbox.');
   } catch(e) {
     console.error(e);
-    showToast('❌ Failed to send link: ' + (e.message || 'Try again'));
+    showToast('❌ Failed to send OTP: ' + (e.message || 'Try again'));
     btn.disabled = false;
-    btn.textContent = '⚡ SEND MAGIC LINK';
+    btn.textContent = '⚡ SEND OTP';
+  }
+}
+
+async function authResendOTP() {
+  authGoStep(1);
+  setTimeout(() => authSendOTP(), 300);
+}
+
+function otpNext(el, idx) {
+  el.value = el.value.replace(/\D/g, '');
+  if (el.value && idx < 5) {
+    document.getElementById('otp-' + (idx + 1)).focus();
+  }
+  if (el.value.length > 1) {
+    const digits = el.value.replace(/\D/g,'').slice(0,6);
+    for (let i = 0; i < 6; i++) {
+      document.getElementById('otp-' + i).value = digits[i] || '';
+    }
+    document.getElementById('otp-5').focus();
+    el.value = digits[idx] || '';
+  }
+  // Auto verify when all 6 digits entered
+  const all = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
+  if (all.length === 6) authVerifyOTP();
+}
+
+async function authVerifyOTP() {
+  const email = document.getElementById('auth-email').value.trim();
+  const enteredOTP = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
+  if (enteredOTP.length !== 6) { showToast('⚠️ Enter all 6 digits'); return; }
+
+  const btn = document.getElementById('verify-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'VERIFYING...';
+
+  try {
+    const emailKey = email.replace(/[.#$[\]]/g, '_');
+    const snap = await db.ref('otp/' + emailKey).once('value');
+    const data = snap.val();
+
+    if (!data) { showToast('❌ OTP expired — request a new one'); btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return; }
+    if (Date.now() > data.expiry) {
+      await db.ref('otp/' + emailKey).remove();
+      showToast('❌ OTP expired — request a new one');
+      btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return;
+    }
+    if (data.otp !== enteredOTP) {
+      showToast('❌ Wrong OTP — try again');
+      btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return;
+    }
+
+    // OTP correct — clean up and proceed
+    await db.ref('otp/' + emailKey).remove();
+    currentUser.email = email;
+    authGoStep(3);
+    btn.disabled=false; btn.textContent='✅ VERIFY OTP';
+    showToast('✅ Email verified!');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Verification failed — try again');
+    btn.disabled=false; btn.textContent='✅ VERIFY OTP';
   }
 }
 
@@ -2434,37 +2522,6 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
-  // ---- Handle email magic link sign-in return ----
-  if (auth.isSignInWithEmailLink(window.location.href)) {
-    let email = localStorage.getItem('emailForSignIn');
-    if (!email) {
-      email = window.prompt('Please confirm your email address to complete sign-in:');
-    }
-    if (email) {
-      try {
-        const result = await auth.signInWithEmailLink(email, window.location.href);
-        localStorage.removeItem('emailForSignIn');
-        // Clean URL
-        window.history.replaceState(null, '', window.location.pathname);
-        currentUser.isGuest = false;
-        currentUser.email = result.user.email;
-        // Make sure auth screen is visible then go to profile step
-        const authScr = document.getElementById('auth-screen');
-        authScr.style.display = 'flex';
-        authScr.classList.remove('hidden');
-        // Small delay so DOM is ready
-        setTimeout(() => {
-          authGoStep(3);
-          showToast('✅ Email verified! Set up your profile.');
-        }, 100);
-        return; // stop here, don't fall through
-      } catch(e) {
-        console.error(e);
-        showToast('❌ Sign-in link invalid or expired. Please try again.');
-      }
-    }
-  }
-
   showTournamentSkeleton();
 
   // ---- Load tournaments from Firebase ----
