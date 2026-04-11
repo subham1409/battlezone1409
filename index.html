@@ -178,6 +178,62 @@ body::after {
   color: var(--accent-orange);
   text-shadow: 0 0 20px rgba(255,120,0,0.4);
 }
+/* === PAGE BRAND HEADER (news / results / my account) === */
+.page-brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  width: 100%;
+}
+.page-brand-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-orange);
+  letter-spacing: 0.18em;
+  opacity: 0.7;
+  text-align: center;
+  width: 100%;
+}
+/* === HOME HEADER GREETING STACK === */
+.header-greeting-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 1;
+}
+.hg-hi {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+.hg-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+/* === CHAT TEXTAREA === */
+.chat-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.5;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+}
 .header-greeting {
   font-size: 13px;
   color: var(--text-secondary);
@@ -681,6 +737,7 @@ body::after {
   flex-direction: column;
   gap: 12px;
   min-height: 300px;
+  overflow-x: hidden;
 }
 .chat-msg { display: flex; align-items: flex-start; gap: 10px; }
 .chat-msg.own { flex-direction: row-reverse; }
@@ -693,12 +750,13 @@ body::after {
   font-weight: 700;
   flex-shrink: 0;
 }
-.msg-content { max-width: 75%; }
+.msg-content { max-width: 75%; min-width: 0; overflow: hidden; }
 .msg-sender {
   font-size: 11px;
   font-weight: 700;
   margin-bottom: 4px;
   letter-spacing: 0.05em;
+  word-break: break-all;
 }
 .msg-bubble {
   background: var(--bg-card);
@@ -711,6 +769,11 @@ body::after {
   line-height: 1.5;
   position: relative;
   font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  overflow: hidden;
+  max-width: 100%;
 }
 .chat-msg.own .msg-bubble {
   background: rgba(255,120,0,0.12);
@@ -1650,9 +1713,10 @@ body.keyboard-open #chat-page.active {
 }
 .news-detail-img {
   width: 100%;
-  max-height: 240px;
-  object-fit: cover;
+  max-height: none;
+  object-fit: contain;
   display: block;
+  background: #000;
 }
 .news-detail-content { padding: 20px 18px 40px; }
 .news-detail-back {
@@ -1708,6 +1772,25 @@ body.keyboard-open #chat-page.active {
   font-weight: 500;
   white-space: pre-wrap;
 }
+.news-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: rgba(255,120,0,0.1);
+  border: 1px solid rgba(255,120,0,0.3);
+  border-radius: 8px;
+  color: var(--accent-orange);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  word-break: break-all;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.news-detail-link:hover { background: rgba(255,120,0,0.2); }
 </style>
 
 
@@ -1810,8 +1893,11 @@ body.keyboard-open #chat-page.active {
     <!-- ===== HOME PAGE ===== -->
     <div id="home-page" class="page active">
       <div class="top-header">
-        <div class="header-greeting">Hi, <strong>Player7734</strong></div>
-        <div class="header-logo">⚔ BATTLEZONE</div>
+        <div class="header-greeting-stack">
+          <span class="hg-hi">Hi 👋</span>
+          <strong class="hg-name" id="home-player-name">Player#7734</strong>
+        </div>
+        <div class="header-logo" style="position:absolute;left:50%;transform:translateX(-50%)">⚔ BATTLEZONE</div>
         <div class="profile-btn" onclick="switchPage('dashboard')">
           <svg viewBox="0 0 24 24" fill="none" stroke="#ff7800" stroke-width="2">
             <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
@@ -1990,7 +2076,7 @@ body.keyboard-open #chat-page.active {
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
-        <input type="search" class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" name="chat-msg-field" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage()}" onsearch="return false">
+        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)"></textarea>
         <button class="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2001,13 +2087,11 @@ body.keyboard-open #chat-page.active {
 
     <!-- ===== NEWS PAGE ===== -->
     <div id="news-page" class="page">
-      <div class="top-header">
-        <div class="header-greeting" style="visibility:hidden">-</div>
-        <div class="header-logo">⚔ BATTLEZONE</div>
-        <div style="width:60px"></div>
-      </div>
-      <div class="section-header">
-        <div class="section-title">Latest News</div>
+      <div class="top-header" style="justify-content:center;text-align:center">
+        <div class="page-brand-header">
+          <div class="header-logo">⚔ BATTLEZONE</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ news · latest updates &amp; announcements</div>
+        </div>
       </div>
       <div id="news-list">
         <div class="news-empty">
@@ -2019,13 +2103,11 @@ body.keyboard-open #chat-page.active {
 
     <!-- ===== RESULTS PAGE ===== -->
     <div id="results-page" class="page">
-      <div class="top-header">
-        <div class="header-greeting" style="visibility:hidden">-</div>
-        <div class="header-logo">⚔ BATTLEZONE</div>
-        <div style="width:60px"></div>
-      </div>
-      <div class="section-header">
-        <div class="section-title">Match Results</div>
+      <div class="top-header" style="justify-content:center;text-align:center">
+        <div class="page-brand-header">
+          <div class="header-logo">⚔ BATTLEZONE</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ results · match outcomes &amp; standings</div>
+        </div>
       </div>
       <div class="results-filter">
         <div class="filter-chip active" onclick="setFilter(this,'all')">All</div>
@@ -2038,38 +2120,17 @@ body.keyboard-open #chat-page.active {
 
     <!-- ===== DASHBOARD PAGE ===== -->
     <div id="dashboard-page" class="page">
-      <div class="top-header">
-        <div class="header-greeting" style="visibility:hidden">-</div>
-        <div class="header-logo">⚔ BATTLEZONE</div>
-        <div style="width:60px"></div>
+      <div class="top-header" style="justify-content:center;text-align:center">
+        <div class="page-brand-header">
+          <div class="header-logo">⚔ BATTLEZONE</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ my account · profile &amp; match history</div>
+        </div>
       </div>
       <div class="profile-hero">
         <div class="profile-avatar">P7</div>
         <div class="profile-info">
           <div class="profile-username">Player#7734</div>
           <div class="profile-id">BGMI ID: 5561298734</div>
-          <div class="rep-bar-wrap">
-            <div class="rep-row">
-              <span>Reputation</span>
-              <span style="color:var(--accent-green)">87 / 100</span>
-            </div>
-            <div class="rep-bar"><div class="rep-fill" style="width:87%"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-stats">
-        <div class="dash-stat">
-          <div class="dash-stat-val">6</div>
-          <div class="dash-stat-key">Matches</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val">2</div>
-          <div class="dash-stat-key">Wins</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val">143</div>
-          <div class="dash-stat-key">Total Kills</div>
         </div>
       </div>
 
@@ -2234,6 +2295,8 @@ function authGuest() {
   document.getElementById('auth-screen').classList.add('hidden');
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = gamerName;
+  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = gamerName;
+  const hn1 = document.getElementById('home-player-name'); if (hn1) hn1.textContent = gamerName;
   showToast('👤 Joined as ' + gamerName);
 }
 
@@ -2389,6 +2452,7 @@ function authFinish() {
   if (bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + bgmiId);
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = username;
+  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = username;
   
   showToast('🎮 Welcome ' + username + '! You\'re in the zone!');
 }
@@ -2573,6 +2637,7 @@ function switchPage(page) {
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
     if (chatLabel) chatLabel.textContent = currentUser.username;
+  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
     if (!chatListenerAttached) initFirebaseChat();
     setTimeout(() => {
       const msgs = document.getElementById('chat-messages');
@@ -2794,12 +2859,45 @@ function filterProfanity(text) {
   return result;
 }
 
+function autoGrowChat(el) {
+  // Measure text width against 70% of screen width threshold
+  const inputArea = el.parentElement;
+  const sendBtn = inputArea ? inputArea.querySelector('.send-btn') : null;
+  const sendBtnWidth = sendBtn ? sendBtn.offsetWidth + 10 : 50;
+  const availableWidth = window.innerWidth - sendBtnWidth - 28 - 28; // padding
+  const threshold70 = availableWidth * 0.70;
+
+  // Use a canvas to measure text width
+  if (!autoGrowChat._canvas) autoGrowChat._canvas = document.createElement('canvas');
+  const ctx = autoGrowChat._canvas.getContext('2d');
+  const style = window.getComputedStyle(el);
+  ctx.font = style.fontSize + ' ' + style.fontFamily;
+  const textWidth = ctx.measureText(el.value).width;
+
+  if (textWidth >= threshold70) {
+    el.style.whiteSpace = 'pre-wrap';
+    el.style.wordBreak = 'break-word';
+  } else {
+    el.style.whiteSpace = 'nowrap';
+    el.style.wordBreak = 'normal';
+    el.style.overflowX = 'hidden';
+  }
+
+  el.style.height = '40px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+let _isSending = false;
 async function sendMessage() {
+  if (_isSending) return;
+  _isSending = true;
   const input = document.getElementById('chat-input');
   const raw = input.value.trim();
-  if (!raw) return;
+  if (!raw) { _isSending = false; return; }
   const clean = filterProfanity(raw);
   input.value = '';
+  input.style.height = '40px'; // reset textarea height after send
+  autoGrowChat(input);
   // Keep focus on input so keyboard stays open and bar stays put
   input.focus();
 
@@ -2830,6 +2928,8 @@ async function sendMessage() {
   } catch(e) {
     showToast('❌ Failed to send — check connection');
     console.error('Chat send error:', e);
+  } finally {
+    _isSending = false;
   }
 }
 
@@ -2976,8 +3076,8 @@ function renderNews() {
   newsItems.forEach(item => {
     const dateStr = item.ts ? new Date(item.ts).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
     const imgHtml = item.imageUrl
-      ? `<img class="news-card-img" src="${item.imageUrl}" alt="${escapeHTML(item.title)}" onerror="this.style.display='none'">`
-      : `<div class="news-card-img-placeholder">📰</div>`;
+      ? `<img class="news-card-img" src="${item.imageUrl}" alt="${escapeHTML(item.title)}" onerror="this.parentElement.querySelector('.news-card-img')&&(this.style.display='none')">`
+      : ``;
 
     list.innerHTML += `
     <div class="news-card" onclick="openNewsDetail('${item.id}')">
@@ -3010,7 +3110,14 @@ function openNewsDetail(id) {
   document.getElementById('news-detail-tag').textContent = item.tag || 'NEWS';
   document.getElementById('news-detail-title').textContent = item.title;
   document.getElementById('news-detail-meta').textContent = '📅 ' + dateStr;
-  document.getElementById('news-detail-body').textContent = item.description;
+
+  // Render description as plain text, then linkUrl as a tap button if set
+  const rawDesc = item.description || '';
+  let bodyHTML = `<div style="white-space:pre-wrap">${escapeHTML(rawDesc)}</div>`;
+  if (item.linkUrl) {
+    bodyHTML += `<a class="news-detail-link" href="${escapeHTML(item.linkUrl)}" target="_blank" rel="noopener">🔗 ${escapeHTML(item.linkUrl)}</a>`;
+  }
+  document.getElementById('news-detail-body').innerHTML = bodyHTML;
   document.getElementById('news-overlay').classList.add('open');
 }
 
