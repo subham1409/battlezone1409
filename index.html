@@ -6,6 +6,8 @@
 <title>BATTLEZONE — BGMI Esports</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -2254,6 +2256,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+emailjs.init('h8MDWFsp-SO1U35kP');
 
 const db = firebase.database();
 const chatRef = db.ref('chat');
@@ -2321,54 +2324,34 @@ async function authSendOTP() {
   btn.disabled = true;
   btn.textContent = 'SENDING...';
 
-  // Generate OTP
+  // Generate OTP and store in Firebase
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiry = Date.now() + 10 * 60 * 1000; // 10 min
+  const expiry = Date.now() + 10 * 60 * 1000;
   const emailKey = email.replace(/[.#$[\]]/g, '_');
+  const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   try {
-    // 1. Store OTP in Firebase
+    // Store OTP in Firebase first
     await db.ref('otp/' + emailKey).set({ otp, expiry });
 
-    // 2. Send email via Resend API
-    const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const emailRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer re_MMCz79BN_3pdHaBfMFQbLKmHkCLofJyUe'
-      },
-      body: JSON.stringify({
-        from: 'BATTLEZONE <onboarding@resend.dev>',
-        to: [email],
-        subject: '🎮 Your BATTLEZONE Login OTP',
-        html: `
-          <div style="background:#080a0e;padding:32px;font-family:sans-serif;max-width:480px;margin:0 auto;border-radius:12px;border:1px solid rgba(255,120,0,0.3)">
-            <h2 style="color:#ff7800;letter-spacing:0.1em;margin-bottom:4px">⚔ BATTLEZONE</h2>
-            <p style="color:#7a8699;font-size:13px;margin-bottom:24px">India's #1 BGMI Esports Arena</p>
-            <p style="color:#f0f2f5;font-size:15px;margin-bottom:16px">Your One-Time Password:</p>
-            <div style="background:#111620;border:2px solid rgba(255,120,0,0.4);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-              <span style="font-size:40px;font-weight:900;letter-spacing:0.3em;color:#ff7800">${otp}</span>
-            </div>
-            <p style="color:#7a8699;font-size:12px">Valid until <strong style="color:#f0f2f5">${expireTime}</strong> (10 minutes)</p>
-            <p style="color:#3d4a5c;font-size:11px;margin-top:24px">Do not share this OTP. BATTLEZONE will never ask for your OTP.</p>
-          </div>`
-      })
+    // Send via EmailJS
+    await emailjs.send('battlezone_service', 'battlezone_otp', {
+      email: email,
+      passcode: otp,
+      time: expireTime
     });
 
-    const emailData = await emailRes.json();
-    if (!emailRes.ok) {
-      throw new Error(emailData.message || 'Email send failed');
-    }
-
-    // Show OTP step
+    // Success - show OTP input step
     document.getElementById('otp-sent-email').textContent = email;
     authGoStep(2);
     setTimeout(() => document.getElementById('otp-0').focus(), 300);
     showToast('📧 OTP sent! Check your inbox.');
   } catch(e) {
-    console.error('Send OTP error:', e);
-    showToast('❌ ' + (e.message || 'Failed to send OTP. Try again.'));
+    console.error('OTP send error:', JSON.stringify(e));
+    const msg = (e && e.text) ? e.text : (e && e.message) ? e.message : JSON.stringify(e);
+    showToast('❌ ' + msg);
+    // Clean up Firebase entry on failure
+    try { await db.ref('otp/' + emailKey).remove(); } catch(_) {}
     btn.disabled = false;
     btn.textContent = '⚡ SEND OTP';
   }
