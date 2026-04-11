@@ -2850,7 +2850,7 @@ function renderResults(filter) {
   const filtered = filter && filter !== 'all' ? results.filter(r => r.map.toLowerCase() === filter) : results;
   filtered.forEach(r => {
     list.innerHTML += `
-    <div class="result-card" onclick="openLeaderboard(${r.id})">
+    <div class="result-card" onclick="openLeaderboard('${r.id}')">
       <div class="result-card-top">
         <div class="result-match-info">
           <div class="result-match-name">${r.name}</div>
