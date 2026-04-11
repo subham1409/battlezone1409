@@ -8,8 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<!-- EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -2256,8 +2254,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-// Init EmailJS — replace with your actual Public Key from emailjs.com
-emailjs.init('h8MDWFsp-SO1U35kP');
+
 const db = firebase.database();
 const chatRef = db.ref('chat');
 
@@ -2314,10 +2311,6 @@ function authStartEmail() {
   setTimeout(() => { const el = document.getElementById('auth-email'); if(el) el.focus(); }, 300);
 }
 
-// Generate a random 6-digit OTP
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
 async function authSendOTP() {
   const email = document.getElementById('auth-email').value.trim();
@@ -2328,22 +2321,45 @@ async function authSendOTP() {
   btn.disabled = true;
   btn.textContent = 'SENDING...';
 
-  const otp = generateOTP();
-  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  // Generate OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 min
+  const emailKey = email.replace(/[.#$[\]]/g, '_');
 
   try {
-    // Store OTP in Firebase under otp/{sanitized email}
-    const emailKey = email.replace(/[.#$[\]]/g, '_');
+    // 1. Store OTP in Firebase
     await db.ref('otp/' + emailKey).set({ otp, expiry });
 
-    // Send OTP via EmailJS — variable names match the EmailJS OTP template
+    // 2. Send email via Resend API
     const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const ejsResult = await emailjs.send('battlezone_service', 'battlezone_otp', {
-      email: email,
-      passcode: otp,
-      time: expireTime
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer re_MMCz79BN_3pdHaBfMFQbLKmHkCLofJyUe'
+      },
+      body: JSON.stringify({
+        from: 'BATTLEZONE <onboarding@resend.dev>',
+        to: [email],
+        subject: '🎮 Your BATTLEZONE Login OTP',
+        html: `
+          <div style="background:#080a0e;padding:32px;font-family:sans-serif;max-width:480px;margin:0 auto;border-radius:12px;border:1px solid rgba(255,120,0,0.3)">
+            <h2 style="color:#ff7800;letter-spacing:0.1em;margin-bottom:4px">⚔ BATTLEZONE</h2>
+            <p style="color:#7a8699;font-size:13px;margin-bottom:24px">India's #1 BGMI Esports Arena</p>
+            <p style="color:#f0f2f5;font-size:15px;margin-bottom:16px">Your One-Time Password:</p>
+            <div style="background:#111620;border:2px solid rgba(255,120,0,0.4);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
+              <span style="font-size:40px;font-weight:900;letter-spacing:0.3em;color:#ff7800">${otp}</span>
+            </div>
+            <p style="color:#7a8699;font-size:12px">Valid until <strong style="color:#f0f2f5">${expireTime}</strong> (10 minutes)</p>
+            <p style="color:#3d4a5c;font-size:11px;margin-top:24px">Do not share this OTP. BATTLEZONE will never ask for your OTP.</p>
+          </div>`
+      })
     });
-    console.log('EmailJS result:', ejsResult);
+
+    const emailData = await emailRes.json();
+    if (!emailRes.ok) {
+      throw new Error(emailData.message || 'Email send failed');
+    }
 
     // Show OTP step
     document.getElementById('otp-sent-email').textContent = email;
@@ -2351,10 +2367,8 @@ async function authSendOTP() {
     setTimeout(() => document.getElementById('otp-0').focus(), 300);
     showToast('📧 OTP sent! Check your inbox.');
   } catch(e) {
-    console.error('EmailJS error full:', e);
-    // Show exact error in toast so user can see it
-    const errMsg = (typeof e === 'object' && e.text) ? e.text : (e.message || JSON.stringify(e));
-    showToast('❌ ' + errMsg);
+    console.error('Send OTP error:', e);
+    showToast('❌ ' + (e.message || 'Failed to send OTP. Try again.'));
     btn.disabled = false;
     btn.textContent = '⚡ SEND OTP';
   }
@@ -2397,27 +2411,30 @@ async function authVerifyOTP() {
     const snap = await db.ref('otp/' + emailKey).once('value');
     const data = snap.val();
 
-    if (!data) { showToast('❌ OTP expired — request a new one'); btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return; }
+    if (!data) {
+      showToast('❌ OTP expired — request a new one');
+      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
+    }
     if (Date.now() > data.expiry) {
       await db.ref('otp/' + emailKey).remove();
       showToast('❌ OTP expired — request a new one');
-      btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return;
+      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
     }
     if (data.otp !== enteredOTP) {
       showToast('❌ Wrong OTP — try again');
-      btn.disabled=false; btn.textContent='✅ VERIFY OTP'; return;
+      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
     }
 
     // OTP correct — clean up and proceed
     await db.ref('otp/' + emailKey).remove();
     currentUser.email = email;
     authGoStep(3);
-    btn.disabled=false; btn.textContent='✅ VERIFY OTP';
+    btn.disabled = false; btn.textContent = '✅ VERIFY OTP';
     showToast('✅ Email verified!');
   } catch(e) {
     console.error(e);
     showToast('❌ Verification failed — try again');
-    btn.disabled=false; btn.textContent='✅ VERIFY OTP';
+    btn.disabled = false; btn.textContent = '✅ VERIFY OTP';
   }
 }
 
