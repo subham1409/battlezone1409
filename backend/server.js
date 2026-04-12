@@ -29,12 +29,14 @@ const tournamentRoutes  = require('./routes/tournaments');
 const registrationRoutes = require('./routes/registrations');
 const chatRoutes        = require('./routes/chat');
 const resultRoutes      = require('./routes/results');
+const otpRoutes         = require('./otp');
 
 app.use('/api/auth',          authRoutes);
 app.use('/api/tournaments',   tournamentRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/chat',          chatRoutes);
 app.use('/api/results',       resultRoutes);
+app.use('/api/otp',           otpRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

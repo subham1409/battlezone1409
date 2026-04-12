@@ -1808,8 +1808,6 @@ body.keyboard-open #chat-page.active {
   <div class="auth-step-indicator">
     <div class="auth-dot active" id="dot-0"></div>
     <div class="auth-dot" id="dot-1"></div>
-    <div class="auth-dot" id="dot-2"></div>
-    <div class="auth-dot" id="dot-3"></div>
   </div>
 
   <div class="auth-box">
@@ -1820,11 +1818,13 @@ body.keyboard-open #chat-page.active {
 
     <!-- Step 0: Choice -->
     <div class="auth-step active" id="auth-step-0">
-      <button class="auth-choice-btn primary-btn" onclick="authStartEmail()">
-        <div class="btn-icon">✉️</div>
+      <button class="auth-choice-btn primary-btn" onclick="authGoogleSignIn()" id="google-btn">
+        <div class="btn-icon" style="background:#fff;border-radius:8px;padding:4px;display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        </div>
         <div class="btn-text-wrap">
-          <span class="btn-main-text">Login with Email OTP</span>
-          <span class="btn-sub-text">6-digit code sent to your inbox</span>
+          <span class="btn-main-text">Sign in with Google</span>
+          <span class="btn-sub-text">Quick &amp; secure — one tap login</span>
         </div>
       </button>
       <button class="auth-choice-btn" onclick="authGuest()">
@@ -1836,46 +1836,21 @@ body.keyboard-open #chat-page.active {
       </button>
     </div>
 
-    <!-- Step 1: Email input -->
+    <!-- Step 1: Profile Setup after Google login -->
     <div class="auth-step" id="auth-step-1">
-      <label class="auth-label">Your Email Address</label>
-      <div class="auth-input-wrap">
-        <input class="auth-input no-prefix" id="auth-email" type="email" placeholder="you@example.com" style="padding:14px 16px" onkeydown="if(event.key==='Enter') authSendOTP()">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:36px;margin-bottom:8px">🎮</div>
+        <div style="font-family:var(--font-display);font-size:13px;color:var(--accent-green);letter-spacing:0.1em">GOOGLE VERIFIED ✓</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)" id="google-email-display"></div>
       </div>
-      <button class="auth-submit-btn" id="send-otp-btn" onclick="authSendOTP()">⚡ SEND OTP</button>
-      <div class="auth-phone-hint">We'll send a 6-digit code to your email.<br>Valid for 10 minutes.</div>
-      <div class="auth-back-link" onclick="authGoStep(0)">← <span>Change option</span></div>
-    </div>
-
-    <!-- Step 2: OTP input -->
-    <div class="auth-step" id="auth-step-2">
-      <label class="auth-label">Enter 6-Digit OTP</label>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-family:var(--font-mono)">Sent to: <span id="otp-sent-email" style="color:var(--accent-orange)"></span></div>
-      <div class="auth-otp-row">
-        <input class="otp-digit" id="otp-0" type="tel" maxlength="1" oninput="otpNext(this,0)">
-        <input class="otp-digit" id="otp-1" type="tel" maxlength="1" oninput="otpNext(this,1)">
-        <input class="otp-digit" id="otp-2" type="tel" maxlength="1" oninput="otpNext(this,2)">
-        <input class="otp-digit" id="otp-3" type="tel" maxlength="1" oninput="otpNext(this,3)">
-        <input class="otp-digit" id="otp-4" type="tel" maxlength="1" oninput="otpNext(this,4)">
-        <input class="otp-digit" id="otp-5" type="tel" maxlength="1" oninput="otpNext(this,5)">
-      </div>
-      <button class="auth-submit-btn" id="verify-otp-btn" onclick="authVerifyOTP()">✅ VERIFY OTP</button>
-      <div class="auth-resend">Didn't get it? <span onclick="authResendOTP()">Resend OTP</span></div>
-      <div class="auth-back-link" onclick="authGoStep(1)">← <span>Change email</span></div>
-    </div>
-
-    <!-- Step 3: Profile Setup -->
-    <div class="auth-step" id="auth-step-3">
-      <label class="auth-label">Username</label>
+      <label class="auth-label">Choose a Username</label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
         <input class="auth-input no-prefix" id="auth-username" type="text" maxlength="20" placeholder="KillZone99" style="padding:14px 16px">
       </div>
-
       <label class="auth-label">BGMI Player ID <span class="optional-tag">Optional</span></label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
         <input class="auth-input no-prefix" id="auth-bgmi" type="tel" maxlength="12" placeholder="e.g. 5561234567" style="padding:14px 16px">
       </div>
-
       <button class="auth-submit-btn" onclick="authFinish()">🎮 ENTER THE ZONE</button>
     </div>
   </div>
@@ -2277,168 +2252,62 @@ let currentUser = { isGuest: true, username: generateGamerName(), bgmiId: null, 
 
 function authGuest() {
   const gamerName = generateGamerName();
-  currentUser = { isGuest: true, username: gamerName, bgmiId: null, phone: null };
-  document.getElementById('auth-screen').classList.add('hidden');
+  currentUser = { isGuest: true, username: gamerName, bgmiId: null, email: null };
+  const authScr = document.getElementById('auth-screen');
+  authScr.style.display = 'none';
+  authScr.classList.add('hidden');
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = gamerName;
-  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = gamerName;
-  const hn1 = document.getElementById('home-player-name'); if (hn1) hn1.textContent = gamerName;
   showToast('👤 Joined as ' + gamerName);
 }
 
 function authGoStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
   document.getElementById('auth-step-' + step).classList.add('active');
-  currentAuthStep = step;
-
-  // Update dots
-  for (let i = 0; i < 4; i++) {
-    const d = document.getElementById('dot-' + i);
-    d.className = 'auth-dot' + (i === step ? ' active' : i < step ? ' done' : '');
-  }
-
+  const d0 = document.getElementById('dot-0');
+  const d1 = document.getElementById('dot-1');
+  if (d0) d0.className = 'auth-dot' + (step === 0 ? ' active' : ' done');
+  if (d1) d1.className = 'auth-dot' + (step === 1 ? ' active' : step > 1 ? ' done' : '');
   const titles = [
     ['Choose How to Enter', 'Login to unlock full tournament access'],
-    ['Email Verification', 'Enter your email address'],
-    ['Enter OTP', 'Check your inbox for the 6-digit code'],
     ['Set Up Profile', 'Almost there — customize your identity']
   ];
-  document.getElementById('auth-box-title').textContent = titles[step][0];
-  document.getElementById('auth-box-sub').textContent = titles[step][1];
+  const t = titles[Math.min(step, titles.length-1)];
+  document.getElementById('auth-box-title').textContent = t[0];
+  document.getElementById('auth-box-sub').textContent = t[1];
 }
 
-function authStartEmail() {
-  authGoStep(1);
-  setTimeout(() => { const el = document.getElementById('auth-email'); if(el) el.focus(); }, 300);
-}
-
-
-async function authSendOTP() {
-  const email = document.getElementById('auth-email').value.trim();
-  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-    showToast('⚠️ Enter a valid email address'); return;
-  }
-  const btn = document.getElementById('send-otp-btn');
+async function authGoogleSignIn() {
+  const btn = document.getElementById('google-btn');
   btn.disabled = true;
-  btn.textContent = 'SENDING...';
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiry = Date.now() + 10 * 60 * 1000;
-  const emailKey = email.replace(/[.#$[\]]/g, '_');
-  const expireTime = new Date(expiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-
+  btn.querySelector('.btn-main-text').textContent = 'Signing in...';
   try {
-    // Store OTP in Firebase
-    await db.ref('otp/' + emailKey).set({ otp, expiry });
-
-    // Call Vercel serverless function
-    const res = await fetch('/api/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, expireTime })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message || 'Failed to send email');
-
-    document.getElementById('otp-sent-email').textContent = email;
-    authGoStep(2);
-    setTimeout(() => document.getElementById('otp-0').focus(), 300);
-    showToast('📧 OTP sent! Check your inbox.');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
+    const user = result.user;
+    currentUser.email = user.email;
+    currentUser.isGuest = false;
+    // Pre-fill username from Google display name
+    const suggestedName = (user.displayName || '').replace(/\s+/g, '').slice(0, 20);
+    setTimeout(() => {
+      const unInput = document.getElementById('auth-username');
+      if (unInput && suggestedName) unInput.value = suggestedName;
+      const emailDisp = document.getElementById('google-email-display');
+      if (emailDisp) emailDisp.textContent = user.email;
+    }, 100);
+    authGoStep(1);
+    showToast('✅ Google verified! Set up your profile.');
   } catch(e) {
-    console.error('OTP error:', e);
-    showToast('❌ ' + (e.message || 'Failed to send OTP'));
-    try { await db.ref('otp/' + emailKey).remove(); } catch(_) {}
+    console.error('Google sign-in error:', e);
+    showToast('❌ Google sign-in failed: ' + (e.message || 'Try again'));
     btn.disabled = false;
-    btn.textContent = '⚡ SEND OTP';
+    btn.querySelector('.btn-main-text').textContent = 'Sign in with Google';
   }
-}
-
-async function authResendOTP() {
-  authGoStep(1);
-  setTimeout(() => authSendOTP(), 300);
-}
-
-function otpNext(el, idx) {
-  el.value = el.value.replace(/\D/g, '');
-  if (el.value && idx < 5) {
-    document.getElementById('otp-' + (idx + 1)).focus();
-  }
-  if (el.value.length > 1) {
-    const digits = el.value.replace(/\D/g,'').slice(0,6);
-    for (let i = 0; i < 6; i++) {
-      document.getElementById('otp-' + i).value = digits[i] || '';
-    }
-    document.getElementById('otp-5').focus();
-    el.value = digits[idx] || '';
-  }
-  // Auto verify when all 6 digits entered
-  const all = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
-  if (all.length === 6) authVerifyOTP();
-}
-
-async function authVerifyOTP() {
-  const email = document.getElementById('auth-email').value.trim();
-  const enteredOTP = [0,1,2,3,4,5].map(i => document.getElementById('otp-'+i).value).join('');
-  if (enteredOTP.length !== 6) { showToast('⚠️ Enter all 6 digits'); return; }
-
-  const btn = document.getElementById('verify-otp-btn');
-  btn.disabled = true;
-  btn.textContent = 'VERIFYING...';
-
-  try {
-    const emailKey = email.replace(/[.#$[\]]/g, '_');
-    const snap = await db.ref('otp/' + emailKey).once('value');
-    const data = snap.val();
-
-    if (!data) {
-      showToast('❌ OTP expired — request a new one');
-      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
-    }
-    if (Date.now() > data.expiry) {
-      await db.ref('otp/' + emailKey).remove();
-      showToast('❌ OTP expired — request a new one');
-      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
-    }
-    if (data.otp !== enteredOTP) {
-      showToast('❌ Wrong OTP — try again');
-      btn.disabled = false; btn.textContent = '✅ VERIFY OTP'; return;
-    }
-
-    await db.ref('otp/' + emailKey).remove();
-    currentUser.email = email;
-    authGoStep(3);
-    btn.disabled = false; btn.textContent = '✅ VERIFY OTP';
-    showToast('✅ Email verified!');
-  } catch(e) {
-    console.error(e);
-    showToast('❌ Verification failed — try again');
-    btn.disabled = false; btn.textContent = '✅ VERIFY OTP';
-  }
-}
-
-function checkPwStrength(pw) {
-  const bar = document.getElementById('pw-bar');
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  const pct = (score / 4) * 100;
-  bar.style.width = pct + '%';
-  bar.style.background = score <= 1 ? 'var(--accent-red)' : score === 2 ? '#ff9500' : score === 3 ? '#ffd700' : 'var(--accent-green)';
-}
-
-function togglePw() {
-  const inp = document.getElementById('auth-password');
-  const t = document.getElementById('pw-toggle');
-  if (inp.type === 'password') { inp.type = 'text'; t.textContent = '🙈'; }
-  else { inp.type = 'password'; t.textContent = '👁'; }
 }
 
 function authFinish() {
   const username = document.getElementById('auth-username').value.trim();
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
-
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
 
   currentUser = {
@@ -2448,24 +2317,19 @@ function authFinish() {
     email: currentUser.email || null
   };
 
-  // Hide auth screen completely
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = 'none';
   authScr.classList.add('hidden');
-  // Reset all steps back to 0 for next time
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
   document.getElementById('auth-step-0').classList.add('active');
-  
-  // Update UI with real username
+
   const initials = username.slice(0,2).toUpperCase();
-  document.querySelectorAll('.header-greeting strong').forEach(el => el.textContent = username);
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   document.querySelector('.profile-avatar').textContent = initials;
   if (bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + bgmiId);
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = username;
-  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = username;
-  
+
   showToast('🎮 Welcome ' + username + '! You\'re in the zone!');
 }
 
