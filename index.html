@@ -1826,6 +1826,76 @@ body.keyboard-open #chat-page.active {
 .news-empty-icon { font-size: 40px; margin-bottom: 12px; }
 .news-empty-text { font-size: 13px; letter-spacing: 0.08em; font-family: var(--font-mono); }
 
+/* ===== TOURNAMENT CHAT OVERLAY ===== */
+#tchat-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg-primary);
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+}
+#tchat-overlay.open { display: flex; }
+.tchat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,10,14,0.95);
+  backdrop-filter: blur(12px);
+  position: relative;
+  flex-shrink: 0;
+}
+.tchat-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+}
+.tchat-back {
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; flex-shrink: 0;
+  color: var(--accent-orange);
+}
+.tchat-title-wrap { flex: 1; min-width: 0; }
+.tchat-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-green);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tchat-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tchat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tchat-messages::-webkit-scrollbar { width: 2px; }
+.tchat-messages::-webkit-scrollbar-thumb { background: var(--accent-orange-dim); }
+
 /* News detail overlay */
 .news-overlay {
   display: none;
@@ -2240,7 +2310,7 @@ body.keyboard-open #chat-page.active {
           <div style="font-size:36px;margin-bottom:10px">✅</div>
           <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--accent-green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">You're Registered!</div>
           <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your squad is locked in for this tournament.<br>Head to the chat lobby for room info &amp; updates.</div>
-          <button onclick="switchPage('chat')" style="width:100%;padding:14px;background:var(--accent-green);border:none;border-radius:12px;color:#000;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer">💬 Open Chat Lobby</button>
+          <button onclick="openTournamentChat(currentDetail.id, currentDetail.name)" style="width:100%;padding:14px;background:var(--accent-green);border:none;border-radius:12px;color:#000;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer">💬 Open Chat Lobby</button>
         </div>
       </div>
 
@@ -2484,6 +2554,56 @@ body.keyboard-open #chat-page.active {
     </div>
     <button class="edit-save-btn" onclick="saveProfile()">💾 SAVE CHANGES</button>
     <div class="edit-cancel-link" onclick="closeEditProfile()">← <span>Cancel</span></div>
+  </div>
+</div>
+
+<!-- ===== TOURNAMENT CHAT OVERLAY ===== -->
+<div id="tchat-overlay">
+  <div class="tchat-header">
+    <div class="tchat-back" onclick="closeTournamentChat()">←</div>
+    <div class="tchat-title-wrap">
+      <div class="tchat-title" id="tchat-title">TOURNAMENT CHAT</div>
+      <div class="tchat-sub">
+        <div class="online-dot"></div>
+        <span>Registered Players Only</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);text-align:right;font-family:var(--font-mono);flex-shrink:0">
+      You:<br><span style="color:var(--accent-orange)" id="tchat-you-label">Player</span>
+    </div>
+  </div>
+
+  <!-- Pinned room info from admin -->
+  <div id="tchat-pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
+    <div class="pinned-banner-inner">
+      <div class="pinned-badge">📌 ROOM INFO</div>
+      <div class="pinned-msg-text" id="tchat-pinned-text"></div>
+    </div>
+  </div>
+
+  <div class="tchat-messages" id="tchat-messages"></div>
+
+  <!-- Input bar — registered users only -->
+  <div id="tchat-input-bar" style="display:none">
+    <div class="chat-input-area">
+      <textarea class="chat-input chat-textarea" id="tchat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendTournamentMessage()}"
+        oninput="autoGrowChat(this)"></textarea>
+      <button class="send-btn" onclick="sendTournamentMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Not registered fallback (safety) -->
+  <div id="tchat-locked-msg" style="display:none;align-items:center;justify-content:center;padding:16px 18px;gap:12px;background:rgba(255,120,0,0.06);border-top:1px solid rgba(255,120,0,0.15)">
+    <div style="font-size:22px">🔒</div>
+    <div>
+      <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in this tournament to chat</div>
+    </div>
   </div>
 </div>
 
@@ -3244,7 +3364,7 @@ function renderTournaments() {
           </div>
         </div>
         ${registeredTournamentIds.has(t.id)
-          ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); switchPage('chat')">💬 CHAT</button>`
+          ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${t.id}', '${t.name.replace(/'/g,"\\'")}')">💬 CHAT</button>`
           : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${t.id}')">${full ? 'FULL' : 'JOIN NOW'}</button>`
         }
       </div>
@@ -3677,6 +3797,145 @@ async function loadMyMatches() {
   } catch(e) {
     console.error('loadMyMatches error:', e);
     list.innerHTML = '<div class="my-matches-loading">⚠️ Could not load matches</div>';
+  }
+}
+
+// ========= TOURNAMENT CHAT =========
+let activeTournamentChatId = null;
+let tchatListener = null;
+let tchatPinnedListener = null;
+const TCHAT_SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+function openTournamentChat(tournamentId, tournamentName) {
+  activeTournamentChatId = tournamentId;
+
+  // Set header
+  document.getElementById('tchat-title').textContent = (tournamentName || 'Tournament').toUpperCase() + ' — CHAT';
+  document.getElementById('tchat-you-label').textContent = currentUser.chatName || currentUser.username || 'Player';
+
+  // Show/hide input based on registration
+  const isRegistered = registeredTournamentIds.has(tournamentId);
+  document.getElementById('tchat-input-bar').style.display  = isRegistered ? 'block' : 'none';
+  document.getElementById('tchat-locked-msg').style.display = isRegistered ? 'none'  : 'flex';
+
+  // Clear old messages
+  document.getElementById('tchat-messages').innerHTML = '';
+  document.getElementById('tchat-input').value = '';
+
+  // Detach old listeners
+  if (tchatListener && activeTournamentChatId) {
+    db.ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
+  }
+  if (tchatPinnedListener) {
+    db.ref('pinnedMessage').off('value', tchatPinnedListener);
+  }
+
+  // Pinned room info (same admin-set node)
+  tchatPinnedListener = db.ref('pinnedMessage').on('value', snap => {
+    const banner = document.getElementById('tchat-pinned-banner');
+    const textEl = document.getElementById('tchat-pinned-text');
+    if (!banner || !textEl) return;
+    if (snap.exists() && snap.val() && snap.val().text) {
+      textEl.textContent = snap.val().text;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+      textEl.textContent = '';
+    }
+  });
+
+  // Load messages for this tournament
+  const msgsRef = db.ref('tournamentChats/' + tournamentId + '/messages');
+  tchatListener = msgsRef.limitToLast(60).on('child_added', snapshot => {
+    const m = snapshot.val();
+    if (!m) return;
+    m.own = (m.sessionId === TCHAT_SESSION_ID);
+    addTchatMessageToDOM(m);
+  });
+
+  // Open overlay
+  document.getElementById('tchat-overlay').classList.add('open');
+  setTimeout(() => {
+    const msgs = document.getElementById('tchat-messages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }, 200);
+}
+
+function closeTournamentChat() {
+  document.getElementById('tchat-overlay').classList.remove('open');
+  // Detach listeners to save bandwidth
+  if (tchatListener && activeTournamentChatId) {
+    db.ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
+    tchatListener = null;
+  }
+  if (tchatPinnedListener) {
+    db.ref('pinnedMessage').off('value', tchatPinnedListener);
+    tchatPinnedListener = null;
+  }
+  activeTournamentChatId = null;
+}
+
+function addTchatMessageToDOM(m) {
+  const container = document.getElementById('tchat-messages');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg' + (m.own ? ' own' : '');
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:${m.color}22;border:1px solid ${m.color}44;color:${m.color}">${m.initials}</div>
+    <div class="msg-content">
+      <div class="msg-sender" style="color:${m.own ? 'var(--accent-orange)' : m.color}">${m.user}</div>
+      <div class="msg-bubble">${escapeHTML(m.text)}</div>
+      <div class="msg-time">${m.time}</div>
+    </div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+let _tchatSending = false;
+async function sendTournamentMessage() {
+  if (_tchatSending || !activeTournamentChatId) return;
+  if (!registeredTournamentIds.has(activeTournamentChatId)) {
+    showToast('🔒 Register in this tournament to chat');
+    return;
+  }
+  _tchatSending = true;
+  const input = document.getElementById('tchat-input');
+  const raw = input.value.trim();
+  if (!raw) { _tchatSending = false; return; }
+  const clean = filterProfanity(raw);
+  input.value = '';
+  input.style.height = '40px';
+  autoGrowChat(input);
+  input.focus();
+
+  const username = currentUser.chatName || currentUser.username || generateGamerName();
+  const initials = username.slice(0, 2).toUpperCase();
+  const now = new Date();
+  const hours = now.getHours();
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const time = (hours % 12 || 12) + ':' + mins + ' ' + ampm;
+
+  const gamerColors = ['#ff7800','#00ff9d','#00cfff','#ff3a6e','#a78bfa','#ffd700','#ff6b35','#39ff14'];
+  let hash = 0;
+  for (let c of username) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+  const userColor = gamerColors[hash % gamerColors.length];
+
+  try {
+    await db.ref('tournamentChats/' + activeTournamentChatId + '/messages').push({
+      user: username,
+      sessionId: TCHAT_SESSION_ID,
+      color: userColor,
+      initials: initials,
+      text: clean,
+      time: time,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    });
+  } catch(e) {
+    showToast('❌ Failed to send — check connection');
+    console.error('Tournament chat send error:', e);
+  } finally {
+    _tchatSending = false;
   }
 }
 
