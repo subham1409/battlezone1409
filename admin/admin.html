@@ -45,6 +45,11 @@ body::after {
   z-index: 0;
 }
 
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(255,120,0,0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 14px rgba(255,120,0,0.8); }
+}
+
 /* ===== LOGIN ===== */
 #login-screen {
   position: fixed; inset: 0; z-index: 999;
@@ -832,6 +837,47 @@ body::after {
 
   <!-- ===== CHAT TAB ===== -->
   <div id="tab-chat" class="tab-panel">
+
+    <!-- PIN ROOM MESSAGE CARD -->
+    <div class="section-card" style="border-color:rgba(255,120,0,0.25);background:linear-gradient(135deg,rgba(255,80,0,0.07) 0%,rgba(255,180,0,0.03) 100%)">
+      <div class="section-card-header">
+        <div class="section-card-title" style="color:var(--accent-orange)">📌 Pin Room Info to Chat</div>
+        <div id="pin-live-badge" style="display:none;background:rgba(255,120,0,0.15);border:1px solid rgba(255,120,0,0.4);border-radius:20px;padding:3px 10px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;animation:pulseGlow 1.5s ease-in-out infinite">● LIVE PIN</div>
+      </div>
+      <div class="section-card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6">
+          Use this to broadcast Room ID &amp; Password to all <strong style="color:var(--text-primary)">registered players</strong> in the chat. The message will appear as a big animated banner at the top of their chat screen.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>🏠 Room ID</label>
+            <input type="text" id="pin-room-id" placeholder="e.g. BGMI123456" maxlength="30" style="font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:0.08em">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>🔑 Room Password</label>
+            <input type="text" id="pin-room-pass" placeholder="e.g. battle99" maxlength="30" style="font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:0.08em">
+          </div>
+        </div>
+        <div class="field">
+          <label>📝 Extra Message <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--text-muted)">(optional — e.g. match start time, map name)</span></label>
+          <input type="text" id="pin-extra" placeholder="e.g. Match starts in 5 mins! Map: Erangel" maxlength="80">
+        </div>
+        <!-- Preview -->
+        <div id="pin-preview-wrap" style="display:none;margin-bottom:14px;border-radius:10px;overflow:hidden">
+          <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Preview</div>
+          <div style="background:linear-gradient(135deg,rgba(255,80,0,0.14) 0%,rgba(255,180,0,0.08) 100%);border:2px solid rgba(255,120,0,0.5);border-radius:10px;padding:14px 16px">
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.18em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:8px">📌 ROOM INFO</div>
+            <div id="pin-preview-text" style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:#fff;line-height:1.7;white-space:pre-wrap"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="pinRoomMessage()" style="max-width:220px;background:var(--accent-orange)">📌 Pin to Chat</button>
+          <button class="btn-secondary" onclick="clearPinnedMessage()" id="clear-pin-btn" style="display:none">✕ Clear Pin</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages list -->
     <div class="section-card">
       <div class="section-card-header">
         <div class="section-card-title">Latest 50 Chat Messages</div>
@@ -927,6 +973,7 @@ function doLogin() {
     loadAnnouncementAdmin();
     loadNewsAdmin();
     loadChatAdmin();
+    loadPinnedMessageAdmin();
     loadTournamentsAdmin();
     loadResultsAdmin();
     showToast('✅ Welcome back, Admin!');
@@ -951,7 +998,7 @@ function switchTab(tab) {
   event.currentTarget.classList.add('active');
   if (tab === 'tournaments') loadTournamentsAdmin();
   if (tab === 'results') loadResultsAdmin();
-  if (tab === 'chat') loadChatAdmin();
+  if (tab === 'chat') { loadChatAdmin(); loadPinnedMessageAdmin(); }
 }
 
 // ===== IMAGE HANDLING =====
@@ -1605,6 +1652,77 @@ function renderResultsAdmin() {
   });
   html += '</tbody></table>';
   list.innerHTML = html;
+}
+
+// ===== PIN ROOM MESSAGE =====
+function buildPinText() {
+  var roomId   = (document.getElementById('pin-room-id').value || '').trim();
+  var roomPass = (document.getElementById('pin-room-pass').value || '').trim();
+  var extra    = (document.getElementById('pin-extra').value || '').trim();
+  var text = '';
+  if (roomId)   text += 'Room ID   : ' + roomId + '\n';
+  if (roomPass) text += 'Password  : ' + roomPass + '\n';
+  if (extra)    text += '\n' + extra;
+  return text.trim();
+}
+
+function updatePinPreview() {
+  const text = buildPinText();
+  const wrap = document.getElementById('pin-preview-wrap');
+  const el   = document.getElementById('pin-preview-text');
+  if (!wrap || !el) return;
+  if (text) { el.textContent = text; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; }
+}
+
+// Live preview as user types
+document.addEventListener('input', function(e) {
+  if (['pin-room-id','pin-room-pass','pin-extra'].includes(e.target.id)) updatePinPreview();
+});
+
+async function pinRoomMessage() {
+  if (!db) { showToast('❌ Firebase not connected'); return; }
+  const text = buildPinText();
+  if (!text) { showToast('⚠️ Enter at least Room ID or Password'); return; }
+  try {
+    await db.ref('pinnedMessage').set({ text, ts: Date.now() });
+    showToast('📌 Room info pinned to chat!');
+    document.getElementById('clear-pin-btn').style.display = 'inline-block';
+    document.getElementById('pin-live-badge').style.display = 'block';
+  } catch(e) { showToast('❌ ' + e.message); }
+}
+
+async function clearPinnedMessage() {
+  if (!db) return;
+  try {
+    await db.ref('pinnedMessage').remove();
+    showToast('✕ Pin cleared');
+    document.getElementById('clear-pin-btn').style.display = 'none';
+    document.getElementById('pin-live-badge').style.display = 'none';
+    document.getElementById('pin-preview-wrap').style.display = 'none';
+    document.getElementById('pin-room-id').value = '';
+    document.getElementById('pin-room-pass').value = '';
+    document.getElementById('pin-extra').value = '';
+  } catch(e) { showToast('❌ ' + e.message); }
+}
+
+function loadPinnedMessageAdmin() {
+  if (!db) return;
+  db.ref('pinnedMessage').once('value', snap => {
+    if (snap.exists() && snap.val() && snap.val().text) {
+      document.getElementById('clear-pin-btn').style.display = 'inline-block';
+      document.getElementById('pin-live-badge').style.display = 'block';
+      // Parse back to fill fields
+      const raw = snap.val().text;
+      const roomIdMatch  = raw.match(/Room ID\s*:\s*(.+)/);
+      const passMatch    = raw.match(/Password\s*:\s*(.+)/);
+      if (roomIdMatch) document.getElementById('pin-room-id').value  = roomIdMatch[1].trim();
+      if (passMatch)   document.getElementById('pin-room-pass').value = passMatch[1].trim();
+      var extraStart = raw.indexOf('\n\n');
+      if (extraStart !== -1) document.getElementById('pin-extra').value = raw.slice(extraStart + 2).trim();
+      updatePinPreview();
+    }
+  });
 }
 
 // ===== CHAT ADMIN =====

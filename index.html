@@ -222,6 +222,64 @@ body::after {
   text-overflow: ellipsis;
   max-width: 110px;
 }
+/* === PINNED BANNER === */
+@keyframes pinnedPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,120,0,0.4), inset 0 0 20px rgba(255,120,0,0.06); border-color: rgba(255,120,0,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(255,120,0,0), inset 0 0 30px rgba(255,120,0,0.12); border-color: rgba(255,120,0,0.9); }
+}
+@keyframes pinnedTextGlow {
+  0%, 100% { text-shadow: 0 0 8px rgba(255,120,0,0.5); }
+  50% { text-shadow: 0 0 20px rgba(255,120,0,1), 0 0 40px rgba(255,200,0,0.4); }
+}
+@keyframes pinnedSlideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.pinned-banner-inner {
+  background: linear-gradient(135deg, rgba(255,80,0,0.14) 0%, rgba(255,180,0,0.08) 100%);
+  border: 2px solid rgba(255,120,0,0.5);
+  border-radius: 12px;
+  padding: 14px 16px;
+  animation: pinnedPulse 2s ease-in-out infinite, pinnedSlideIn 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.pinned-banner-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,120,0,0.03) 8px, rgba(255,120,0,0.03) 16px);
+  pointer-events: none;
+}
+.pinned-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-orange);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pinned-badge::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,120,0,0.4), transparent);
+}
+.pinned-msg-text {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.7;
+  animation: pinnedTextGlow 2s ease-in-out infinite;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* === CHAT TEXTAREA === */
 .chat-textarea {
   resize: none;
@@ -2261,7 +2319,24 @@ body.keyboard-open #chat-page.active {
         <span onclick="addEmoji('💣')">💣</span>
         <span onclick="addEmoji('🐔')">🐔</span>
       </div>
+      <!-- Pinned animated message from admin -->
+      <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
+        <div class="pinned-banner-inner">
+          <div class="pinned-badge">📌 ROOM INFO</div>
+          <div class="pinned-msg-text" id="pinned-msg-text"></div>
+        </div>
+      </div>
       <div class="chat-messages" id="chat-messages"></div>
+      <!-- Locked state for non-registered users -->
+      <div id="chat-locked-msg" style="display:none;align-items:center;justify-content:center;padding:16px 18px;gap:12px;background:rgba(255,120,0,0.06);border-top:1px solid rgba(255,120,0,0.15)">
+        <div style="font-size:22px">🔒</div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in a tournament to unlock</div>
+        </div>
+      </div>
+      <!-- Input bar — shown only to registered users -->
+      <div id="chat-input-bar" style="display:none">
       <div class="chat-input-area">
         <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)"></textarea>
         <button class="send-btn" onclick="sendMessage()">
@@ -2269,6 +2344,7 @@ body.keyboard-open #chat-page.active {
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
+      </div>
       </div>
     </div>
 
@@ -2476,6 +2552,89 @@ function generateGamerName() {
 
 let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
 
+// ── SESSION PERSISTENCE ──────────────────────────────────────
+// Save session to localStorage so page refresh doesn't log out user
+function persistSession(user) {
+  try { localStorage.setItem('bz_session', JSON.stringify(user)); } catch(e) {}
+}
+function clearSession() {
+  try { localStorage.removeItem('bz_session'); } catch(e) {}
+}
+function loadPersistedSession() {
+  try {
+    const raw = localStorage.getItem('bz_session');
+    if (!raw) return null;
+    const u = JSON.parse(raw);
+    if (u && u.email && !u.isGuest) return u;
+  } catch(e) {}
+  return null;
+}
+function applyLoggedInUser(userData, skipToast) {
+  const username = userData.username || 'Player';
+  const chatName = userData.chatName || username;
+  currentUser = {
+    isGuest: false,
+    username: username,
+    chatName: chatName,
+    bgmiId: userData.bgmiId || null,
+    email: userData.email || null,
+    googleUid: userData.googleUid || null
+  };
+  const authScr = document.getElementById('auth-screen');
+  if (authScr) { authScr.style.display = 'none'; authScr.classList.add('hidden'); }
+  const initials = username.slice(0,2).toUpperCase();
+  document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
+  const av = document.querySelector('.profile-avatar');
+  if (av) av.textContent = initials;
+  if (currentUser.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + currentUser.bgmiId);
+  const chatLabel = document.getElementById('chat-you-label');
+  if (chatLabel) chatLabel.textContent = chatName;
+  if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
+  checkRegisteredChatAccess();
+}
+
+function checkRegisteredChatAccess() {
+  if (currentUser.isGuest || !currentUser.email) {
+    updateChatAccessUI(false);
+    return;
+  }
+  const emailLower = currentUser.email.toLowerCase();
+  db.ref('registrations').once('value', snap => {
+    let found = false;
+    snap.forEach(tourneyNode => {
+      if (found) return;
+      tourneyNode.forEach(reg => {
+        if (found) return;
+        const r = reg.val();
+        const e1 = (r.email1 || '').toLowerCase();
+        const e2 = (r.email2 || '').toLowerCase();
+        if (e1 === emailLower || (e2 && e2 === emailLower)) {
+          found = true;
+        }
+      });
+    });
+    updateChatAccessUI(found);
+  }).catch(() => updateChatAccessUI(false));
+}
+
+function updateChatAccessUI(hasAccess) {
+  const lockEl = document.getElementById('chat-locked-msg');
+  const inputEl = document.getElementById('chat-input-bar');
+  if (lockEl) lockEl.style.display = hasAccess ? 'none' : 'flex';
+  if (inputEl) inputEl.style.display = hasAccess ? 'flex' : 'none';
+}
+
+function doLogout() {
+  clearSession();
+  currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
+  firebase.auth().signOut().catch(() => {});
+  const authScr = document.getElementById('auth-screen');
+  authScr.style.display = '';
+  authScr.classList.remove('hidden');
+  authGoStep(0);
+  showToast('👋 Logged out');
+}
+
 function authGuest() {
   const gamerName = generateGamerName();
   const chatName = generateGamerName();
@@ -2590,26 +2749,16 @@ async function authLogin() {
     }
 
     // Login success
-    currentUser = {
+    const mergedUser = {
       isGuest: false,
       username: userData.username,
       chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
-      email: email
+      email: email,
+      googleUid: userData.googleUid || null
     };
-
-    const authScr = document.getElementById('auth-screen');
-    authScr.style.display = 'none';
-    authScr.classList.add('hidden');
-
-    const initials = userData.username.slice(0,2).toUpperCase();
-    document.querySelectorAll('.profile-username').forEach(el => el.textContent = userData.username);
-    document.querySelector('.profile-avatar').textContent = initials;
-    if (userData.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + userData.bgmiId);
-    const chatLabel = document.getElementById('chat-you-label');
-    if (chatLabel) chatLabel.textContent = currentUser.chatName || userData.username;
-
-    showToast('🎮 Welcome back ' + userData.username + '!');
+    persistSession(mergedUser);
+    applyLoggedInUser(mergedUser);
   } catch(e) {
     console.error('Login error:', e);
     showToast('❌ Login failed: ' + (e.message || 'Try again'));
@@ -2665,7 +2814,7 @@ async function authFinish() {
   }
   if (!chatName) chatName = generateGamerName(); // brand new permanent chat name
 
-  currentUser = {
+  const finishedUser = {
     isGuest: false,
     username: username,
     chatName: chatName,
@@ -2673,6 +2822,7 @@ async function authFinish() {
     email: currentUser.email || null,
     googleUid: currentUser.googleUid || null
   };
+  currentUser = finishedUser;
 
   // Save everything to Firebase including permanent chatName
   if (emailKey) {
@@ -2704,6 +2854,8 @@ async function authFinish() {
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
 
+  persistSession(finishedUser);
+  checkRegisteredChatAccess();
   showToast('🎮 Welcome ' + username + "! You're in the zone!");
 }
 
@@ -2757,6 +2909,32 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // ── RESTORE SESSION FROM localStorage (prevents redirect on refresh) ──
+  const savedSession = loadPersistedSession();
+  if (savedSession) {
+    // Fetch fresh data from Firebase to make sure it's still valid
+    try {
+      const emailKey = savedSession.email.replace(/[.#$\[\]]/g, '_');
+      const snap = await db.ref('users/' + emailKey).once('value');
+      const userData = snap.val();
+      if (userData) {
+        applyLoggedInUser({
+          isGuest: false,
+          username: userData.username,
+          chatName: userData.chatName || savedSession.chatName,
+          bgmiId: userData.bgmiId || null,
+          email: savedSession.email,
+          googleUid: userData.googleUid || null
+        }, true); // skip toast on silent restore
+      } else {
+        clearSession(); // account removed, fall through to auth screen
+      }
+    } catch(e) {
+      // Network error — restore from local cache anyway so user stays logged in
+      applyLoggedInUser(savedSession, true);
+    }
+  }
+
   // Handle Google redirect result (fallback for when popup was blocked)
   const pendingRedirect = sessionStorage.getItem('pendingGoogleRedirect');
   if (pendingRedirect) {
@@ -2954,6 +3132,7 @@ function switchPage(page) {
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
     if (chatLabel) chatLabel.textContent = currentUser.chatName || currentUser.username;
+    checkRegisteredChatAccess();
   const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
     if (!chatListenerAttached) initFirebaseChat();
     setTimeout(() => {
@@ -3157,6 +3336,8 @@ async function registerTeam() {
     }
 
     document.getElementById('success-modal').classList.add('open');
+    // Unlock chat immediately after registration
+    checkRegisteredChatAccess();
 
   } catch(e) {
     console.error('Registration error:', e);
@@ -3179,6 +3360,20 @@ const SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2)
 
 function initFirebaseChat() {
   const container = document.getElementById('chat-messages');
+
+  // Listen for pinned message from admin
+  db.ref('pinnedMessage').on('value', snap => {
+    const banner = document.getElementById('pinned-banner');
+    const textEl = document.getElementById('pinned-msg-text');
+    if (!banner || !textEl) return;
+    if (snap.exists() && snap.val() && snap.val().text) {
+      textEl.textContent = snap.val().text;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+      textEl.textContent = '';
+    }
+  });
 
   // Listen for last 60 messages and any new ones in real time
   chatRef.limitToLast(60).on('child_added', snapshot => {
