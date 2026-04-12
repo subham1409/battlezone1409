@@ -1824,8 +1824,8 @@ body.keyboard-open #chat-page.active {
           <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         </div>
         <div class="btn-text-wrap">
-          <span class="btn-main-text">Sign up with Google</span>
-          <span class="btn-sub-text">Create account — quick &amp; secure</span>
+          <span class="btn-main-text">Continue with Google</span>
+          <span class="btn-sub-text">Sign in or create account instantly</span>
         </div>
       </button>
       <button class="auth-choice-btn" onclick="authGoStep(1)" style="margin-top:4px">
@@ -1835,13 +1835,7 @@ body.keyboard-open #chat-page.active {
           <span class="btn-sub-text">Already have an account? Sign in</span>
         </div>
       </button>
-      <button class="auth-choice-btn" onclick="authGuest()" style="margin-top:4px">
-        <div class="btn-icon" style="background:rgba(255,255,255,0.05)">👤</div>
-        <div class="btn-text-wrap">
-          <span class="btn-main-text">Continue as Guest</span>
-          <span class="btn-sub-text">Browse without an account</span>
-        </div>
-      </button>
+
     </div>
 
     <!-- Step 1: Login with email + password -->
@@ -2280,17 +2274,7 @@ function generateGamerName() {
 
 let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
 
-function authGuest() {
-  const gamerName = generateGamerName();
-  const chatName = generateGamerName();
-  currentUser = { isGuest: true, username: gamerName, chatName: chatName, bgmiId: null, email: null };
-  const authScr = document.getElementById('auth-screen');
-  authScr.style.display = 'none';
-  authScr.classList.add('hidden');
-  const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = chatName;
-  showToast('👤 Joined as ' + gamerName);
-}
+function authGuest() { showToast('⚠️ Please sign in with Google to continue'); }
 
 function authGoStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
@@ -2309,61 +2293,118 @@ function authGoStep(step) {
   document.getElementById('auth-box-sub').textContent = t[1];
 }
 
-// ── GOOGLE SIGN UP ──────────────────────────────────────────
+// ── GOOGLE SIGN IN — works on iOS Safari, Android, Desktop ──
+// onAuthStateChanged is the single source of truth for sign-in completion.
+// signInWithPopup on iOS opens a new tab; the promise may never resolve,
+// but onAuthStateChanged fires reliably when auth completes.
+let _googleSignInInProgress = false;
+
+auth.onAuthStateChanged(async (firebaseUser) => {
+  if (!firebaseUser) return;                    // signed out — ignore
+  if (currentUser.googleUid) return;            // already handled
+  if (!_googleSignInInProgress) return;         // page-load auto-sign-in — ignore
+
+  _googleSignInInProgress = false;
+  await handleGoogleUser(firebaseUser);
+});
+
 async function authGoogleSignIn() {
   const btn = document.getElementById('google-btn');
   btn.disabled = true;
   btn.querySelector('.btn-main-text').textContent = 'Signing in...';
 
+  _googleSignInInProgress = true;
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // Always try popup first — it works on modern iOS/Safari when triggered
-  // by a real user tap (which this is). Only fall back to redirect if the
-  // browser explicitly blocks the popup.
   try {
     const result = await auth.signInWithPopup(provider);
-    handleGoogleResult(result);
+    // Desktop / Android: popup resolved directly — onAuthStateChanged also fires,
+    // but _googleSignInInProgress guard ensures handleGoogleUser runs only once.
+    // (If onAuthStateChanged fires first it handles it; if popup resolves first,
+    // the flag is cleared and onAuthStateChanged is a no-op.)
   } catch(e) {
     console.error('Google sign-in error:', e);
-
-    if (e.code === 'auth/popup-blocked') {
-      // Popup was blocked — fall back to redirect
-      try {
-        sessionStorage.setItem('pendingGoogleRedirect', '1');
-        await auth.signInWithRedirect(provider);
-        // Page will reload; handled in window.onload
-      } catch(err) {
-        console.error('Redirect fallback error:', err);
-        showToast('❌ ' + (err.message || 'Google sign-in failed'));
-        btn.disabled = false;
-        btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
-      }
-    } else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
-      // User closed the popup — reset button silently
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      // User closed popup — reset silently
+      _googleSignInInProgress = false;
       btn.disabled = false;
-      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+      btn.querySelector('.btn-main-text').textContent = 'Continue with Google';
+    } else if (e.code === 'auth/popup-blocked') {
+      showToast('⚠️ Popup blocked — allow popups and try again');
+      _googleSignInInProgress = false;
+      btn.disabled = false;
+      btn.querySelector('.btn-main-text').textContent = 'Continue with Google';
     } else {
       showToast('❌ ' + (e.message || 'Google sign-in failed'));
+      _googleSignInInProgress = false;
       btn.disabled = false;
-      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+      btn.querySelector('.btn-main-text').textContent = 'Continue with Google';
     }
   }
 }
 
+// Called when Google auth completes — checks if returning or new user
+async function handleGoogleUser(firebaseUser) {
+  const emailKey = firebaseUser.email.replace(/[.#$[\]]/g, '_');
+
+  try {
+    const snap = await db.ref('users/' + emailKey).once('value');
+    const existing = snap.val();
+
+    if (existing && existing.username) {
+      // ── Returning user — log them straight in ──────────────
+      currentUser = {
+        isGuest: false,
+        username: existing.username,
+        chatName: existing.chatName || generateGamerName(),
+        bgmiId: existing.bgmiId || null,
+        email: firebaseUser.email,
+        googleUid: firebaseUser.uid
+      };
+
+      const authScr = document.getElementById('auth-screen');
+      authScr.style.display = 'none';
+      authScr.classList.add('hidden');
+
+      const initials = existing.username.slice(0, 2).toUpperCase();
+      document.querySelectorAll('.profile-username').forEach(el => el.textContent = existing.username);
+      const av = document.querySelector('.profile-avatar');
+      if (av) av.textContent = initials;
+      if (existing.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + existing.bgmiId);
+      const chatLabel = document.getElementById('chat-you-label');
+      if (chatLabel) chatLabel.textContent = currentUser.chatName;
+
+      showToast('🎮 Welcome back ' + existing.username + '!');
+
+    } else {
+      // ── New user — go to profile setup (step 2) ────────────
+      currentUser.email = firebaseUser.email;
+      currentUser.googleUid = firebaseUser.uid;
+      currentUser.isGuest = false;
+      currentUser.chatName = null;
+
+      setTimeout(() => {
+        const unInput = document.getElementById('auth-username');
+        if (unInput && firebaseUser.displayName) unInput.value = firebaseUser.displayName.replace(/\s+/g, '').slice(0, 20);
+        const emailDisp = document.getElementById('google-email-display');
+        if (emailDisp) emailDisp.textContent = firebaseUser.email;
+      }, 100);
+
+      authGoStep(2);
+      showToast('✅ Google verified! Set up your profile.');
+    }
+  } catch(err) {
+    console.error('handleGoogleUser error:', err);
+    showToast('❌ Sign-in error — try again');
+    const btn = document.getElementById('google-btn');
+    if (btn) { btn.disabled = false; btn.querySelector('.btn-main-text').textContent = 'Continue with Google'; }
+  }
+}
+
+// Keep for backward compat (used in window.onload redirect result path)
 function handleGoogleResult(result) {
-  const user = result.user;
-  currentUser.email = user.email;
-  currentUser.googleUid = user.uid;
-  currentUser.isGuest = false;
-  currentUser.chatName = null;
-  setTimeout(() => {
-    const unInput = document.getElementById('auth-username');
-    if (unInput && user.displayName) unInput.value = user.displayName.replace(/\s+/g, '').slice(0, 20);
-    const emailDisp = document.getElementById('google-email-display');
-    if (emailDisp) emailDisp.textContent = user.email;
-  }, 100);
-  authGoStep(2);
-  showToast('✅ Google verified! Set up your profile.');
+  _googleSignInInProgress = true;
+  handleGoogleUser(result.user);
 }
 
 // ── LOGIN (email + password) ────────────────────────────────
