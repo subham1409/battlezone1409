@@ -2234,7 +2234,17 @@ body.keyboard-open #chat-page.active {
         </div>
       </div>
 
-      <div class="detail-section">
+      <!-- Already-registered state — shown instead of reg form -->
+      <div id="detail-registered-state" style="display:none;margin:0 18px 20px">
+        <div style="background:linear-gradient(135deg,rgba(0,255,157,0.1),rgba(0,255,157,0.04));border:1px solid rgba(0,255,157,0.3);border-radius:16px;padding:22px 20px;text-align:center">
+          <div style="font-size:36px;margin-bottom:10px">✅</div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--accent-green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">You're Registered!</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your squad is locked in for this tournament.<br>Head to the chat lobby for room info &amp; updates.</div>
+          <button onclick="switchPage('chat')" style="width:100%;padding:14px;background:var(--accent-green);border:none;border-radius:12px;color:#000;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer">💬 Open Chat Lobby</button>
+        </div>
+      </div>
+
+      <div class="detail-section" id="detail-reg-form-section">
         <div class="detail-section-title">Squad Registration</div>
         <div class="reg-form">
           <div class="field-group">
@@ -2595,26 +2605,33 @@ function applyLoggedInUser(userData, skipToast) {
 
 function checkRegisteredChatAccess() {
   if (currentUser.isGuest || !currentUser.email) {
+    registeredTournamentIds = new Set();
     updateChatAccessUI(false);
+    renderTournaments();
     return;
   }
   const emailLower = currentUser.email.toLowerCase();
   db.ref('registrations').once('value', snap => {
     let found = false;
+    const newIds = new Set();
     snap.forEach(tourneyNode => {
-      if (found) return;
       tourneyNode.forEach(reg => {
-        if (found) return;
         const r = reg.val();
         const e1 = (r.email1 || '').toLowerCase();
         const e2 = (r.email2 || '').toLowerCase();
         if (e1 === emailLower || (e2 && e2 === emailLower)) {
           found = true;
+          newIds.add(tourneyNode.key);
         }
       });
     });
+    registeredTournamentIds = newIds;
     updateChatAccessUI(found);
-  }).catch(() => updateChatAccessUI(false));
+    renderTournaments();
+  }).catch(() => {
+    registeredTournamentIds = new Set();
+    updateChatAccessUI(false);
+  });
 }
 
 function updateChatAccessUI(hasAccess) {
@@ -2872,6 +2889,7 @@ let messages = [];
 let msgId = 100;
 let tournaments = []; // Now loaded from API
 let results = [];     // Now loaded from API
+let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered for
 
 // ========= API HELPERS =========
 async function apiFetch(path) {
@@ -3225,7 +3243,10 @@ function renderTournaments() {
             <div class="slot-fill ${almostFull ? 'almost' : ''}" style="width:${pct}%"></div>
           </div>
         </div>
-        <button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${t.id}')">${full ? 'FULL' : 'JOIN NOW'}</button>
+        ${registeredTournamentIds.has(t.id)
+          ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); switchPage('chat')">💬 CHAT</button>`
+          : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${t.id}')">${full ? 'FULL' : 'JOIN NOW'}</button>`
+        }
       </div>
     </div>`;
   });
@@ -3268,7 +3289,12 @@ function openDetail(id) {
   document.getElementById('p4-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
-  
+
+  // Show "already registered" panel or the reg form depending on user's status
+  const alreadyReg = registeredTournamentIds.has(id);
+  document.getElementById('detail-registered-state').style.display = alreadyReg ? 'block' : 'none';
+  document.getElementById('detail-reg-form-section').style.display = alreadyReg ? 'none' : 'block';
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('detail-page').classList.add('active');
   document.getElementById('content').scrollTop = 0;
@@ -3337,6 +3363,8 @@ async function registerTeam() {
 
     document.getElementById('success-modal').classList.add('open');
     // Unlock chat immediately after registration
+    registeredTournamentIds.add(currentDetail.id);
+    renderTournaments();
     checkRegisteredChatAccess();
 
   } catch(e) {
