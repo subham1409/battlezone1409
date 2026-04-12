@@ -2716,7 +2716,7 @@ function applyLoggedInUser(userData, skipToast) {
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   const av = document.querySelector('.profile-avatar');
   if (av) av.textContent = initials;
-  if (currentUser.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + currentUser.bgmiId);
+  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
   if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
@@ -2754,10 +2754,28 @@ function checkRegisteredChatAccess() {
   });
 }
 
+function showAuthScreen() {
+  const authScr = document.getElementById('auth-screen');
+  authScr.style.display = 'flex';
+  authScr.classList.remove('hidden');
+  authGoStep(0);
+}
+
 function updateChatAccessUI(hasAccess) {
   const lockEl = document.getElementById('chat-locked-msg');
   const inputEl = document.getElementById('chat-input-bar');
-  if (lockEl) lockEl.style.display = hasAccess ? 'none' : 'flex';
+  if (lockEl) {
+    if (hasAccess) {
+      lockEl.style.display = 'none';
+    } else {
+      lockEl.style.display = 'flex';
+      if (currentUser.isGuest) {
+        lockEl.innerHTML = `<div style="font-size:22px">🔒</div><div><div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Create an account to join the chat — <span style="color:var(--accent-orange);cursor:pointer;font-weight:700;text-decoration:underline" onclick="showAuthScreen()">Sign Up →</span></div></div>`;
+      } else {
+        lockEl.innerHTML = `<div style="font-size:22px">🔒</div><div><div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in a tournament to unlock</div></div>`;
+      }
+    }
+  }
   if (inputEl) inputEl.style.display = hasAccess ? 'flex' : 'none';
 }
 
@@ -2986,7 +3004,7 @@ async function authFinish() {
   const initials = username.slice(0,2).toUpperCase();
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   document.querySelector('.profile-avatar').textContent = initials;
-  if (bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + bgmiId);
+  document.querySelectorAll('.profile-id').forEach(el => el.textContent = bgmiId ? 'BGMI ID: ' + bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
   // Chat shows chatName, profile shows username
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
@@ -3428,6 +3446,12 @@ function toggleRules() {
 }
 
 async function registerTeam() {
+  // Block guests
+  if (currentUser.isGuest) {
+    showToast('🔒 Sign up to register in tournaments');
+    setTimeout(() => showAuthScreen(), 600);
+    return;
+  }
   const name = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
@@ -3446,9 +3470,65 @@ async function registerTeam() {
 
   // Disable button to prevent double-submit
   const btn = document.querySelector('.submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'REGISTERING...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
 
   try {
+    // ── DUPLICATE CHECK ──────────────────────────────────────────────────
+    // Check if this tournament already has a registration with matching
+    // email, phone number, or any of the 4 BGMI IDs
+    const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
+    if (existingSnap.exists()) {
+      const submittedBgmiIds = [p1, p2, p3, p4].filter(Boolean);
+      const submittedPhone = '+91' + phone1;
+      const submittedEmail = email1.toLowerCase();
+
+      let dupReason = null;
+
+      existingSnap.forEach(regNode => {
+        if (dupReason) return; // already found
+        const r = regNode.val();
+
+        // Email match
+        if ((r.email1 || '').toLowerCase() === submittedEmail ||
+            (r.email2 || '').toLowerCase() === submittedEmail) {
+          dupReason = 'email address';
+          return;
+        }
+
+        // Phone match
+        if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) {
+          dupReason = 'phone number';
+          return;
+        }
+
+        // BGMI ID match — check submitted IDs against all registered players
+        const regPlayers = Array.isArray(r.players) ? r.players : [];
+        for (const bid of submittedBgmiIds) {
+          if (regPlayers.includes(bid)) {
+            dupReason = 'BGMI ID (' + bid + ')';
+            return;
+          }
+        }
+      });
+
+      if (dupReason) {
+        showToast('⚠️ Already registered! Duplicate ' + dupReason + ' found.');
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
+        // Show a clear "already registered" panel
+        document.getElementById('detail-reg-form-section').style.display = 'none';
+        const alreadyEl = document.getElementById('detail-registered-state');
+        alreadyEl.style.display = 'block';
+        alreadyEl.querySelector('div > div:nth-child(3)').textContent =
+          'A squad with the same ' + dupReason + ' is already registered for this tournament.';
+        registeredTournamentIds.add(currentDetail.id);
+        renderTournaments();
+        return;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    if (btn) btn.textContent = 'REGISTERING...';
+
     const now = new Date();
     const timeStr = now.toLocaleString('en-IN', {
       timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short',
@@ -3528,9 +3608,10 @@ function initFirebaseChat() {
     const m = snapshot.val();
     if (!m) return;
 
-    // Mark as own if sessionId matches OR if it's from the current user's chatName/username
     const myName = currentUser.chatName || currentUser.username;
-    m.own = (m.sessionId === SESSION_ID) || (!!(myName) && m.user === myName);
+    m.own = (m.sessionId === SESSION_ID)
+         || (myName && m.user === myName)
+         || (currentUser.email && m.userEmail === currentUser.email);
 
     addMessageToDOM(m, true);
   });
@@ -3602,6 +3683,11 @@ function autoGrowChat(el) {
 let _isSending = false;
 async function sendMessage() {
   if (_isSending) return;
+  if (currentUser.isGuest) {
+    showToast('🔒 Sign up to chat');
+    setTimeout(() => showAuthScreen(), 600);
+    return;
+  }
   _isSending = true;
   const input = document.getElementById('chat-input');
   const raw = input.value.trim();
@@ -3631,6 +3717,7 @@ async function sendMessage() {
     await chatRef.push({
       user: username,
       sessionId: SESSION_ID,
+      userEmail: currentUser.email || null,
       color: userColor,
       initials: initials,
       text: clean,
@@ -3684,13 +3771,17 @@ async function saveProfile() {
       const updates = { username: newUsername };
       if (newBgmi) updates.bgmiId = newBgmi;
 
-      // Update password in Firebase Auth if provided
+      // Update password in Firebase DB if provided
       if (newPassword && newPassword.length >= 6) {
-        const authUser = firebase.auth().currentUser;
-        if (authUser) {
-          await authUser.updatePassword(newPassword);
+        updates.password = btoa(newPassword);
+        // Also update Firebase Auth password if user is signed in via Google/Auth
+        try {
+          const authUser = firebase.auth().currentUser;
+          if (authUser) await authUser.updatePassword(newPassword);
+        } catch(authErr) {
+          // Ignore — DB-only users don't use Firebase Auth passwords
+          console.warn('Firebase Auth password update skipped:', authErr.code);
         }
-        updates.passwordHash = btoa(newPassword);
       } else if (newPassword && newPassword.length > 0) {
         showToast('⚠️ Password must be at least 6 characters');
         if (btn) { btn.disabled = false; btn.textContent = '💾 SAVE CHANGES'; }
@@ -3709,9 +3800,7 @@ async function saveProfile() {
     const initials = newUsername.slice(0,2).toUpperCase();
     document.querySelectorAll('.profile-username').forEach(el => el.textContent = newUsername);
     document.querySelector('.profile-avatar').textContent = initials;
-    if (currentUser.bgmiId) {
-      document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + currentUser.bgmiId);
-    }
+    document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
     const chatLabel = document.getElementById('chat-you-label');
     if (chatLabel) chatLabel.textContent = newUsername;
 
@@ -3731,18 +3820,27 @@ async function loadMyMatches() {
   if (!list) return;
 
   if (currentUser.isGuest || !currentUser.email) {
+    // Hide edit button and BGMI ID for guests
+    const editBtn = document.querySelector('.edit-profile-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    document.querySelectorAll('.profile-id').forEach(el => el.style.display = 'none');
     list.innerHTML = `
       <div class="my-matches-empty">
         <div class="my-matches-empty-icon">🔐</div>
         <div class="my-matches-empty-text">Sign in to view your matches</div>
         <div style="margin-top:12px">
-          <button onclick="document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';document.getElementById('auth-screen').classList.remove('hidden')" style="background:var(--accent-orange);color:#000;border:none;border-radius:8px;padding:10px 22px;font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Sign In →</button>
+          <button onclick="showAuthScreen()" style="background:var(--accent-orange);color:#000;border:none;border-radius:8px;padding:10px 22px;font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Sign Up / Login →</button>
         </div>
       </div>`;
     return;
   }
 
   list.innerHTML = '<div class="my-matches-loading">⏳ Loading your matches...</div>';
+
+  // Ensure edit button and profile-id are visible for logged-in users
+  const editBtn = document.querySelector('.edit-profile-btn');
+  if (editBtn) editBtn.style.display = '';
+  document.querySelectorAll('.profile-id').forEach(el => el.style.display = '');
 
   try {
     // Search registrations across all tournaments for this user's email
@@ -3850,7 +3948,10 @@ function openTournamentChat(tournamentId, tournamentName) {
   tchatListener = msgsRef.limitToLast(60).on('child_added', snapshot => {
     const m = snapshot.val();
     if (!m) return;
-    m.own = (m.sessionId === TCHAT_SESSION_ID);
+    const myName = currentUser.chatName || currentUser.username;
+    m.own = (m.sessionId === TCHAT_SESSION_ID)
+         || (myName && m.user === myName)
+         || (currentUser.email && m.userEmail === currentUser.email);
     addTchatMessageToDOM(m);
   });
 
@@ -3926,6 +4027,7 @@ async function sendTournamentMessage() {
     await db.ref('tournamentChats/' + activeTournamentChatId + '/messages').push({
       user: username,
       sessionId: TCHAT_SESSION_ID,
+      userEmail: currentUser.email || null,
       color: userColor,
       initials: initials,
       text: clean,
