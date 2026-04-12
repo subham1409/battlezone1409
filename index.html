@@ -3528,8 +3528,9 @@ function initFirebaseChat() {
     const m = snapshot.val();
     if (!m) return;
 
-    // Mark as own if sessionId matches
-    m.own = (m.sessionId === SESSION_ID);
+    // Mark as own if sessionId matches OR if it's from the current user's chatName/username
+    const myName = currentUser.chatName || currentUser.username;
+    m.own = (m.sessionId === SESSION_ID) || (!!(myName) && m.user === myName);
 
     addMessageToDOM(m, true);
   });
@@ -3830,8 +3831,8 @@ function openTournamentChat(tournamentId, tournamentName) {
     db.ref('pinnedMessage').off('value', tchatPinnedListener);
   }
 
-  // Pinned room info (same admin-set node)
-  tchatPinnedListener = db.ref('pinnedMessage').on('value', snap => {
+  // Tournament-specific pinned room info
+  tchatPinnedListener = db.ref('tournamentChats/' + tournamentId + '/pinnedMessage').on('value', snap => {
     const banner = document.getElementById('tchat-pinned-banner');
     const textEl = document.getElementById('tchat-pinned-text');
     if (!banner || !textEl) return;
@@ -3869,7 +3870,7 @@ function closeTournamentChat() {
     tchatListener = null;
   }
   if (tchatPinnedListener) {
-    db.ref('pinnedMessage').off('value', tchatPinnedListener);
+    db.ref('tournamentChats/' + (activeTournamentChatId || '_') + '/pinnedMessage').off('value', tchatPinnedListener);
     tchatPinnedListener = null;
   }
   activeTournamentChatId = null;
