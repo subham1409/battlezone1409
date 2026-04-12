@@ -2317,33 +2317,36 @@ async function authGoogleSignIn() {
 
   const provider = new firebase.auth.GoogleAuthProvider();
 
-  // Detect iOS (Safari/Chrome on iPhone/iPad)
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-  if (isIOS || isSafari) {
-    // Use redirect for iOS/Safari — popup is blocked
-    try {
-      await auth.signInWithRedirect(provider);
-      // Page will reload after redirect, handled in window.onload
-    } catch(e) {
-      console.error('Redirect error:', e);
-      showToast('❌ ' + (e.message || 'Google sign-in failed'));
-      btn.disabled = false;
-      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
-    }
-    return;
-  }
-
-  // Non-iOS: use popup (works on Android, desktop)
+  // Always try popup first — it works on modern iOS/Safari when triggered
+  // by a real user tap (which this is). Only fall back to redirect if the
+  // browser explicitly blocks the popup.
   try {
     const result = await auth.signInWithPopup(provider);
     handleGoogleResult(result);
   } catch(e) {
     console.error('Google sign-in error:', e);
-    showToast('❌ ' + (e.message || 'Google sign-in failed'));
-    btn.disabled = false;
-    btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+
+    if (e.code === 'auth/popup-blocked') {
+      // Popup was blocked — fall back to redirect
+      try {
+        sessionStorage.setItem('pendingGoogleRedirect', '1');
+        await auth.signInWithRedirect(provider);
+        // Page will reload; handled in window.onload
+      } catch(err) {
+        console.error('Redirect fallback error:', err);
+        showToast('❌ ' + (err.message || 'Google sign-in failed'));
+        btn.disabled = false;
+        btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+      }
+    } else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      // User closed the popup — reset button silently
+      btn.disabled = false;
+      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+    } else {
+      showToast('❌ ' + (e.message || 'Google sign-in failed'));
+      btn.disabled = false;
+      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+    }
   }
 }
 
@@ -2558,16 +2561,45 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
-  // Handle Google redirect result (for iOS/Safari users)
+  // Handle Google redirect result (fallback for when popup was blocked)
+  const pendingRedirect = sessionStorage.getItem('pendingGoogleRedirect');
+  if (pendingRedirect) {
+    // Show a "completing sign-in" overlay so user isn't confused
+    const authTitle = document.getElementById('auth-box-title');
+    const authSub = document.getElementById('auth-box-sub');
+    if (authTitle) authTitle.textContent = 'Completing Sign-In…';
+    if (authSub) authSub.textContent = 'Please wait while we verify your Google account';
+    const googleBtn = document.getElementById('google-btn');
+    if (googleBtn) {
+      googleBtn.disabled = true;
+      googleBtn.querySelector('.btn-main-text').textContent = 'Completing sign-in...';
+    }
+  }
+
   try {
     const result = await auth.getRedirectResult();
     if (result && result.user) {
+      sessionStorage.removeItem('pendingGoogleRedirect');
       handleGoogleResult(result);
+    } else if (pendingRedirect) {
+      // Redirect returned but no user — something went wrong
+      sessionStorage.removeItem('pendingGoogleRedirect');
+      showToast('❌ Google sign-in failed — please try again');
+      const authTitle = document.getElementById('auth-box-title');
+      const authSub = document.getElementById('auth-box-sub');
+      if (authTitle) authTitle.textContent = 'Choose How to Enter';
+      if (authSub) authSub.textContent = 'Login to unlock full tournament access';
+      const googleBtn = document.getElementById('google-btn');
+      if (googleBtn) {
+        googleBtn.disabled = false;
+        googleBtn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+      }
     }
   } catch(e) {
     console.error('Redirect result error:', e);
+    sessionStorage.removeItem('pendingGoogleRedirect');
     if (e.code !== 'auth/no-current-user') {
-      showToast('❌ Google sign-in failed: ' + e.message);
+      showToast('❌ Google sign-in failed: ' + (e.message || 'Please try again'));
     }
   }
 
