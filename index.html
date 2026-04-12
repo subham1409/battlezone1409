@@ -2278,16 +2278,17 @@ function generateGamerName() {
   return p + s + n;
 }
 
-let currentUser = { isGuest: true, username: generateGamerName(), bgmiId: null, phone: null };
+let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
 
 function authGuest() {
   const gamerName = generateGamerName();
-  currentUser = { isGuest: true, username: gamerName, bgmiId: null, email: null };
+  const chatName = generateGamerName();
+  currentUser = { isGuest: true, username: gamerName, chatName: chatName, bgmiId: null, email: null };
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = 'none';
   authScr.classList.add('hidden');
   const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = gamerName;
+  if (chatLabel) chatLabel.textContent = chatName;
   showToast('👤 Joined as ' + gamerName);
 }
 
@@ -2313,28 +2314,53 @@ async function authGoogleSignIn() {
   const btn = document.getElementById('google-btn');
   btn.disabled = true;
   btn.querySelector('.btn-main-text').textContent = 'Signing in...';
+
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  // Detect iOS (Safari/Chrome on iPhone/iPad)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS || isSafari) {
+    // Use redirect for iOS/Safari — popup is blocked
+    try {
+      await auth.signInWithRedirect(provider);
+      // Page will reload after redirect, handled in window.onload
+    } catch(e) {
+      console.error('Redirect error:', e);
+      showToast('❌ ' + (e.message || 'Google sign-in failed'));
+      btn.disabled = false;
+      btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
+    }
+    return;
+  }
+
+  // Non-iOS: use popup (works on Android, desktop)
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
     const result = await auth.signInWithPopup(provider);
-    const user = result.user;
-    currentUser.email = user.email;
-    currentUser.googleUid = user.uid;
-    currentUser.isGuest = false;
-    // Pre-fill username from Google display name
-    setTimeout(() => {
-      const unInput = document.getElementById('auth-username');
-      if (unInput && user.displayName) unInput.value = user.displayName.replace(/\s+/g, '').slice(0, 20);
-      const emailDisp = document.getElementById('google-email-display');
-      if (emailDisp) emailDisp.textContent = user.email;
-    }, 100);
-    authGoStep(2);
-    showToast('✅ Google verified! Set up your profile.');
+    handleGoogleResult(result);
   } catch(e) {
     console.error('Google sign-in error:', e);
     showToast('❌ ' + (e.message || 'Google sign-in failed'));
     btn.disabled = false;
     btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
   }
+}
+
+function handleGoogleResult(result) {
+  const user = result.user;
+  currentUser.email = user.email;
+  currentUser.googleUid = user.uid;
+  currentUser.isGuest = false;
+  currentUser.chatName = null;
+  setTimeout(() => {
+    const unInput = document.getElementById('auth-username');
+    if (unInput && user.displayName) unInput.value = user.displayName.replace(/\s+/g, '').slice(0, 20);
+    const emailDisp = document.getElementById('google-email-display');
+    if (emailDisp) emailDisp.textContent = user.email;
+  }, 100);
+  authGoStep(2);
+  showToast('✅ Google verified! Set up your profile.');
 }
 
 // ── LOGIN (email + password) ────────────────────────────────
@@ -2368,6 +2394,7 @@ async function authLogin() {
     currentUser = {
       isGuest: false,
       username: userData.username,
+      chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
       email: email
     };
@@ -2381,7 +2408,7 @@ async function authLogin() {
     document.querySelector('.profile-avatar').textContent = initials;
     if (userData.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + userData.bgmiId);
     const chatLabel = document.getElementById('chat-you-label');
-    if (chatLabel) chatLabel.textContent = userData.username;
+    if (chatLabel) chatLabel.textContent = currentUser.chatName || userData.username;
 
     showToast('🎮 Welcome back ' + userData.username + '!');
   } catch(e) {
@@ -2420,35 +2447,47 @@ function togglePw() {
 // ── PROFILE FINISH (save to Firebase) ──────────────────────
 async function authFinish() {
   const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password') ? document.getElementById('auth-password').value : '';
+  const pwEl = document.getElementById('auth-password');
+  const password = pwEl ? pwEl.value : '';
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
 
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
   if (!password || password.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
 
+  const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
+
+  // Generate a permanent chat name — check Firebase first in case they signed up before
+  let chatName = currentUser.chatName;
+  if (!chatName && emailKey) {
+    try {
+      const snap = await db.ref('users/' + emailKey + '/chatName').once('value');
+      chatName = snap.val();
+    } catch(e) {}
+  }
+  if (!chatName) chatName = generateGamerName(); // brand new permanent chat name
+
   currentUser = {
     isGuest: false,
     username: username,
+    chatName: chatName,
     bgmiId: bgmiId || null,
     email: currentUser.email || null,
     googleUid: currentUser.googleUid || null
   };
 
-  try {
-    // Save user to Firebase DB
-    const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
-    await db.ref('users/' + emailKey).set({
-      username: username,
-      password: btoa(password), // base64 encode (basic protection)
-      bgmiId: bgmiId || null,
-      email: currentUser.email || null,
-      googleUid: currentUser.googleUid || null,
-      createdAt: Date.now()
-    });
-    showToast('✅ Profile saved!');
-  } catch(e) {
-    console.error('Save error:', e);
-    // Continue anyway even if save fails
+  // Save everything to Firebase including permanent chatName
+  if (emailKey) {
+    try {
+      await db.ref('users/' + emailKey).set({
+        username: username,
+        chatName: chatName,
+        password: btoa(password),
+        bgmiId: bgmiId || null,
+        email: currentUser.email || null,
+        googleUid: currentUser.googleUid || null,
+        createdAt: Date.now()
+      });
+    } catch(e) { console.warn('Save failed:', e); }
   }
 
   // Hide auth screen
@@ -2462,8 +2501,9 @@ async function authFinish() {
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   document.querySelector('.profile-avatar').textContent = initials;
   if (bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + bgmiId);
+  // Chat shows chatName, profile shows username
   const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = username;
+  if (chatLabel) chatLabel.textContent = chatName;
 
   showToast('🎮 Welcome ' + username + "! You're in the zone!");
 }
@@ -2518,6 +2558,19 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // Handle Google redirect result (for iOS/Safari users)
+  try {
+    const result = await auth.getRedirectResult();
+    if (result && result.user) {
+      handleGoogleResult(result);
+    }
+  } catch(e) {
+    console.error('Redirect result error:', e);
+    if (e.code !== 'auth/no-current-user') {
+      showToast('❌ Google sign-in failed: ' + e.message);
+    }
+  }
+
   showTournamentSkeleton();
 
   // ---- Load tournaments from Firebase ----
@@ -2647,7 +2700,7 @@ function switchPage(page) {
 
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
-    if (chatLabel) chatLabel.textContent = currentUser.username;
+    if (chatLabel) chatLabel.textContent = currentUser.chatName || currentUser.username;
   const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
     if (!chatListenerAttached) initFirebaseChat();
     setTimeout(() => {
@@ -2912,7 +2965,7 @@ async function sendMessage() {
   // Keep focus on input so keyboard stays open and bar stays put
   input.focus();
 
-  const username = currentUser.username || generateGamerName();
+  const username = currentUser.chatName || currentUser.username || generateGamerName();
   const initials = username.slice(0, 2).toUpperCase();
   const now = new Date();
   const hours = now.getHours();
