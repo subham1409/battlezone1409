@@ -460,6 +460,44 @@ body::after {
   <!-- ===== NEWS TAB ===== -->
   <div id="tab-news" class="tab-panel active">
 
+    <!-- ===== HOME ANNOUNCEMENT BANNER ===== -->
+    <div class="section-card" style="margin-bottom:24px;border-color:rgba(255,120,0,0.25)">
+      <div class="section-card-header" style="background:linear-gradient(135deg,rgba(255,120,0,0.1),transparent)">
+        <div class="section-card-title">📢 Home Announcement Banner</div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">shown on home screen</span>
+      </div>
+      <div class="section-card-body">
+        <div style="display:grid;grid-template-columns:1fr 80px;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Title *</label>
+            <input type="text" id="ann-title-input" placeholder="e.g. Weekly Championship" maxlength="60">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Icon (emoji)</label>
+            <input type="text" id="ann-icon-input" placeholder="🏆" maxlength="4" style="text-align:center;font-size:20px">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Label (top small text)</label>
+            <input type="text" id="ann-label-input" placeholder="📅 Upcoming" maxlength="40">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Date / Subtitle</label>
+            <input type="text" id="ann-date-input" placeholder="SAT, 19 APR 2026 • 8:00 PM IST" maxlength="80">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-primary" onclick="saveAnnouncement()" style="max-width:200px">📢 Save Announcement</button>
+          <button onclick="clearAnnouncement()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:10px 16px;color:var(--text-muted);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">🗑 Hide Banner</button>
+        </div>
+        <div id="ann-current" style="margin-top:14px;padding:12px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;display:none">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:6px">Current banner:</div>
+          <div id="ann-preview-text" style="font-size:13px;color:var(--text-primary);font-weight:600"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Firebase Rules Tip -->
     <div id="firebase-rules-tip" style="background:rgba(255,120,0,0.07);border:1px solid rgba(255,120,0,0.25);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
       <div style="font-size:20px;flex-shrink:0">🔑</div>
@@ -606,12 +644,37 @@ body::after {
             <input type="text" id="t-date" placeholder="e.g. Sat, 20 Apr 2026" maxlength="40">
           </div>
           <div class="field" style="margin-bottom:0">
-            <label>Time</label>
+            <label>Time (legacy fallback)</label>
             <input type="text" id="t-time" placeholder="e.g. 8:00 PM IST" maxlength="40">
           </div>
           <div class="field" style="margin-bottom:0">
             <label>Prize Pool</label>
             <input type="text" id="t-prize" placeholder="e.g. ₹50,000" maxlength="40">
+          </div>
+        </div>
+
+        <!-- Match 1 & Match 2 Schedule -->
+        <div style="background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px;padding:14px 16px;margin-bottom:12px">
+          <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase;margin-bottom:12px">⚔ Match Schedule (2 matches per tournament)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div class="field" style="margin-bottom:0">
+              <label>Match 1 Title</label>
+              <input type="text" id="t-match1-title" placeholder="e.g. Qualifier Round" maxlength="40">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Match 1 Time *</label>
+              <input type="text" id="t-match1-time" placeholder="e.g. 8:00 PM IST" maxlength="40">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="field" style="margin-bottom:0">
+              <label>Match 2 Title</label>
+              <input type="text" id="t-match2-title" placeholder="e.g. Grand Finals" maxlength="40">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Match 2 Time <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
+              <input type="text" id="t-match2-time" placeholder="e.g. 9:30 PM IST" maxlength="40">
+            </div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
@@ -640,6 +703,33 @@ body::after {
         <div class="field">
           <label>Room ID</label>
           <input type="text" id="t-room" placeholder="Room ID (shown only after registration)" maxlength="60">
+        </div>
+        <div class="field">
+          <label>Prize Distribution <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Shown on home screen tournament cards)</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥇 1st Place</div>
+              <input type="text" id="t-prize1" placeholder="e.g. ₹3,000" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥈 2nd Place</div>
+              <input type="text" id="t-prize2" placeholder="e.g. ₹1,500" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥉 3rd Place</div>
+              <input type="text" id="t-prize3" placeholder="e.g. ₹500" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🏅 4th Place <span style="opacity:0.5">(optional)</span></div>
+              <input type="text" id="t-prize4" placeholder="e.g. ₹200" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🏅 5th Place <span style="opacity:0.5">(optional)</span></div>
+              <input type="text" id="t-prize5" placeholder="e.g. ₹100" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
+            </div>
+          </div>
         </div>
         <div class="field">
           <label>Description / Rules</label>
@@ -834,6 +924,7 @@ function doLogin() {
     }
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('admin-app').classList.add('visible');
+    loadAnnouncementAdmin();
     loadNewsAdmin();
     loadChatAdmin();
     loadTournamentsAdmin();
@@ -1165,11 +1256,25 @@ async function submitTournament() {
   if (!tournamentsRef) { showToast('❌ Firebase not connected'); return; }
   const name = document.getElementById('t-name').value.trim();
   if (!name) { showToast('⚠️ Tournament name required'); return; }
+
+  // Build prizeList array from prize1–prize5 fields
+  const prizeList = [
+    document.getElementById('t-prize1').value.trim(),
+    document.getElementById('t-prize2').value.trim(),
+    document.getElementById('t-prize3').value.trim(),
+    document.getElementById('t-prize4').value.trim(),
+    document.getElementById('t-prize5').value.trim(),
+  ].filter(p => p !== '');
+
   const payload = {
     name,
     map: document.getElementById('t-map').value.trim(),
     date: document.getElementById('t-date').value.trim(),
     time: document.getElementById('t-time').value.trim(),
+    match1Title: document.getElementById('t-match1-title').value.trim() || 'Match 1',
+    match1Time:  document.getElementById('t-match1-time').value.trim(),
+    match2Title: document.getElementById('t-match2-title').value.trim() || 'Match 2',
+    match2Time:  document.getElementById('t-match2-time').value.trim(),
     prize: document.getElementById('t-prize').value.trim(),
     entryFee: document.getElementById('t-entry').value.trim(),
     maxTeams: parseInt(document.getElementById('t-maxteams').value) || 0,
@@ -1177,6 +1282,7 @@ async function submitTournament() {
     status: document.getElementById('t-status').value,
     roomId: document.getElementById('t-room').value.trim(),
     description: document.getElementById('t-desc').value.trim(),
+    prizeList: prizeList,
     ts: Date.now()
   };
   const btn = document.getElementById('t-submit-btn');
@@ -1197,26 +1303,39 @@ async function submitTournament() {
 }
 
 function resetTournamentForm() {
-  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc'].forEach(id => document.getElementById(id).value = '');
+  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc',
+   't-prize1','t-prize2','t-prize3','t-prize4','t-prize5',
+   't-match1-title','t-match1-time','t-match2-title','t-match2-time'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   document.getElementById('t-status').value = 'UPCOMING';
 }
 
 function editTournament(id) {
   const t = tourData.find(x => x.id === id); if (!t) return;
   editingTourId = id;
-  document.getElementById('t-name').value = t.name || '';
-  document.getElementById('t-map').value = t.map || '';
-  document.getElementById('t-date').value = t.date || '';
-  document.getElementById('t-time').value = t.time || '';
-  document.getElementById('t-prize').value = t.prize || '';
-  document.getElementById('t-entry').value = t.entryFee || '';
-  document.getElementById('t-maxteams').value = t.maxTeams || '';
-  document.getElementById('t-slots').value = t.slotsLeft || '';
-  document.getElementById('t-status').value = t.status || 'UPCOMING';
-  document.getElementById('t-room').value = t.roomId || '';
-  document.getElementById('t-desc').value = t.description || '';
+  document.getElementById('t-name').value       = t.name || '';
+  document.getElementById('t-map').value        = t.map || '';
+  document.getElementById('t-date').value       = t.date || '';
+  document.getElementById('t-time').value       = t.time || '';
+  document.getElementById('t-prize').value      = t.prize || '';
+  document.getElementById('t-entry').value      = t.entryFee || '';
+  document.getElementById('t-maxteams').value   = t.maxTeams || '';
+  document.getElementById('t-slots').value      = t.slotsLeft || '';
+  document.getElementById('t-status').value     = t.status || 'UPCOMING';
+  document.getElementById('t-room').value       = t.roomId || '';
+  document.getElementById('t-desc').value       = t.description || '';
+  document.getElementById('t-match1-title').value = t.match1Title || '';
+  document.getElementById('t-match1-time').value  = t.match1Time || '';
+  document.getElementById('t-match2-title').value = t.match2Title || '';
+  document.getElementById('t-match2-time').value  = t.match2Time || '';
+  // Fill prize distribution
+  const pl = t.prizeList || [];
+  ['t-prize1','t-prize2','t-prize3','t-prize4','t-prize5'].forEach((fid, i) => {
+    const el = document.getElementById(fid); if (el) el.value = pl[i] || '';
+  });
   document.getElementById('t-form-title').textContent = 'Edit Tournament';
-  document.getElementById('t-submit-btn').textContent = '✏️ Update Tournament';
+  document.getElementById('t-submit-btn').textContent  = '✏️ Update Tournament';
   document.getElementById('t-cancel-btn').style.display = 'inline-block';
   document.getElementById('tournament-form-card').scrollIntoView({ behavior: 'smooth' });
 }
@@ -1262,13 +1381,16 @@ function renderTournamentsAdmin() {
   document.getElementById('t-count-label').textContent = tourData.length + ' tournament' + (tourData.length !== 1 ? 's' : '');
   if (!tourData.length) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏆</div><div class="empty-state-text">No tournaments yet — add one above!</div></div>'; return; }
   const statusColor = { UPCOMING:'#ff7800', LIVE:'#00ff9d', COMPLETED:'#7a8699', CANCELLED:'#ff3a3a' };
-  let html = '<table class="news-table"><thead><tr><th>Name</th><th>Date</th><th>Prize</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  let html = '<table class="news-table"><thead><tr><th>Name</th><th>Date</th><th>Prize Pool</th><th>Prize List</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   tourData.forEach(t => {
     const col = statusColor[t.status] || '#7a8699';
+    const pl = t.prizeList || [];
+    const plPreview = pl.length ? pl.slice(0,3).map((p,i)=>['🥇','🥈','🥉'][i]+' '+escHTML(p)).join(' · ') : '<span style="color:var(--text-muted)">—</span>';
     html += `<tr>
-      <td style="font-weight:700;color:var(--text-primary);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(t.name)}</td>
+      <td style="font-weight:700;color:var(--text-primary);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(t.name)}</td>
       <td style="font-family:var(--font-mono);font-size:11px">${escHTML(t.date||'—')}</td>
       <td style="font-family:var(--font-mono);font-size:11px;color:var(--accent-orange)">${escHTML(t.prize||'—')}</td>
+      <td style="font-size:11px;font-family:var(--font-mono);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${plPreview}</td>
       <td><span class="tag-badge" style="color:${col};border-color:${col}33;background:${col}18">${escHTML(t.status||'—')}</span></td>
       <td style="white-space:nowrap">
         <button class="action-btn edit" onclick="editTournament('${t.id}')">✏️ Edit</button>
@@ -1534,6 +1656,62 @@ async function clearChat() {
   } catch(e) {
     showToast('❌ ' + e.message);
   }
+}
+
+// ===== ANNOUNCEMENT BANNER =====
+async function saveAnnouncement() {
+  if (!db) { showToast('❌ Firebase not connected'); return; }
+  const title = document.getElementById('ann-title-input').value.trim();
+  if (!title) { showToast('⚠️ Title is required'); return; }
+
+  const payload = {
+    title,
+    label: document.getElementById('ann-label-input').value.trim() || '📅 Upcoming',
+    date:  document.getElementById('ann-date-input').value.trim(),
+    icon:  document.getElementById('ann-icon-input').value.trim() || '🏆'
+  };
+
+  try {
+    await db.ref('announcement').set(payload);
+    showToast('✅ Announcement saved!');
+    showAnnouncementPreview(payload);
+  } catch(e) { showToast('❌ ' + e.message); }
+}
+
+async function clearAnnouncement() {
+  if (!db) return;
+  if (!confirm('Hide the home announcement banner?')) return;
+  try {
+    await db.ref('announcement').remove();
+    showToast('🗑 Announcement hidden');
+    document.getElementById('ann-current').style.display = 'none';
+    ['ann-title-input','ann-label-input','ann-date-input','ann-icon-input'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+  } catch(e) { showToast('❌ ' + e.message); }
+}
+
+function showAnnouncementPreview(ann) {
+  const wrap = document.getElementById('ann-current');
+  const txt  = document.getElementById('ann-preview-text');
+  if (!wrap || !txt) return;
+  txt.textContent = (ann.icon || '🏆') + '  ' + (ann.title || '') + '  —  ' + (ann.date || '');
+  wrap.style.display = 'block';
+}
+
+async function loadAnnouncementAdmin() {
+  if (!db) return;
+  try {
+    const snap = await db.ref('announcement').once('value');
+    if (snap.exists()) {
+      const ann = snap.val();
+      document.getElementById('ann-title-input').value = ann.title || '';
+      document.getElementById('ann-label-input').value = ann.label || '';
+      document.getElementById('ann-date-input').value  = ann.date  || '';
+      document.getElementById('ann-icon-input').value  = ann.icon  || '';
+      showAnnouncementPreview(ann);
+    }
+  } catch(e) { console.warn('Announcement load failed', e); }
 }
 
 // ===== HELPERS =====

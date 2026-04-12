@@ -444,6 +444,72 @@ body::after {
   justify-content: space-between;
   gap: 10px;
 }
+/* Prize List Table inside tournament card */
+.prize-list-section {
+  padding: 0 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.prize-list-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-orange);
+  margin-bottom: 6px;
+  padding: 0 2px;
+}
+.prize-list-table {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.prize-list-table-head {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  padding: 6px 10px;
+  background: rgba(255,120,0,0.08);
+  border-bottom: 1px solid var(--border);
+}
+.prize-list-table-head span {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.prize-list-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: center;
+}
+.prize-list-row:last-child { border-bottom: none; }
+.prize-list-rank {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+}
+.prize-list-pos {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.prize-list-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-green);
+  text-align: right;
+}
 .tournament-badge {
   font-size: 9px;
   font-weight: 700;
@@ -1800,6 +1866,110 @@ body.keyboard-open #chat-page.active {
   transition: background 0.2s;
 }
 .news-detail-link:hover { background: rgba(255,120,0,0.2); }
+
+/* === EDIT PROFILE MODAL === */
+.edit-profile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(6px);
+  align-items: flex-end;
+  justify-content: center;
+}
+.edit-profile-overlay.open { display: flex; }
+.edit-profile-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top: 1px solid rgba(255,120,0,0.2);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px 40px;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.edit-profile-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.edit-profile-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.edit-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.edit-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.edit-field-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.edit-field-input:focus { border-color: var(--border-accent); }
+.edit-field-input::placeholder { color: var(--text-muted); }
+.edit-save-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent-orange);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.15s;
+}
+.edit-save-btn:hover { background: #ff9500; }
+.edit-cancel-link {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.edit-cancel-link span { color: var(--accent-orange); font-weight: 600; }
+/* My Matches dynamic list */
+.my-matches-loading {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.my-matches-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.my-matches-empty-icon { font-size: 32px; margin-bottom: 10px; }
+.my-matches-empty-text { font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.08em; line-height: 1.7; }
 </style>
 
 
@@ -1905,14 +2075,14 @@ body.keyboard-open #chat-page.active {
 
       </div>
 
-      <!-- Calendar Banner -->
-      <div class="banner-card">
+      <!-- Announcement Banner — loaded from Firebase -->
+      <div class="banner-card" id="home-announcement" style="display:none">
         <div>
-          <div class="banner-label">📅 Upcoming</div>
-          <div class="banner-title">Weekly Championship</div>
-          <div class="banner-date">SAT, 12 APR 2026 • 8:00 PM IST</div>
+          <div class="banner-label" id="ann-label">📅 Upcoming</div>
+          <div class="banner-title" id="ann-title">Weekly Championship</div>
+          <div class="banner-date" id="ann-date">SAT, 12 APR 2026 • 8:00 PM IST</div>
         </div>
-        <div class="banner-icon">🏆</div>
+        <div class="banner-icon" id="ann-icon">🏆</div>
       </div>
 
       <!-- Chat CTA -->
@@ -1967,11 +2137,28 @@ body.keyboard-open #chat-page.active {
       </div>
 
       <div class="detail-section">
-        <div class="detail-section-title">Map & Time</div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px">
+        <div class="detail-section-title">Map & Schedule</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px">
           <div class="map-pill" id="d-map">🗺 Erangel</div>
           <div class="map-pill" style="background:rgba(255,120,0,0.08);border-color:rgba(255,120,0,0.2);color:var(--accent-orange)">
-            🕐 <span id="d-datetime">Sat, 12 Apr • 8:00 PM</span>
+            📅 <span id="d-date">Sat, 12 Apr</span>
+          </div>
+        </div>
+        <!-- Match Schedule Grid -->
+        <div id="d-schedule" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <div style="background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.15);border-radius:10px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--accent-green);text-transform:uppercase;margin-bottom:3px" id="d-match1-title">MATCH 1</div>
+              <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600" id="d-match1-time">8:00 PM IST</div>
+            </div>
+            <div style="font-size:22px">🎯</div>
+          </div>
+          <div id="d-match2-wrap" style="background:rgba(255,120,0,0.06);border:1px solid rgba(255,120,0,0.15);border-radius:10px;padding:11px 14px;display:none;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:3px" id="d-match2-title">MATCH 2</div>
+              <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600" id="d-match2-time">9:30 PM IST</div>
+            </div>
+            <div style="font-size:22px">🔥</div>
           </div>
         </div>
         <button class="rules-toggle" onclick="toggleRules()">
@@ -2138,31 +2325,10 @@ body.keyboard-open #chat-page.active {
         <div class="section-title">My Matches</div>
       </div>
 
-      <div class="my-match-card">
-        <div class="my-match-icon upcoming">🎯</div>
-        <div class="my-match-info">
-          <div class="my-match-name">Weekly Championship</div>
-          <div class="my-match-meta">SAT 12 APR • ERANGEL • Squad: PhoenixSquad</div>
-        </div>
-        <div class="status-pill status-upcoming">Soon</div>
+      <div id="my-matches-list">
+        <div class="my-matches-loading">⏳ Loading your matches...</div>
       </div>
-      <div class="my-match-card">
-        <div class="my-match-icon completed">✅</div>
-        <div class="my-match-info">
-          <div class="my-match-name">Chicken Dinner Classic</div>
-          <div class="my-match-meta">05 APR • SANHOK • #2 Place · 28 kills</div>
-        </div>
-        <div class="status-pill status-completed">Done</div>
-      </div>
-      <div class="my-match-card">
-        <div class="my-match-icon completed">✅</div>
-        <div class="my-match-info">
-          <div class="my-match-name">Miramar Mayhem</div>
-          <div class="my-match-meta">29 MAR • MIRAMAR • #1 Place · 36 kills 🏆</div>
-        </div>
-        <div class="status-pill status-completed">Done</div>
-      </div>
-      <button class="edit-profile-btn">✏️ Edit Profile</button>
+      <button class="edit-profile-btn" onclick="openEditProfile()">✏️ Edit Profile</button>
       <div style="height:20px"></div>
     </div>
 
@@ -2211,6 +2377,28 @@ body.keyboard-open #chat-page.active {
       <span>My Matches</span>
     </div>
   </nav>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="edit-profile-overlay" id="edit-profile-overlay">
+  <div class="edit-profile-sheet">
+    <div class="edit-profile-handle"></div>
+    <div class="edit-profile-title">✏️ Edit Profile</div>
+    <div class="edit-field">
+      <div class="edit-field-label">Username</div>
+      <input type="text" class="edit-field-input" id="ep-username" placeholder="Your gamer tag" maxlength="20">
+    </div>
+    <div class="edit-field">
+      <div class="edit-field-label">BGMI Player ID</div>
+      <input type="tel" class="edit-field-input" id="ep-bgmi" placeholder="e.g. 5561234567" maxlength="12">
+    </div>
+    <div class="edit-field">
+      <div class="edit-field-label">New Password <span style="font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></div>
+      <input type="password" class="edit-field-input" id="ep-password" placeholder="Min 6 characters" maxlength="32">
+    </div>
+    <button class="edit-save-btn" onclick="saveProfile()">💾 SAVE CHANGES</button>
+    <div class="edit-cancel-link" onclick="closeEditProfile()">← <span>Cancel</span></div>
+  </div>
 </div>
 
 <!-- News Detail Overlay -->
@@ -2613,6 +2801,34 @@ window.onload = async function() {
 
   showTournamentSkeleton();
 
+  // ---- Load home announcement from Firebase ----
+  try {
+    const annSnap = await db.ref('announcement').once('value');
+    if (annSnap.exists()) {
+      const ann = annSnap.val();
+      const el = document.getElementById('home-announcement');
+      if (el && ann.title) {
+        document.getElementById('ann-label').textContent = ann.label || '📅 Upcoming';
+        document.getElementById('ann-title').textContent = ann.title;
+        document.getElementById('ann-date').textContent = ann.date || '';
+        document.getElementById('ann-icon').textContent = ann.icon || '🏆';
+        el.style.display = 'flex';
+      }
+    }
+    // Live listener for announcement changes
+    db.ref('announcement').on('value', snap => {
+      if (!snap.exists()) return;
+      const ann = snap.val();
+      const el = document.getElementById('home-announcement');
+      if (!el || !ann.title) return;
+      document.getElementById('ann-label').textContent = ann.label || '📅 Upcoming';
+      document.getElementById('ann-title').textContent = ann.title;
+      document.getElementById('ann-date').textContent = ann.date || '';
+      document.getElementById('ann-icon').textContent = ann.icon || '🏆';
+      el.style.display = 'flex';
+    });
+  } catch(e) { console.warn('Announcement load failed:', e); }
+
   // ---- Load tournaments from Firebase ----
   try {
     const tSnap = await db.ref('tournaments').once('value');
@@ -2627,49 +2843,51 @@ window.onload = async function() {
         name: t.name || '',
         date: t.date || '',
         time: t.time || '',
+        match1Title: t.match1Title || 'Match 1',
+        match1Time: t.match1Time || t.time || '',
+        match2Title: t.match2Title || 'Match 2',
+        match2Time: t.match2Time || '',
         map: t.map || t.game || '',
         fee: t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
-        slots: Math.max(0, (t.maxTeams || 0) - (t.slotsLeft || 0)),
+        slots: 0, // always start at 0, real count comes from registrationCounts
         total: t.maxTeams || 25,
-        status: mapTournamentStatus(t.status)
+        status: mapTournamentStatus(t.status),
+        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [])
       }));
     } else {
-      tournaments = [
-        { id:'demo1', num:'MATCH #01', name:'Chicken Dinner Classic', date:'Sat, 12 Apr', time:'8:00 PM IST', map:'Erangel', fee:'FREE', prize:'₹5,000', slots:12, total:25, status:'open' },
-        { id:'demo2', num:'MATCH #02', name:'Desert Storm: Miramar', date:'Sun, 13 Apr', time:'6:00 PM IST', map:'Miramar', fee:'₹50', prize:'₹10,000', slots:20, total:25, status:'upcoming' },
-        { id:'demo3', num:'MATCH #03', name:'Sanhok Slaughter', date:'Mon, 14 Apr', time:'9:00 PM IST', map:'Sanhok', fee:'₹100', prize:'₹20,000', slots:24, total:25, status:'open' },
-      ];
+      tournaments = []; // No tournaments yet — show empty state
     }
   } catch(e) {
     console.warn('Firebase tournaments load failed:', e);
-    tournaments = [
-      { id:'demo1', num:'MATCH #01', name:'Chicken Dinner Classic', date:'Sat, 12 Apr', time:'8:00 PM IST', map:'Erangel', fee:'FREE', prize:'₹5,000', slots:12, total:25, status:'open' },
-    ];
+    tournaments = [];
   }
 
-  // ---- Load registrationCounts and merge into tournaments ----
+  // ---- Load registrationCounts from Firebase — REAL slot count ----
+  // registrationCounts is the only source of truth for filled slots
   try {
     const rcSnap = await db.ref('registrationCounts').once('value');
     if (rcSnap.exists()) {
       rcSnap.forEach(child => {
         const t = tournaments.find(x => x.id === child.key);
-        if (t) t.slots = Math.min(child.val() || 0, t.total);
+        if (t) {
+          t.slots = Math.min(child.val() || 0, t.total);
+          if (t.slots >= t.total) t.status = 'full';
+        }
       });
     }
   } catch(e) { console.warn('registrationCounts load failed:', e); }
 
-  // ---- Live listener: update slot count whenever a new registration comes in ----
+  // ---- Real-time listener: slot bar updates instantly across all devices ----
   db.ref('registrationCounts').on('value', snap => {
     if (!snap.exists()) return;
     snap.forEach(child => {
       const t = tournaments.find(x => x.id === child.key);
       if (!t) return;
       t.slots = Math.min(child.val() || 0, t.total);
-      t.status = t.slots >= t.total ? 'full' : t.status === 'full' ? 'open' : t.status;
+      t.status = t.slots >= t.total ? 'full' : (t.status === 'full' ? 'open' : t.status);
     });
     renderTournaments();
-    // also refresh detail page slot counter if open
     if (currentDetail) {
       const td = tournaments.find(x => x.id === currentDetail.id);
       if (td) document.getElementById('d-slots').textContent = td.slots + '/' + td.total;
@@ -2707,12 +2925,7 @@ window.onload = async function() {
         };
       });
     } else {
-      results = [
-        { id:'demo1', name:'Miramar Mayhem', date:'29 Mar 2026', map:'Miramar', winner:'Ghost Legion', kills:52, teams:20, prize:'₹8,000', lb:[
-          { r:1, team:'Ghost Legion', players:'ShadowX, KillR, Phantom, NightFox', kills:52, place:'#1' },
-          { r:2, team:'Phoenix Squad', players:'P7734, FireStorm, AceBlaze, Hunter', kills:28, place:'#2' },
-        ]},
-      ];
+      results = []; // No results yet — admin will add them
     }
   } catch(e) {
     console.warn('Firebase results load failed:', e);
@@ -2751,6 +2964,9 @@ function switchPage(page) {
   if (page === 'news') {
     loadNews();
   }
+  if (page === 'dashboard') {
+    loadMyMatches();
+  }
 }
 
 function showHome() {
@@ -2761,12 +2977,41 @@ function showHome() {
 function renderTournaments() {
   const container = document.getElementById('tournament-list');
   container.innerHTML = '';
+  if (!tournaments.length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em">No tournaments yet — check back soon!</div>';
+    return;
+  }
   tournaments.forEach(t => {
     const pct = (t.slots / t.total) * 100;
     const almostFull = pct >= 80;
     const full = t.status === 'full';
     const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
     const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
+
+    // Prize distribution list
+    let prizeListHTML = '';
+    const pl = t.prizeList || [];
+    if (pl.length > 0) {
+      const rankIcons = ['🥇','🥈','🥉','🏅','🏅'];
+      const posLabels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
+      prizeListHTML = `
+      <div class="prize-list-section">
+        <div class="prize-list-header">🏆 Prize Distribution</div>
+        <div class="prize-list-table">
+          <div class="prize-list-table-head">
+            <span>Rank</span>
+            <span>Position</span>
+            <span>Prize</span>
+          </div>
+          ${pl.map((p, i) => `
+          <div class="prize-list-row">
+            <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
+            <div class="prize-list-pos">${posLabels[i] || (i+1)+'th Place'}</div>
+            <div class="prize-list-amount">${p}</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
 
     container.innerHTML += `
     <div class="tournament-card" onclick="openDetail('${t.id}')">
@@ -2776,10 +3021,13 @@ function renderTournaments() {
           <div class="tournament-name">${t.name}</div>
           <div class="tournament-meta">
             <span>📅 ${t.date}</span>
-            <span>🕐 ${t.time}</span>
-          </div>
-          <div class="tournament-meta" style="margin-top:3px">
             <span>🗺 ${t.map}</span>
+          </div>
+          <div class="tournament-meta" style="margin-top:5px;gap:6px;flex-direction:column;align-items:flex-start">
+            <span style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);border-radius:5px;padding:2px 7px;color:var(--accent-green);font-size:10px">
+              🎯 ${t.match1Title || 'Match 1'} · ${t.match1Time || t.time || '—'}
+            </span>
+            ${t.match2Time ? `<span style="background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);border-radius:5px;padding:2px 7px;color:var(--accent-orange);font-size:10px">🔥 ${t.match2Title || 'Match 2'} · ${t.match2Time}</span>` : ''}
           </div>
         </div>
         <div class="prize-label">
@@ -2787,6 +3035,7 @@ function renderTournaments() {
           <div class="prize-sub">Prize Pool</div>
         </div>
       </div>
+      ${prizeListHTML}
       <div class="tournament-card-bottom">
         <div class="slot-bar-wrap">
           <div class="slot-label">
@@ -2813,7 +3062,22 @@ function openDetail(id) {
   document.getElementById('d-prize').textContent = t.prize;
   document.getElementById('d-slots').textContent = t.slots + '/' + t.total;
   document.getElementById('d-map').textContent = '🗺 ' + t.map;
-  document.getElementById('d-datetime').textContent = t.date + ' • ' + t.time;
+  document.getElementById('d-date').textContent = t.date;
+
+  // Match 1
+  document.getElementById('d-match1-title').textContent = (t.match1Title || 'Match 1').toUpperCase();
+  document.getElementById('d-match1-time').textContent = t.match1Time || t.time || '—';
+
+  // Match 2 — only show if time is set
+  const m2wrap = document.getElementById('d-match2-wrap');
+  if (t.match2Time) {
+    document.getElementById('d-match2-title').textContent = (t.match2Title || 'Match 2').toUpperCase();
+    document.getElementById('d-match2-time').textContent = t.match2Time;
+    m2wrap.style.display = 'flex';
+  } else {
+    m2wrap.style.display = 'none';
+  }
+
   document.getElementById('team-name-input').value = '';
   document.getElementById('phone1-input').value = '';
   document.getElementById('phone2-input').value = '';
@@ -3045,6 +3309,152 @@ function addEmoji(e) {
 
 function reportMsg(id) {
   showToast('⚑ Message reported for review');
+}
+
+// ========= EDIT PROFILE =========
+function openEditProfile() {
+  document.getElementById('ep-username').value = currentUser.username || '';
+  document.getElementById('ep-bgmi').value = currentUser.bgmiId || '';
+  document.getElementById('ep-password').value = '';
+  document.getElementById('edit-profile-overlay').classList.add('open');
+}
+
+function closeEditProfile() {
+  document.getElementById('edit-profile-overlay').classList.remove('open');
+}
+
+async function saveProfile() {
+  const newUsername = document.getElementById('ep-username').value.trim();
+  const newBgmi = document.getElementById('ep-bgmi').value.trim();
+  const newPassword = document.getElementById('ep-password').value;
+
+  if (!newUsername) { showToast('⚠️ Username cannot be empty'); return; }
+
+  const btn = document.querySelector('.edit-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'SAVING...'; }
+
+  try {
+    // Update in Firebase if logged in (has email / uid)
+    if (currentUser.email && !currentUser.isGuest) {
+      const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+      const updates = { username: newUsername };
+      if (newBgmi) updates.bgmiId = newBgmi;
+
+      // Update password in Firebase Auth if provided
+      if (newPassword && newPassword.length >= 6) {
+        const authUser = firebase.auth().currentUser;
+        if (authUser) {
+          await authUser.updatePassword(newPassword);
+        }
+        updates.passwordHash = btoa(newPassword);
+      } else if (newPassword && newPassword.length > 0) {
+        showToast('⚠️ Password must be at least 6 characters');
+        if (btn) { btn.disabled = false; btn.textContent = '💾 SAVE CHANGES'; }
+        return;
+      }
+
+      await db.ref('users/' + emailKey).update(updates);
+    }
+
+    // Update local state
+    currentUser.username = newUsername;
+    currentUser.chatName = newUsername;
+    if (newBgmi) currentUser.bgmiId = newBgmi;
+
+    // Update UI
+    const initials = newUsername.slice(0,2).toUpperCase();
+    document.querySelectorAll('.profile-username').forEach(el => el.textContent = newUsername);
+    document.querySelector('.profile-avatar').textContent = initials;
+    if (currentUser.bgmiId) {
+      document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + currentUser.bgmiId);
+    }
+    const chatLabel = document.getElementById('chat-you-label');
+    if (chatLabel) chatLabel.textContent = newUsername;
+
+    showToast('✅ Profile updated!');
+    closeEditProfile();
+  } catch(e) {
+    console.error('Profile update error:', e);
+    showToast('❌ ' + (e.message || 'Update failed'));
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '💾 SAVE CHANGES'; }
+}
+
+// ========= MY MATCHES — Load from Firebase =========
+async function loadMyMatches() {
+  const list = document.getElementById('my-matches-list');
+  if (!list) return;
+
+  if (currentUser.isGuest || !currentUser.email) {
+    list.innerHTML = `
+      <div class="my-matches-empty">
+        <div class="my-matches-empty-icon">🔐</div>
+        <div class="my-matches-empty-text">Sign in to view your matches</div>
+        <div style="margin-top:12px">
+          <button onclick="document.getElementById('app').style.display='none';document.getElementById('auth-screen').style.display='flex';document.getElementById('auth-screen').classList.remove('hidden')" style="background:var(--accent-orange);color:#000;border:none;border-radius:8px;padding:10px 22px;font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Sign In →</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = '<div class="my-matches-loading">⏳ Loading your matches...</div>';
+
+  try {
+    // Search registrations across all tournaments for this user's email
+    const regSnap = await db.ref('registrations').once('value');
+    const myRegs = [];
+    regSnap.forEach(tourneyNode => {
+      const tourneyId = tourneyNode.key;
+      const tName = tournaments.find(x => x.id === tourneyId);
+      tourneyNode.forEach(reg => {
+        const r = reg.val();
+        if (r.email1 === currentUser.email || 
+           (currentUser.bgmiId && r.players && r.players.includes(currentUser.bgmiId))) {
+          myRegs.push({
+            tournamentId: tourneyId,
+            tournamentName: r.tournamentName || (tName ? tName.name : tourneyId),
+            teamName: r.teamName,
+            registeredAt: r.registeredAt,
+            ts: r.ts || 0
+          });
+        }
+      });
+    });
+
+    myRegs.sort((a, b) => b.ts - a.ts);
+
+    if (!myRegs.length) {
+      list.innerHTML = `
+        <div class="my-matches-empty">
+          <div class="my-matches-empty-icon">🎮</div>
+          <div class="my-matches-empty-text">No registrations yet<br>Join a tournament to get started!</div>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    myRegs.forEach(reg => {
+      const t = tournaments.find(x => x.id === reg.tournamentId);
+      const status = t ? t.status : 'upcoming';
+      const statusClass = status === 'full' ? 'status-completed' : 'status-upcoming';
+      const statusLabel = status === 'full' ? 'Done' : 'Soon';
+      const icon = status === 'full' ? '✅' : '🎯';
+      const iconClass = status === 'full' ? 'completed' : 'upcoming';
+      list.innerHTML += `
+      <div class="my-match-card">
+        <div class="my-match-icon ${iconClass}">${icon}</div>
+        <div class="my-match-info">
+          <div class="my-match-name">${escapeHTML(reg.tournamentName)}</div>
+          <div class="my-match-meta">${reg.registeredAt || ''} • Squad: ${escapeHTML(reg.teamName || '')}</div>
+        </div>
+        <div class="status-pill ${statusClass}">${statusLabel}</div>
+      </div>`;
+    });
+  } catch(e) {
+    console.error('loadMyMatches error:', e);
+    list.innerHTML = '<div class="my-matches-loading">⚠️ Could not load matches</div>';
+  }
 }
 
 // ========= RESULTS =========
