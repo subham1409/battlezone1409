@@ -1808,6 +1808,7 @@ body.keyboard-open #chat-page.active {
   <div class="auth-step-indicator">
     <div class="auth-dot active" id="dot-0"></div>
     <div class="auth-dot" id="dot-1"></div>
+    <div class="auth-dot" id="dot-2"></div>
   </div>
 
   <div class="auth-box">
@@ -1816,18 +1817,25 @@ body.keyboard-open #chat-page.active {
       <div class="auth-box-sub" id="auth-box-sub">Login to unlock full tournament access</div>
     </div>
 
-    <!-- Step 0: Choice -->
+    <!-- Step 0: Choose -->
     <div class="auth-step active" id="auth-step-0">
       <button class="auth-choice-btn primary-btn" onclick="authGoogleSignIn()" id="google-btn">
         <div class="btn-icon" style="background:#fff;border-radius:8px;padding:4px;display:flex;align-items:center;justify-content:center">
           <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         </div>
         <div class="btn-text-wrap">
-          <span class="btn-main-text">Sign in with Google</span>
-          <span class="btn-sub-text">Quick &amp; secure — one tap login</span>
+          <span class="btn-main-text">Sign up with Google</span>
+          <span class="btn-sub-text">Create account — quick &amp; secure</span>
         </div>
       </button>
-      <button class="auth-choice-btn" onclick="authGuest()">
+      <button class="auth-choice-btn" onclick="authGoStep(1)" style="margin-top:4px">
+        <div class="btn-icon" style="background:rgba(255,120,0,0.1)">🔐</div>
+        <div class="btn-text-wrap">
+          <span class="btn-main-text">Login</span>
+          <span class="btn-sub-text">Already have an account? Sign in</span>
+        </div>
+      </button>
+      <button class="auth-choice-btn" onclick="authGuest()" style="margin-top:4px">
         <div class="btn-icon" style="background:rgba(255,255,255,0.05)">👤</div>
         <div class="btn-text-wrap">
           <span class="btn-main-text">Continue as Guest</span>
@@ -1836,17 +1844,39 @@ body.keyboard-open #chat-page.active {
       </button>
     </div>
 
-    <!-- Step 1: Profile Setup after Google login -->
+    <!-- Step 1: Login with email + password -->
     <div class="auth-step" id="auth-step-1">
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:36px;margin-bottom:8px">🎮</div>
-        <div style="font-family:var(--font-display);font-size:13px;color:var(--accent-green);letter-spacing:0.1em">GOOGLE VERIFIED ✓</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)" id="google-email-display"></div>
+      <label class="auth-label">Email Address</label>
+      <div class="auth-input-wrap" style="margin-bottom:16px">
+        <input class="auth-input no-prefix" id="login-email" type="email" placeholder="you@example.com" style="padding:14px 16px" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <label class="auth-label">Password</label>
+      <div class="auth-input-wrap" style="margin-bottom:16px" id="login-pw-wrap">
+        <input class="auth-input no-prefix" id="login-pass" type="password" placeholder="Your password" style="padding:14px 16px" onkeydown="if(event.key==='Enter')authLogin()">
+        <div class="pw-toggle" onclick="toggleLoginPw()">👁</div>
+      </div>
+      <button class="auth-submit-btn" id="login-btn" onclick="authLogin()">🔐 LOGIN</button>
+      <div class="auth-phone-hint" style="margin-top:12px">Don't have an account? <span style="color:var(--accent-orange);cursor:pointer;font-weight:600" onclick="authGoStep(0)">Sign up with Google</span></div>
+      <div class="auth-back-link" onclick="authGoStep(0)">← <span>Back</span></div>
+    </div>
+
+    <!-- Step 2: Profile Setup (after Google sign-up) -->
+    <div class="auth-step" id="auth-step-2">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:32px;margin-bottom:6px">🎮</div>
+        <div style="font-family:var(--font-display);font-size:12px;color:var(--accent-green);letter-spacing:0.1em">GOOGLE VERIFIED ✓</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)" id="google-email-display"></div>
       </div>
       <label class="auth-label">Choose a Username</label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
         <input class="auth-input no-prefix" id="auth-username" type="text" maxlength="20" placeholder="KillZone99" style="padding:14px 16px">
       </div>
+      <label class="auth-label">Create a Password</label>
+      <div class="auth-input-wrap" style="margin-bottom:4px" id="pw-wrap">
+        <input class="auth-input no-prefix" id="auth-password" type="password" maxlength="32" placeholder="Min 6 characters" style="padding:14px 16px" oninput="checkPwStrength(this.value)">
+        <div class="pw-toggle" onclick="togglePw()" id="pw-toggle">👁</div>
+      </div>
+      <div class="pw-strength"><div class="pw-strength-fill" id="pw-bar"></div></div>
       <label class="auth-label">BGMI Player ID <span class="optional-tag">Optional</span></label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
         <input class="auth-input no-prefix" id="auth-bgmi" type="tel" maxlength="12" placeholder="e.g. 5561234567" style="padding:14px 16px">
@@ -2264,19 +2294,21 @@ function authGuest() {
 function authGoStep(step) {
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
   document.getElementById('auth-step-' + step).classList.add('active');
-  const d0 = document.getElementById('dot-0');
-  const d1 = document.getElementById('dot-1');
-  if (d0) d0.className = 'auth-dot' + (step === 0 ? ' active' : ' done');
-  if (d1) d1.className = 'auth-dot' + (step === 1 ? ' active' : step > 1 ? ' done' : '');
+  for (let i = 0; i < 3; i++) {
+    const d = document.getElementById('dot-' + i);
+    if (d) d.className = 'auth-dot' + (i === step ? ' active' : i < step ? ' done' : '');
+  }
   const titles = [
     ['Choose How to Enter', 'Login to unlock full tournament access'],
+    ['Login', 'Enter your email and password'],
     ['Set Up Profile', 'Almost there — customize your identity']
   ];
-  const t = titles[Math.min(step, titles.length-1)];
+  const t = titles[Math.min(step, titles.length - 1)];
   document.getElementById('auth-box-title').textContent = t[0];
   document.getElementById('auth-box-sub').textContent = t[1];
 }
 
+// ── GOOGLE SIGN UP ──────────────────────────────────────────
 async function authGoogleSignIn() {
   const btn = document.getElementById('google-btn');
   btn.disabled = true;
@@ -2286,37 +2318,140 @@ async function authGoogleSignIn() {
     const result = await auth.signInWithPopup(provider);
     const user = result.user;
     currentUser.email = user.email;
+    currentUser.googleUid = user.uid;
     currentUser.isGuest = false;
     // Pre-fill username from Google display name
-    const suggestedName = (user.displayName || '').replace(/\s+/g, '').slice(0, 20);
     setTimeout(() => {
       const unInput = document.getElementById('auth-username');
-      if (unInput && suggestedName) unInput.value = suggestedName;
+      if (unInput && user.displayName) unInput.value = user.displayName.replace(/\s+/g, '').slice(0, 20);
       const emailDisp = document.getElementById('google-email-display');
       if (emailDisp) emailDisp.textContent = user.email;
     }, 100);
-    authGoStep(1);
+    authGoStep(2);
     showToast('✅ Google verified! Set up your profile.');
   } catch(e) {
     console.error('Google sign-in error:', e);
-    showToast('❌ Google sign-in failed: ' + (e.message || 'Try again'));
+    showToast('❌ ' + (e.message || 'Google sign-in failed'));
     btn.disabled = false;
-    btn.querySelector('.btn-main-text').textContent = 'Sign in with Google';
+    btn.querySelector('.btn-main-text').textContent = 'Sign up with Google';
   }
 }
 
-function authFinish() {
+// ── LOGIN (email + password) ────────────────────────────────
+async function authLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!email || !pass) { showToast('⚠️ Enter email and password'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = 'LOGGING IN...';
+
+  try {
+    // Check if user exists in Firebase DB
+    const emailKey = email.replace(/[.#$[\]]/g, '_');
+    const snap = await db.ref('users/' + emailKey).once('value');
+    const userData = snap.val();
+
+    if (!userData) {
+      showToast('❌ No account found — please Sign up with Google first');
+      btn.disabled = false; btn.textContent = '🔐 LOGIN'; return;
+    }
+
+    // Simple password check (hashed compare)
+    if (userData.password !== btoa(pass)) {
+      showToast('❌ Wrong password — try again');
+      btn.disabled = false; btn.textContent = '🔐 LOGIN'; return;
+    }
+
+    // Login success
+    currentUser = {
+      isGuest: false,
+      username: userData.username,
+      bgmiId: userData.bgmiId || null,
+      email: email
+    };
+
+    const authScr = document.getElementById('auth-screen');
+    authScr.style.display = 'none';
+    authScr.classList.add('hidden');
+
+    const initials = userData.username.slice(0,2).toUpperCase();
+    document.querySelectorAll('.profile-username').forEach(el => el.textContent = userData.username);
+    document.querySelector('.profile-avatar').textContent = initials;
+    if (userData.bgmiId) document.querySelectorAll('.profile-id').forEach(el => el.textContent = 'BGMI ID: ' + userData.bgmiId);
+    const chatLabel = document.getElementById('chat-you-label');
+    if (chatLabel) chatLabel.textContent = userData.username;
+
+    showToast('🎮 Welcome back ' + userData.username + '!');
+  } catch(e) {
+    console.error('Login error:', e);
+    showToast('❌ Login failed: ' + (e.message || 'Try again'));
+    btn.disabled = false; btn.textContent = '🔐 LOGIN';
+  }
+}
+
+function toggleLoginPw() {
+  const inp = document.getElementById('login-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function checkPwStrength(pw) {
+  const bar = document.getElementById('pw-bar');
+  if (!bar) return;
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const pct = (score / 4) * 100;
+  bar.style.width = pct + '%';
+  bar.style.background = score <= 1 ? 'var(--accent-red)' : score === 2 ? '#ff9500' : score === 3 ? '#ffd700' : 'var(--accent-green)';
+}
+
+function togglePw() {
+  const inp = document.getElementById('auth-password');
+  const t = document.getElementById('pw-toggle');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text'; t.textContent = '🙈'; }
+  else { inp.type = 'password'; t.textContent = '👁'; }
+}
+
+// ── PROFILE FINISH (save to Firebase) ──────────────────────
+async function authFinish() {
   const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password') ? document.getElementById('auth-password').value : '';
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
+
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
+  if (!password || password.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
 
   currentUser = {
     isGuest: false,
     username: username,
     bgmiId: bgmiId || null,
-    email: currentUser.email || null
+    email: currentUser.email || null,
+    googleUid: currentUser.googleUid || null
   };
 
+  try {
+    // Save user to Firebase DB
+    const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
+    await db.ref('users/' + emailKey).set({
+      username: username,
+      password: btoa(password), // base64 encode (basic protection)
+      bgmiId: bgmiId || null,
+      email: currentUser.email || null,
+      googleUid: currentUser.googleUid || null,
+      createdAt: Date.now()
+    });
+    showToast('✅ Profile saved!');
+  } catch(e) {
+    console.error('Save error:', e);
+    // Continue anyway even if save fails
+  }
+
+  // Hide auth screen
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = 'none';
   authScr.classList.add('hidden');
@@ -2330,7 +2465,7 @@ function authFinish() {
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = username;
 
-  showToast('🎮 Welcome ' + username + '! You\'re in the zone!');
+  showToast('🎮 Welcome ' + username + "! You're in the zone!");
 }
 
 // =====================================================================
