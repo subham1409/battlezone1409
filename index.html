@@ -2105,8 +2105,25 @@ body.keyboard-open #chat-page.active {
 </head>
 <body>
 
+<!-- ===== LOADING SCREEN ===== -->
+<div id="loading-screen" style="position:fixed;inset:0;z-index:99999;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:28px">
+    <div style="position:absolute;width:90px;height:90px;border-radius:50%;border:2px solid transparent;border-top-color:var(--accent-orange);border-right-color:rgba(255,120,0,0.3);animation:bzSpin 1.2s linear infinite"></div>
+    <div style="font-family:var(--font-display);font-size:28px;font-weight:900;color:var(--accent-orange);text-shadow:0 0 30px rgba(255,120,0,0.5);letter-spacing:0.06em">⚔</div>
+  </div>
+  <div style="font-family:var(--font-display);font-size:18px;font-weight:900;color:var(--text-primary);letter-spacing:0.16em;text-transform:uppercase;margin-top:16px">BATTLEZONE</div>
+  <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent-orange);letter-spacing:0.22em;margin-top:6px;opacity:0.7">INDIA'S #1 BGMI ESPORTS ARENA</div>
+  <div style="margin-top:36px;width:160px;height:2px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+    <div id="loading-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent-orange),#ff4800);border-radius:2px;transition:width 0.3s ease"></div>
+  </div>
+  <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.1em;margin-top:10px" id="loading-status">INITIALIZING...</div>
+</div>
+<style>
+@keyframes bzSpin { to { transform: rotate(360deg); } }
+</style>
+
 <!-- ===== AUTH SCREEN ===== -->
-<div id="auth-screen">
+<div id="auth-screen" style="display:none">
   <div class="auth-logo">⚔ BATTLEZONE</div>
   <div class="auth-tagline">India's #1 BGMI Esports Arena</div>
 
@@ -2171,6 +2188,11 @@ body.keyboard-open #chat-page.active {
         <div style="font-size:32px;margin-bottom:6px">🎮</div>
         <div style="font-family:var(--font-display);font-size:12px;color:var(--accent-green);letter-spacing:0.1em">GOOGLE VERIFIED ✓</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)" id="google-email-display"></div>
+      </div>
+      <label class="auth-label">Phone Number <span style="color:var(--accent-red);font-size:11px">*</span></label>
+      <div class="auth-input-wrap" style="margin-bottom:16px;display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="auth-phone-wrap">
+        <span style="padding:14px 10px 14px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+        <input class="auth-input no-prefix" id="auth-phone" type="tel" maxlength="10" placeholder="9876543210" style="padding:14px 10px;border:none;background:transparent" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,255,255,0.07)'">
       </div>
       <label class="auth-label">Choose a Username</label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
@@ -2470,10 +2492,10 @@ body.keyboard-open #chat-page.active {
         </div>
       </div>
       <div class="profile-hero">
-        <div class="profile-avatar">P7</div>
+        <div class="profile-avatar" id="profile-avatar-el">--</div>
         <div class="profile-info">
-          <div class="profile-username">Player#7734</div>
-          <div class="profile-id">BGMI ID: 5561298734</div>
+          <div class="profile-username">--</div>
+          <div class="profile-id"></div>
         </div>
       </div>
 
@@ -2667,6 +2689,49 @@ const db = firebase.database();
 const chatRef = db.ref('chat');
 
 // =====================================================================
+// LOADING SCREEN
+// =====================================================================
+function hideLoadingScreen() {
+  const ls = document.getElementById('loading-screen');
+  if (!ls) return;
+  const bar = document.getElementById('loading-bar');
+  const status = document.getElementById('loading-status');
+  if (bar) bar.style.width = '100%';
+  if (status) status.textContent = 'READY';
+  setTimeout(() => {
+    ls.style.transition = 'opacity 0.5s ease';
+    ls.style.opacity = '0';
+    setTimeout(() => {
+      ls.style.display = 'none';
+      // Show auth screen if not logged in (session restore sets currentUser.email)
+      const authScr = document.getElementById('auth-screen');
+      if (authScr && !currentUser.email) {
+        authScr.style.display = '';
+      }
+    }, 500);
+  }, 300);
+}
+
+// Animate loading bar during init
+(function animateLoadingBar() {
+  const bar = document.getElementById('loading-bar');
+  const status = document.getElementById('loading-status');
+  if (!bar) return;
+  const steps = [
+    { w: 20, s: 'LOADING ASSETS...' },
+    { w: 45, s: 'CONNECTING...' },
+    { w: 70, s: 'FETCHING DATA...' },
+    { w: 88, s: 'ALMOST READY...' }
+  ];
+  steps.forEach((step, i) => {
+    setTimeout(() => {
+      bar.style.width = step.w + '%';
+      if (status) status.textContent = step.s;
+    }, i * 600);
+  });
+})();
+
+// =====================================================================
 // AUTH STATE
 // =====================================================================
 let currentAuthStep = 0;
@@ -2715,8 +2780,7 @@ function applyLoggedInUser(userData, skipToast) {
   const initials = username.slice(0,2).toUpperCase();
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   const av = document.querySelector('.profile-avatar');
-  if (av) av.textContent = initials;
-  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
+  if (av) av.textContent = initials;  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
   if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
@@ -2949,14 +3013,17 @@ function togglePw() {
 
 // ── PROFILE FINISH (save to Firebase) ──────────────────────
 async function authFinish() {
+  const phoneRaw = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
   const username = document.getElementById('auth-username').value.trim();
   const pwEl = document.getElementById('auth-password');
   const password = pwEl ? pwEl.value : '';
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
 
+  if (!phoneRaw || phoneRaw.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
   if (!password || password.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
 
+  const phone = '+91' + phoneRaw;
   const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
 
   // Generate a permanent chat name — check Firebase first in case they signed up before
@@ -2975,7 +3042,8 @@ async function authFinish() {
     chatName: chatName,
     bgmiId: bgmiId || null,
     email: currentUser.email || null,
-    googleUid: currentUser.googleUid || null
+    googleUid: currentUser.googleUid || null,
+    phone: phone
   };
   currentUser = finishedUser;
 
@@ -2989,10 +3057,27 @@ async function authFinish() {
         bgmiId: bgmiId || null,
         email: currentUser.email || null,
         googleUid: currentUser.googleUid || null,
+        phone: phone,
         createdAt: Date.now()
       });
     } catch(e) { console.warn('Save failed:', e); }
   }
+
+  // Save user data to Excel (non-blocking)
+  try {
+    fetch('/api/save-userdata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username,
+        email: currentUser.email || '',
+        phone: phone,
+        bgmiId: bgmiId || '',
+        googleUid: currentUser.googleUid || '',
+        createdAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      })
+    }).catch(() => {});
+  } catch(e) {}
 
   // Hide auth screen
   const authScr = document.getElementById('auth-screen');
@@ -3271,6 +3356,15 @@ window.onload = async function() {
 
   renderTournaments();
   renderResults();
+
+  // ── RESTORE LAST SECTION (section persistence on reload) ──
+  const lastPage = sessionStorage.getItem('bz_page');
+  if (lastPage && ['home','news','chat','results','dashboard'].includes(lastPage)) {
+    switchPage(lastPage);
+  }
+
+  // ── HIDE LOADING SCREEN ──
+  hideLoadingScreen();
 };
 
 // ========= NAVIGATION =========
@@ -3284,6 +3378,9 @@ function switchPage(page) {
   
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
+
+  // Persist current section so reload returns to same tab
+  try { sessionStorage.setItem('bz_page', page); } catch(e) {}
 
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
@@ -3567,6 +3664,27 @@ async function registerTeam() {
     renderTournaments();
     checkRegisteredChatAccess();
 
+    // Save tournament registration to Excel (non-blocking)
+    try {
+      fetch('/api/save-tournament-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentName: currentDetail.name,
+          teamName: name,
+          phone1: '+91' + phone1,
+          phone2: phone2 ? '+91' + phone2 : '',
+          email1: email1,
+          email2: email2 || '',
+          bgmiId1: p1,
+          bgmiId2: p2,
+          bgmiId3: p3,
+          bgmiId4: p4,
+          registeredAt: timeStr
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
   } catch(e) {
     console.error('Registration error:', e);
     showToast('Registration failed: ' + (e.message || 'Check connection'));
@@ -3820,10 +3938,14 @@ async function loadMyMatches() {
   if (!list) return;
 
   if (currentUser.isGuest || !currentUser.email) {
+    // Show guest info
+    const av = document.getElementById('profile-avatar-el') || document.querySelector('.profile-avatar');
+    if (av) av.textContent = '👤';
+    document.querySelectorAll('.profile-username').forEach(el => el.textContent = 'Guest');
+    document.querySelectorAll('.profile-id').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
     // Hide edit button and BGMI ID for guests
     const editBtn = document.querySelector('.edit-profile-btn');
     if (editBtn) editBtn.style.display = 'none';
-    document.querySelectorAll('.profile-id').forEach(el => el.style.display = 'none');
     list.innerHTML = `
       <div class="my-matches-empty">
         <div class="my-matches-empty-icon">🔐</div>
@@ -3910,7 +4032,7 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Set header
   document.getElementById('tchat-title').textContent = (tournamentName || 'Tournament').toUpperCase() + ' — CHAT';
-  document.getElementById('tchat-you-label').textContent = currentUser.chatName || currentUser.username || 'Player';
+  document.getElementById('tchat-you-label').textContent = currentUser.username || currentUser.chatName || 'Player';
 
   // Show/hide input based on registration
   const isRegistered = registeredTournamentIds.has(tournamentId);
@@ -4010,7 +4132,7 @@ async function sendTournamentMessage() {
   autoGrowChat(input);
   input.focus();
 
-  const username = currentUser.chatName || currentUser.username || generateGamerName();
+  const username = currentUser.username || currentUser.chatName || generateGamerName();
   const initials = username.slice(0, 2).toUpperCase();
   const now = new Date();
   const hours = now.getHours();
@@ -4248,4 +4370,3 @@ function closeNewsDetail() {
 </script>
 </body>
 </html>
-hy
