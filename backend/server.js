@@ -57,3 +57,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+const excelRoutes = require('./routes/excel');
+app.use('/api', excelRoutes);

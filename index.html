@@ -2098,12 +2098,123 @@ body.keyboard-open #chat-page.active {
 }
 .my-matches-empty-icon { font-size: 32px; margin-bottom: 10px; }
 .my-matches-empty-text { font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.08em; line-height: 1.7; }
+
+/* ===== LOADING SCREEN ===== */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#loading-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+#loading-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,120,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,120,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+.loading-logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--accent-orange);
+  text-shadow: 0 0 40px rgba(255,120,0,0.6), 0 0 80px rgba(255,120,0,0.2);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  animation: loadLogoPulse 1.5s ease-in-out infinite;
+}
+@keyframes loadLogoPulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(255,120,0,0.5); }
+  50% { text-shadow: 0 0 50px rgba(255,120,0,1), 0 0 100px rgba(255,120,0,0.3); }
+}
+.loading-tagline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+.loading-bar-wrap {
+  width: 160px;
+  height: 3px;
+  background: rgba(255,120,0,0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-orange), #ff4800);
+  border-radius: 2px;
+  animation: loadBarAnim 1.6s ease-in-out infinite;
+  transform-origin: left;
+}
+@keyframes loadBarAnim {
+  0% { width: 0%; opacity: 1; }
+  60% { width: 100%; opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+.loading-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-orange);
+  letter-spacing: 0.15em;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+.loading-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 32px;
+}
+.loading-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  opacity: 0.3;
+  animation: dotBlink 1.2s ease-in-out infinite;
+}
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBlink {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
 </style>
 
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<!-- ===== LOADING SCREEN ===== -->
+<div id="loading-screen">
+  <div class="loading-logo">⚔ BATTLEZONE</div>
+  <div class="loading-tagline">India's #1 BGMI Esports Arena</div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar-fill"></div>
+  </div>
+  <div class="loading-status" id="loading-status">Initializing...</div>
+  <div class="loading-dots">
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+    <div class="loading-dot"></div>
+  </div>
+</div>
 
 <!-- ===== AUTH SCREEN ===== -->
 <div id="auth-screen">
@@ -2171,6 +2282,11 @@ body.keyboard-open #chat-page.active {
         <div style="font-size:32px;margin-bottom:6px">🎮</div>
         <div style="font-family:var(--font-display);font-size:12px;color:var(--accent-green);letter-spacing:0.1em">GOOGLE VERIFIED ✓</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)" id="google-email-display"></div>
+      </div>
+      <label class="auth-label">Phone Number <span style="color:var(--accent-red);font-size:11px">*</span></label>
+      <div class="auth-input-wrap" style="margin-bottom:16px;display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="auth-phone-wrap" onfocus="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,255,255,0.07)'">
+        <span style="padding:14px 10px 14px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+        <input class="auth-input no-prefix" id="auth-phone" type="tel" maxlength="10" placeholder="9876543210" style="padding:14px;border:none;background:transparent;border-radius:0" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('auth-phone-wrap').style.borderColor='rgba(255,255,255,0.07)'">
       </div>
       <label class="auth-label">Choose a Username</label>
       <div class="auth-input-wrap" style="margin-bottom:16px">
@@ -2708,6 +2824,7 @@ function applyLoggedInUser(userData, skipToast) {
     chatName: chatName,
     bgmiId: userData.bgmiId || null,
     email: userData.email || null,
+    phone: userData.phone || null,
     googleUid: userData.googleUid || null
   };
   const authScr = document.getElementById('auth-screen');
@@ -2910,6 +3027,7 @@ async function authLogin() {
       chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
       email: email,
+      phone: userData.phone || null,
       googleUid: userData.googleUid || null
     };
     persistSession(mergedUser);
@@ -2953,10 +3071,13 @@ async function authFinish() {
   const pwEl = document.getElementById('auth-password');
   const password = pwEl ? pwEl.value : '';
   const bgmiId = document.getElementById('auth-bgmi').value.trim();
+  const phoneRaw = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
 
+  if (!phoneRaw || phoneRaw.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
   if (!password || password.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
 
+  const phone = '+91' + phoneRaw;
   const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
 
   // Generate a permanent chat name — check Firebase first in case they signed up before
@@ -2975,6 +3096,7 @@ async function authFinish() {
     chatName: chatName,
     bgmiId: bgmiId || null,
     email: currentUser.email || null,
+    phone: phone,
     googleUid: currentUser.googleUid || null
   };
   currentUser = finishedUser;
@@ -2988,11 +3110,28 @@ async function authFinish() {
         password: btoa(password),
         bgmiId: bgmiId || null,
         email: currentUser.email || null,
+        phone: phone,
         googleUid: currentUser.googleUid || null,
         createdAt: Date.now()
       });
     } catch(e) { console.warn('Save failed:', e); }
   }
+
+  // Save user data (without password) to Excel file via backend
+  try {
+    await fetch('/api/save-userdata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username,
+        email: currentUser.email || null,
+        phone: phone,
+        bgmiId: bgmiId || null,
+        googleUid: currentUser.googleUid || null,
+        createdAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      })
+    });
+  } catch(e) { console.warn('Excel userdata save failed:', e); }
 
   // Hide auth screen
   const authScr = document.getElementById('auth-screen');
@@ -3012,6 +3151,22 @@ async function authFinish() {
   persistSession(finishedUser);
   checkRegisteredChatAccess();
   showToast('🎮 Welcome ' + username + "! You're in the zone!");
+}
+
+// =====================================================================
+// LOADING SCREEN
+// =====================================================================
+function hideLoadingScreen() {
+  const ls = document.getElementById('loading-screen');
+  if (ls) {
+    ls.classList.add('hide');
+    setTimeout(() => { ls.style.display = 'none'; }, 600);
+  }
+}
+
+function setLoadingStatus(text) {
+  const el = document.getElementById('loading-status');
+  if (el) el.textContent = text;
 }
 
 // =====================================================================
@@ -3065,6 +3220,11 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // ── RESTORE SECTION (stay on same section after reload) ──
+  const savedSection = sessionStorage.getItem('bz_section');
+
+  setLoadingStatus('Connecting to servers...');
+
   // ── RESTORE SESSION FROM localStorage (prevents redirect on refresh) ──
   const savedSession = loadPersistedSession();
   if (savedSession) {
@@ -3135,6 +3295,7 @@ window.onload = async function() {
 
   showTournamentSkeleton();
 
+  setLoadingStatus('Loading announcements...');
   // ---- Load home announcement from Firebase ----
   try {
     const annSnap = await db.ref('announcement').once('value');
@@ -3163,6 +3324,7 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
+  setLoadingStatus('Loading tournaments...');
   // ---- Load tournaments from Firebase ----
   try {
     const tSnap = await db.ref('tournaments').once('value');
@@ -3228,6 +3390,7 @@ window.onload = async function() {
     }
   });
 
+  setLoadingStatus('Loading results...');
   // ---- Load results from Firebase ----
   try {
     const rSnap = await db.ref('results').once('value');
@@ -3266,11 +3429,21 @@ window.onload = async function() {
     results = [];
   }
 
+  setLoadingStatus('Ready!');
+
   // Chat — Firebase listener
   initFirebaseChat();
 
   renderTournaments();
   renderResults();
+
+  // ── HIDE LOADING SCREEN ──
+  hideLoadingScreen();
+
+  // ── RESTORE SECTION after reload ──
+  if (savedSection && savedSection !== 'home') {
+    setTimeout(() => switchPage(savedSection), 50);
+  }
 };
 
 // ========= NAVIGATION =========
@@ -3284,6 +3457,9 @@ function switchPage(page) {
   
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
+
+  // Save current section so reload restores it
+  try { sessionStorage.setItem('bz_section', page); } catch(e) {}
 
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
@@ -3535,8 +3711,7 @@ async function registerTeam() {
       year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // 1: Save registration entry under /registrations/{tournamentId}/
-    await db.ref('registrations/' + currentDetail.id).push({
+    const regData = {
       tournamentId:   currentDetail.id,
       tournamentName: currentDetail.name,
       teamName:       name,
@@ -3547,7 +3722,31 @@ async function registerTeam() {
       players:        [p1, p2, p3, p4],
       registeredAt:   timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
-    });
+    };
+
+    // 1: Save registration entry under /registrations/{tournamentId}/
+    await db.ref('registrations/' + currentDetail.id).push(regData);
+
+    // Save tournament registration to Excel file: BATTLEZONE/Exelfiles/{tournamentName}.xlsx
+    try {
+      await fetch('/api/save-tournament-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentName: currentDetail.name,
+          teamName:    name,
+          phone1:      '+91' + phone1,
+          phone2:      phone2 ? '+91' + phone2 : '',
+          email1:      email1,
+          email2:      email2 || '',
+          bgmiId1:     p1,
+          bgmiId2:     p2,
+          bgmiId3:     p3,
+          bgmiId4:     p4,
+          registeredAt: timeStr
+        })
+      });
+    } catch(e) { console.warn('Excel tournament save failed:', e); }
 
     // 2: Increment registrationCount in a separate writable node
     await db.ref('registrationCounts/' + currentDetail.id).transaction(current => {
@@ -3824,6 +4023,10 @@ async function loadMyMatches() {
     const editBtn = document.querySelector('.edit-profile-btn');
     if (editBtn) editBtn.style.display = 'none';
     document.querySelectorAll('.profile-id').forEach(el => el.style.display = 'none');
+    // Clear any generated guest names from profile area
+    document.querySelectorAll('.profile-username').forEach(el => el.textContent = 'Guest');
+    const av = document.querySelector('.profile-avatar');
+    if (av) av.textContent = '?';
     list.innerHTML = `
       <div class="my-matches-empty">
         <div class="my-matches-empty-icon">🔐</div>
@@ -3910,7 +4113,7 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Set header
   document.getElementById('tchat-title').textContent = (tournamentName || 'Tournament').toUpperCase() + ' — CHAT';
-  document.getElementById('tchat-you-label').textContent = currentUser.chatName || currentUser.username || 'Player';
+  document.getElementById('tchat-you-label').textContent = currentUser.username || currentUser.chatName || 'Player';
 
   // Show/hide input based on registration
   const isRegistered = registeredTournamentIds.has(tournamentId);
@@ -4010,14 +4213,14 @@ async function sendTournamentMessage() {
   autoGrowChat(input);
   input.focus();
 
-  const username = currentUser.chatName || currentUser.username || generateGamerName();
+  // Tournament chat: use real username (not anonymous chatName)
+  const username = currentUser.username || currentUser.chatName || generateGamerName();
   const initials = username.slice(0, 2).toUpperCase();
   const now = new Date();
   const hours = now.getHours();
   const mins = String(now.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const time = (hours % 12 || 12) + ':' + mins + ' ' + ampm;
-
   const gamerColors = ['#ff7800','#00ff9d','#00cfff','#ff3a6e','#a78bfa','#ffd700','#ff6b35','#39ff14'];
   let hash = 0;
   for (let c of username) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
