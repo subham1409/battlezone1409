@@ -3298,14 +3298,29 @@ window.onload = async function() {
   } catch(e) { console.warn('registrationCounts load failed:', e); }
 
   // ---- Real-time listener: slot bar updates instantly across all devices ----
+  // Also handles deletions: resets all slots to 0 first, then applies current counts
   db.ref('registrationCounts').on('value', snap => {
-    if (!snap.exists()) return;
-    snap.forEach(child => {
-      const t = tournaments.find(x => x.id === child.key);
-      if (!t) return;
-      t.slots = Math.min(child.val() || 0, t.total);
-      t.status = t.slots >= t.total ? 'full' : (t.status === 'full' ? 'open' : t.status);
+    // Always reset all tournament slots to 0 before applying fresh data
+    // This ensures deletions from Firebase console reflect immediately
+    tournaments.forEach(t => { t.slots = 0; });
+
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const t = tournaments.find(x => x.id === child.key);
+        if (!t) return;
+        t.slots = Math.min(child.val() || 0, t.total);
+      });
+    }
+
+    // Recompute status based on fresh slot counts
+    tournaments.forEach(t => {
+      if (t.slots >= t.total) {
+        t.status = 'full';
+      } else if (t.status === 'full') {
+        t.status = 'open';
+      }
     });
+
     renderTournaments();
     if (currentDetail) {
       const td = tournaments.find(x => x.id === currentDetail.id);

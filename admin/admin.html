@@ -460,6 +460,7 @@ body::after {
     <button class="tab-btn" onclick="switchTab('tournaments')">🏆 Tournaments</button>
     <button class="tab-btn" onclick="switchTab('results')">🥇 Results</button>
     <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="tab-btn" onclick="switchTab('registrations')">📋 Registrations</button>
   </div>
 
   <!-- ===== NEWS TAB ===== -->
@@ -937,8 +938,47 @@ body::after {
       </div>
     </div>
   </div>
+  <!-- ===== REGISTRATIONS TAB ===== -->
+  <div id="tab-registrations" class="tab-panel">
 
-</div><!-- end admin-app -->
+    <!-- Recalculate Counts Tool -->
+    <div class="section-card" style="margin-bottom:24px;border-color:rgba(0,255,157,0.25);background:linear-gradient(135deg,rgba(0,255,157,0.05),transparent)">
+      <div class="section-card-header">
+        <div class="section-card-title" style="color:var(--accent-green)">&#x1F504; Slot Count Sync</div>
+      </div>
+      <div class="section-card-body">
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px">
+          If you manually deleted registrations from Firebase Console and the slot count is wrong, click <strong style="color:var(--text-primary)">Recalculate Slot Counts</strong> to resync everything.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn-primary" onclick="recalcSlotCounts()" style="max-width:260px;background:var(--accent-green);color:#000">&#x1F504; Recalculate Slot Counts</button>
+          <div id="recalc-status" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tournament Filter + Registrations List -->
+    <div class="section-card" style="margin-bottom:24px">
+      <div class="section-card-header">
+        <div class="section-card-title">All Registrations</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="reg-tournament-filter" onchange="filterRegistrations()" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;outline:none;cursor:pointer">
+            <option value="all">All Tournaments</option>
+          </select>
+          <button class="action-btn edit" onclick="loadRegistrationsAdmin()">&#x1F504; Refresh</button>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)">Total: <strong id="reg-total-count" style="color:var(--accent-orange)">0</strong></div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)">Showing: <strong id="reg-filtered-count" style="color:var(--accent-green)">0</strong></div>
+      </div>
+      <div id="registrations-admin-list">
+        <div class="empty-state"><div class="empty-state-icon">&#x1F4E1;</div><div class="empty-state-text">Loading registrations...</div></div>
+      </div>
+    </div>
+
+  </div><!-- end tab-registrations -->
+
 
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal">
@@ -1043,6 +1083,7 @@ function switchTab(tab) {
   if (tab === 'tournaments') loadTournamentsAdmin();
   if (tab === 'results') loadResultsAdmin();
   if (tab === 'chat') { loadChatAdmin(); loadPinnedMessageAdmin(); loadTournamentPinDropdown(); }
+  if (tab === 'registrations') loadRegistrationsAdmin();
 }
 
 // ===== IMAGE HANDLING =====
@@ -1972,6 +2013,189 @@ async function loadAnnouncementAdmin() {
       showAnnouncementPreview(ann);
     }
   } catch(e) { console.warn('Announcement load failed', e); }
+}
+
+// ===== REGISTRATIONS ADMIN =====
+let allRegistrationsData = []; // flat list: { tournamentId, tournamentName, regKey, ...regFields }
+
+async function loadRegistrationsAdmin() {
+  if (!db) return;
+  const list = document.getElementById('registrations-admin-list');
+  list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x23F3;</div><div class="empty-state-text">Loading...</div></div>';
+
+  try {
+    // Load tournament names for labelling
+    const tSnap = await db.ref('tournaments').once('value');
+    const tournamentNames = {};
+    tSnap.forEach(c => { tournamentNames[c.key] = c.val().name || c.key; });
+
+    // Load all registrations
+    const regSnap = await db.ref('registrations').once('value');
+    allRegistrationsData = [];
+
+    regSnap.forEach(tourneyNode => {
+      const tId = tourneyNode.key;
+      const tName = tournamentNames[tId] || tId;
+      tourneyNode.forEach(regNode => {
+        allRegistrationsData.push({
+          tournamentId: tId,
+          tournamentName: tName,
+          regKey: regNode.key,
+          ...regNode.val()
+        });
+      });
+    });
+
+    // Sort newest first
+    allRegistrationsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    // Populate filter dropdown
+    const filter = document.getElementById('reg-tournament-filter');
+    const prevVal = filter.value;
+    filter.innerHTML = '<option value="all">All Tournaments</option>';
+    const seen = new Set();
+    allRegistrationsData.forEach(r => {
+      if (!seen.has(r.tournamentId)) {
+        seen.add(r.tournamentId);
+        const opt = document.createElement('option');
+        opt.value = r.tournamentId;
+        opt.textContent = r.tournamentName;
+        filter.appendChild(opt);
+      }
+    });
+    if (prevVal) filter.value = prevVal;
+
+    document.getElementById('reg-total-count').textContent = allRegistrationsData.length;
+    filterRegistrations();
+
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x274C;</div><div class="empty-state-text">' + escHTML(e.message) + '</div></div>';
+  }
+}
+
+function filterRegistrations() {
+  const filterVal = document.getElementById('reg-tournament-filter').value;
+  const filtered = filterVal === 'all'
+    ? allRegistrationsData
+    : allRegistrationsData.filter(r => r.tournamentId === filterVal);
+
+  document.getElementById('reg-filtered-count').textContent = filtered.length;
+  renderRegistrationsAdmin(filtered);
+}
+
+function renderRegistrationsAdmin(data) {
+  const list = document.getElementById('registrations-admin-list');
+  if (!data.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F4CB;</div><div class="empty-state-text">No registrations found</div></div>';
+    return;
+  }
+
+  let html = '<div style="overflow-x:auto"><table class="news-table"><thead><tr>' +
+    '<th>Tournament</th><th>Team</th><th>Players (BGMI IDs)</th>' +
+    '<th>Contact</th><th>Registered At</th><th>Actions</th>' +
+    '</tr></thead><tbody>';
+
+  data.forEach(r => {
+    const players = Array.isArray(r.players) ? r.players.filter(Boolean).join(', ') : (r.players || '—');
+    const contact = [r.phone1, r.phone2].filter(Boolean).join(' / ') || '—';
+    const email = [r.email1, r.email2].filter(Boolean).join(' / ') || '';
+    html += `<tr>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <span style="font-family:var(--font-display);font-size:10px;font-weight:700;color:var(--accent-orange)">${escHTML(r.tournamentName)}</span>
+      </td>
+      <td style="font-weight:700;color:var(--text-primary)">${escHTML(r.teamName || '—')}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;max-width:200px;word-break:break-all">${escHTML(players)}</td>
+      <td style="font-size:12px">
+        <div style="color:var(--accent-green)">${escHTML(contact)}</div>
+        ${email ? '<div style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono)">' + escHTML(email) + '</div>' : ''}
+      </td>
+      <td style="font-family:var(--font-mono);font-size:11px;white-space:nowrap;color:var(--text-secondary)">${escHTML(r.registeredAt || '—')}</td>
+      <td>
+        <button class="action-btn delete" onclick="deleteRegistration('${escHTML(r.tournamentId)}','${escHTML(r.regKey)}')">&#x1F5D1; Del</button>
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  list.innerHTML = html;
+}
+
+let deleteRegTournamentId = null;
+let deleteRegKey = null;
+
+function deleteRegistration(tournamentId, regKey) {
+  deleteRegTournamentId = tournamentId;
+  deleteRegKey = regKey;
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDeleteRegistration;
+}
+
+async function confirmDeleteRegistration() {
+  if (!deleteRegTournamentId || !deleteRegKey) return;
+  try {
+    // 1. Delete the registration entry
+    await db.ref('registrations/' + deleteRegTournamentId + '/' + deleteRegKey).remove();
+
+    // 2. Recalculate and update the count for this tournament only
+    const regSnap = await db.ref('registrations/' + deleteRegTournamentId).once('value');
+    const newCount = regSnap.exists() ? regSnap.numChildren() : 0;
+    if (newCount > 0) {
+      await db.ref('registrationCounts/' + deleteRegTournamentId).set(newCount);
+    } else {
+      // All registrations deleted — remove the count entry entirely so UI resets to 0
+      await db.ref('registrationCounts/' + deleteRegTournamentId).remove();
+    }
+
+    showToast('&#x1F5D1; Registration deleted & slot count updated!');
+    loadRegistrationsAdmin();
+  } catch(e) {
+    showToast('&#x274C; ' + e.message);
+  }
+  deleteRegTournamentId = null;
+  deleteRegKey = null;
+  document.getElementById('delete-modal').classList.remove('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore default
+}
+
+// Recalculate ALL slot counts from actual registration data (use after manual Firebase deletions)
+async function recalcSlotCounts() {
+  if (!db) { showToast('&#x274C; Firebase not connected'); return; }
+  const statusEl = document.getElementById('recalc-status');
+  statusEl.textContent = 'Calculating...';
+  try {
+    const snap = await db.ref('registrations').once('value');
+    const counts = {};
+    snap.forEach(tourneyNode => {
+      const count = tourneyNode.numChildren();
+      if (count > 0) counts[tourneyNode.key] = count;
+      // If count is 0 we skip it — no entry needed (Firebase real-time listener handles missing keys)
+    });
+
+    // Also clear any orphaned count keys (tournaments that no longer have registrations)
+    const existingCounts = await db.ref('registrationCounts').once('value');
+    const deletes = {};
+    existingCounts.forEach(c => {
+      if (!counts.hasOwnProperty(c.key)) deletes[c.key] = null; // null = delete in Firebase
+    });
+
+    // Merge counts + deletions into one write
+    const finalUpdate = Object.assign({}, counts, deletes);
+
+    if (Object.keys(finalUpdate).length > 0) {
+      await db.ref('registrationCounts').update(finalUpdate);
+    }
+
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    statusEl.style.color = 'var(--accent-green)';
+    statusEl.textContent = '&#x2705; Done! ' + Object.keys(counts).length + ' tournament(s), ' + total + ' total registrations synced.';
+    showToast('&#x2705; Slot counts recalculated!');
+    // Reload registrations view
+    loadRegistrationsAdmin();
+  } catch(e) {
+    statusEl.style.color = 'var(--accent-red)';
+    statusEl.textContent = '&#x274C; Error: ' + e.message;
+    showToast('&#x274C; ' + e.message);
+  }
 }
 
 // ===== HELPERS =====
