@@ -822,22 +822,74 @@ body::after {
 
 /* === CHAT PAGE === */
 .chat-header {
-  padding: 14px 18px;
+  padding: 0 18px;
+  height: 56px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(8,10,14,0.9);
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(8,10,14,0.97) 0%, rgba(13,17,27,0.97) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 rgba(255,120,0,0.15), 0 4px 20px rgba(0,0,0,0.4);
+}
+.chat-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,120,0,0.5), transparent);
+}
+.chat-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .chat-title {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--accent-orange);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(255,120,0,0.45);
+  line-height: 1;
+}
+.chat-title-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.chat-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.chat-you-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.chat-you-name {
+  font-family: var(--font-display);
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.1em;
+  color: var(--accent-green);
+  letter-spacing: 0.06em;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 0 10px rgba(0,255,157,0.3);
 }
 .online-badge {
   display: flex;
@@ -1696,7 +1748,7 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE FIX — input always at bottom ===== */
+/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
 #chat-page.active {
   position: fixed;
   top: 0;
@@ -1710,6 +1762,12 @@ body::after {
   z-index: 20;
   background: var(--bg-primary);
   overflow: hidden;
+}
+/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
+#chat-page.active .chat-header {
+  flex-shrink: 0;
+  position: relative;
+  top: auto;
 }
 #chat-page.active .chat-messages {
   flex: 1;
@@ -2413,8 +2471,13 @@ body.keyboard-open #chat-page.active {
     <!-- ===== CHAT PAGE ===== -->
     <div id="chat-page" class="page">
       <div class="chat-header">
-        <div style="text-align:center">
-          <div class="chat-title">COMMUNITY TALK</div>
+        <div class="chat-header-left">
+          <div class="chat-title">💬 Community Talk</div>
+          <div class="chat-title-sub">⚡ Live · Open Lobby</div>
+        </div>
+        <div class="chat-header-right">
+          <div class="chat-you-label">You</div>
+          <div class="chat-you-name" id="chat-you-label">Anonymous</div>
         </div>
       </div>
       <div class="emoji-row">
@@ -4384,41 +4447,51 @@ function closeNewsDetail() {
   document.getElementById('news-overlay').classList.remove('open');
 }
 
-// ========= KEYBOARD DETECTION — hide bottom bar when typing =========
+// ========= KEYBOARD DETECTION — keep input above keyboard =========
 (function() {
   if (!window.visualViewport) return;
   const threshold = 150; // px shrink = keyboard open
-  const initialHeight = window.visualViewport.height;
 
   function onViewportResize() {
-    const shrink = initialHeight - window.visualViewport.height;
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
+    const shrink   = window.screen.height - vvHeight - vvTop;
 
-    // ── Main chat page (existing) ──────────────────────────────────
+    // ── Main chat page ────────────────────────────────────────────
+    const chatPage = document.getElementById('chat-page');
+    const isOnChatPage = chatPage && chatPage.classList.contains('active');
+
     if (shrink > threshold) {
       document.body.classList.add('keyboard-open');
+      if (isOnChatPage) {
+        // Anchor the whole chat page to the visual viewport so header
+        // stays at real top and input bar sits just above the keyboard
+        chatPage.style.top    = vvTop + 'px';
+        chatPage.style.height = vvHeight + 'px';
+        chatPage.style.bottom = 'auto';
+        chatPage.style.transform = 'translateX(-50%)';
+      }
       const msgs = document.getElementById('chat-messages');
       if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
     } else {
       document.body.classList.remove('keyboard-open');
+      if (isOnChatPage) {
+        chatPage.style.top    = '';
+        chatPage.style.height = '';
+        chatPage.style.bottom = '';
+      }
     }
 
-    // ── Tournament chat overlay — WhatsApp/Instagram style ─────────
-    // Pin overlay to the VISUAL viewport so the header never goes
-    // off-screen and the input bar always sits just above the keyboard.
+    // ── Tournament chat overlay ───────────────────────────────────
     const overlay = document.getElementById('tchat-overlay');
     if (overlay && overlay.classList.contains('open')) {
       if (shrink > threshold) {
-        // Keyboard is open: shrink overlay to visual viewport
         overlay.style.top    = vvTop + 'px';
         overlay.style.height = vvHeight + 'px';
         overlay.style.bottom = 'auto';
-        // Scroll messages to bottom so latest is visible
         const tmsgs = document.getElementById('tchat-messages');
         if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
       } else {
-        // Keyboard closed: restore full-screen
         overlay.style.top    = '';
         overlay.style.height = '';
         overlay.style.bottom = '';
