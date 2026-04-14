@@ -2859,15 +2859,18 @@ function applyLoggedInUser(userData, skipToast) {
 }
 
 function checkRegisteredChatAccess() {
+  // Guests are blocked; any logged-in user can chat
   if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
     updateChatAccessUI(false);
     renderTournaments();
     return;
   }
+  // Logged-in user always gets chat access immediately
+  updateChatAccessUI(true);
+  // Still fetch registration IDs so tournament-specific chat works
   const emailLower = currentUser.email.toLowerCase();
   db.ref('registrations').once('value', snap => {
-    let found = false;
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
@@ -2875,17 +2878,15 @@ function checkRegisteredChatAccess() {
         const e1 = (r.email1 || '').toLowerCase();
         const e2 = (r.email2 || '').toLowerCase();
         if (e1 === emailLower || (e2 && e2 === emailLower)) {
-          found = true;
           newIds.add(tourneyNode.key);
         }
       });
     });
     registeredTournamentIds = newIds;
-    updateChatAccessUI(found);
     renderTournaments();
   }).catch(() => {
     registeredTournamentIds = new Set();
-    updateChatAccessUI(false);
+    renderTournaments();
   });
 }
 
@@ -2907,7 +2908,8 @@ function updateChatAccessUI(hasAccess) {
       if (currentUser.isGuest) {
         lockEl.innerHTML = `<div style="font-size:22px">🔒</div><div><div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Create an account to join the chat — <span style="color:var(--accent-orange);cursor:pointer;font-weight:700;text-decoration:underline" onclick="showAuthScreen()">Sign Up →</span></div></div>`;
       } else {
-        lockEl.innerHTML = `<div style="font-size:22px">🔒</div><div><div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in a tournament to unlock</div></div>`;
+        // logged-in users always have access — this branch should not be reached
+        lockEl.style.display = 'none';
       }
     }
   }
