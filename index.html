@@ -1830,12 +1830,17 @@ body.keyboard-open #chat-page.active {
 #tchat-overlay {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 300;
   background: var(--bg-primary);
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
+  will-change: height, top;
+  transition: height 0.08s ease, top 0.08s ease;
 }
 #tchat-overlay.open { display: flex; }
 .tchat-header {
@@ -4101,7 +4106,12 @@ function openTournamentChat(tournamentId, tournamentName) {
 }
 
 function closeTournamentChat() {
-  document.getElementById('tchat-overlay').classList.remove('open');
+  const overlay = document.getElementById('tchat-overlay');
+  overlay.classList.remove('open');
+  // Reset any keyboard-driven resize so it opens clean next time
+  overlay.style.top    = '';
+  overlay.style.height = '';
+  overlay.style.bottom = '';
   // Detach listeners to save bandwidth
   if (tchatListener && activeTournamentChatId) {
     db.ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
@@ -4369,13 +4379,37 @@ function closeNewsDetail() {
 
   function onViewportResize() {
     const shrink = initialHeight - window.visualViewport.height;
+    const vvHeight = window.visualViewport.height;
+    const vvTop    = window.visualViewport.offsetTop;
+
+    // ── Main chat page (existing) ──────────────────────────────────
     if (shrink > threshold) {
       document.body.classList.add('keyboard-open');
-      // Scroll chat to bottom when keyboard opens
       const msgs = document.getElementById('chat-messages');
       if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
     } else {
       document.body.classList.remove('keyboard-open');
+    }
+
+    // ── Tournament chat overlay — WhatsApp/Instagram style ─────────
+    // Pin overlay to the VISUAL viewport so the header never goes
+    // off-screen and the input bar always sits just above the keyboard.
+    const overlay = document.getElementById('tchat-overlay');
+    if (overlay && overlay.classList.contains('open')) {
+      if (shrink > threshold) {
+        // Keyboard is open: shrink overlay to visual viewport
+        overlay.style.top    = vvTop + 'px';
+        overlay.style.height = vvHeight + 'px';
+        overlay.style.bottom = 'auto';
+        // Scroll messages to bottom so latest is visible
+        const tmsgs = document.getElementById('tchat-messages');
+        if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
+      } else {
+        // Keyboard closed: restore full-screen
+        overlay.style.top    = '';
+        overlay.style.height = '';
+        overlay.style.bottom = '';
+      }
     }
   }
 
