@@ -1884,27 +1884,6 @@ body.keyboard-open #chat-page.active {
 .news-empty-icon { font-size: 40px; margin-bottom: 12px; }
 .news-empty-text { font-size: 13px; letter-spacing: 0.08em; font-family: var(--font-mono); }
 
-/* ===== TOURNAMENT CHAT INPUT BAR OVERRIDE ===== */
-#tchat-input-bar .chat-input-area {
-  padding: 10px 22px;
-  gap: 8px;
-}
-#tchat-input-bar .chat-input {
-  font-size: 13px;
-  padding: 8px 13px;
-  min-height: 36px;
-  border-radius: 18px;
-}
-#tchat-input-bar .send-btn {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-}
-#tchat-input-bar .send-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
 /* ===== TOURNAMENT CHAT OVERLAY ===== */
 #tchat-overlay {
   display: none;
@@ -3371,8 +3350,7 @@ window.onload = async function() {
         slots: 0, // always start at 0, real count comes from registrationCounts
         total: t.maxTeams || 25,
         status: mapTournamentStatus(t.status),
-        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : []),
-        imageUrl: t.imageUrl || ''
+        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [])
       }));
     } else {
       tournaments = []; // No tournaments yet — show empty state
@@ -3577,12 +3555,9 @@ function renderTournaments() {
             ${t.match2Time ? `<span style="background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);border-radius:5px;padding:2px 7px;color:var(--accent-orange);font-size:10px">🔥 ${t.match2Title || 'Match 2'} · ${t.match2Time}</span>` : ''}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-          ${t.imageUrl ? `<img src="${t.imageUrl}" alt="" style="width:72px;height:48px;object-fit:cover;border-radius:7px;border:1px solid var(--border);display:block;flex-shrink:0" onerror="this.style.display='none'">` : ''}
-          <div class="prize-label">
-            <div class="prize-amount">${t.prize}</div>
-            <div class="prize-sub">Prize Pool</div>
-          </div>
+        <div class="prize-label">
+          <div class="prize-amount">${t.prize}</div>
+          <div class="prize-sub">Prize Pool</div>
         </div>
       </div>
       ${prizeListHTML}
