@@ -49,7 +49,7 @@ body::before {
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
-  z-index: 400;
+  z-index: 2;
   opacity: 0.4;
 }
 
@@ -826,7 +826,7 @@ body::after {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   background: rgba(8,10,14,0.9);
   position: sticky;
   top: 0;
@@ -1748,14 +1748,14 @@ body.keyboard-open #chat-page.active {
 .news-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
 .news-card-img {
   width: 100%;
-  height: 180px;
+  height: 130px;
   object-fit: cover;
   display: block;
   background: var(--bg-secondary);
 }
 .news-card-img-placeholder {
   width: 100%;
-  height: 180px;
+  height: 130px;
   background: linear-gradient(135deg, rgba(255,120,0,0.08) 0%, rgba(255,60,0,0.03) 100%);
   display: flex;
   align-items: center;
@@ -1835,13 +1835,16 @@ body.keyboard-open #chat-page.active {
   right: 0;
   bottom: 0;
   z-index: 300;
-  background: var(--bg-primary);
+  background: #080a0e;
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
   will-change: height, top;
   transition: height 0.08s ease, top 0.08s ease;
   overscroll-behavior: contain;
+  isolation: isolate;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 #tchat-overlay.open { display: flex; }
 .tchat-header {
@@ -2410,12 +2413,8 @@ body.keyboard-open #chat-page.active {
     <!-- ===== CHAT PAGE ===== -->
     <div id="chat-page" class="page">
       <div class="chat-header">
-        <div>
-          <div class="chat-title">🔥 GLOBAL CHAT LOBBY</div>
-          <div class="online-badge"><div class="online-dot"></div>247 online now</div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);text-align:right;font-family:var(--font-mono)">
-          You:<br><span style="color:var(--accent-orange)" id="chat-you-label">Player#7734</span>
+        <div style="text-align:center">
+          <div class="chat-title">COMMUNITY TALK</div>
         </div>
       </div>
       <div class="emoji-row">
@@ -2467,7 +2466,7 @@ body.keyboard-open #chat-page.active {
           <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ news · latest updates &amp; announcements</div>
         </div>
       </div>
-      <div id="news-list">
+      <div id="news-list" style="padding-top:14px">
         <div class="news-empty">
           <div class="news-empty-icon">📡</div>
           <div class="news-empty-text">Loading news...</div>
@@ -4103,7 +4102,11 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Open overlay
   document.getElementById('tchat-overlay').classList.add('open');
-  document.getElementById('content').style.overflow = 'hidden';
+  // Open overlay — freeze underlying content (stops iOS momentum scroll bleed)
+  const _c = document.getElementById('content');
+  _c.style.overflow = 'hidden';
+  _c.style.position = 'fixed';
+  _c.style.width = '100%';
   setTimeout(() => {
     const msgs = document.getElementById('tchat-messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
@@ -4113,7 +4116,11 @@ function openTournamentChat(tournamentId, tournamentName) {
 function closeTournamentChat() {
   const overlay = document.getElementById('tchat-overlay');
   overlay.classList.remove('open');
-  document.getElementById('content').style.overflow = '';
+  // Restore underlying content
+  const _c = document.getElementById('content');
+  _c.style.overflow = '';
+  _c.style.position = '';
+  _c.style.width = '';
   // Reset any keyboard-driven resize so it opens clean next time
   overlay.style.top    = '';
   overlay.style.height = '';
