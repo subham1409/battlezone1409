@@ -1903,6 +1903,8 @@ body.keyboard-open #chat-page.active {
   isolation: isolate;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  overflow: hidden;
+  touch-action: none;
 }
 #tchat-overlay.open { display: flex; }
 .tchat-header {
@@ -1955,6 +1957,7 @@ body.keyboard-open #chat-page.active {
 .tchat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px 14px 0;
   display: flex;
   flex-direction: column;
@@ -1962,6 +1965,8 @@ body.keyboard-open #chat-page.active {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  /* iOS Safari: prevent touches from bleeding through to background */
+  isolation: isolate;
 }
 .tchat-messages::-webkit-scrollbar { width: 2px; }
 .tchat-messages::-webkit-scrollbar-thumb { background: var(--accent-orange-dim); }
@@ -4167,11 +4172,16 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Open overlay
   document.getElementById('tchat-overlay').classList.add('open');
-  // Open overlay — freeze underlying content (stops iOS momentum scroll bleed)
+  // Freeze underlying content AND body — stops iOS Safari momentum scroll bleed-through
   const _c = document.getElementById('content');
   _c.style.overflow = 'hidden';
   _c.style.position = 'fixed';
   _c.style.width = '100%';
+  // iOS Safari requires body-level lock too — otherwise background page scrolls on touch
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
   setTimeout(() => {
     const msgs = document.getElementById('tchat-messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
@@ -4186,6 +4196,11 @@ function closeTournamentChat() {
   _c.style.overflow = '';
   _c.style.position = '';
   _c.style.width = '';
+  // Release iOS Safari body lock
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
+  document.body.style.height = '';
   // Reset any keyboard-driven resize so it opens clean next time
   overlay.style.top    = '';
   overlay.style.height = '';
