@@ -49,7 +49,7 @@ body::before {
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
-  z-index: 9999;
+  z-index: 400;
   opacity: 0.4;
 }
 
@@ -1841,6 +1841,7 @@ body.keyboard-open #chat-page.active {
   margin: 0 auto;
   will-change: height, top;
   transition: height 0.08s ease, top 0.08s ease;
+  overscroll-behavior: contain;
 }
 #tchat-overlay.open { display: flex; }
 .tchat-header {
@@ -1897,6 +1898,9 @@ body.keyboard-open #chat-page.active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .tchat-messages::-webkit-scrollbar { width: 2px; }
 .tchat-messages::-webkit-scrollbar-thumb { background: var(--accent-orange-dim); }
@@ -2845,7 +2849,7 @@ function updateChatAccessUI(hasAccess) {
       }
     }
   }
-  if (inputEl) inputEl.style.display = hasAccess ? 'flex' : 'none';
+  if (inputEl) inputEl.style.display = hasAccess ? 'block' : 'none';
 }
 
 function doLogout() {
@@ -4099,6 +4103,7 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Open overlay
   document.getElementById('tchat-overlay').classList.add('open');
+  document.getElementById('content').style.overflow = 'hidden';
   setTimeout(() => {
     const msgs = document.getElementById('tchat-messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
@@ -4108,6 +4113,7 @@ function openTournamentChat(tournamentId, tournamentName) {
 function closeTournamentChat() {
   const overlay = document.getElementById('tchat-overlay');
   overlay.classList.remove('open');
+  document.getElementById('content').style.overflow = '';
   // Reset any keyboard-driven resize so it opens clean next time
   overlay.style.top    = '';
   overlay.style.height = '';
