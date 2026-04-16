@@ -293,6 +293,7 @@ body::after {
   word-break: break-word;
   overflow-wrap: break-word;
   width: 100%;
+  font-size: 16px; /* 16px prevents iOS Safari auto-zoom on focus */
 }
 .header-greeting {
   font-size: 13px;
@@ -916,6 +917,12 @@ body::after {
   gap: 12px;
   min-height: 300px;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior: contain;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  background: var(--bg-primary);
 }
 .chat-msg { display: flex; align-items: flex-start; gap: 10px; }
 .chat-msg.own { flex-direction: row-reverse; }
@@ -1005,7 +1012,7 @@ body::after {
   padding: 10px 16px;
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS Safari auto-zoom on focus */
   font-weight: 500;
   outline: none;
   transition: border-color 0.2s;
@@ -1897,14 +1904,13 @@ body.keyboard-open #chat-page.active {
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
-  will-change: height, top;
-  transition: height 0.08s ease, top 0.08s ease;
+  /* NO touch-action:none here — it blocks scroll inside children */
+  /* NO transition here — transitions on height/top cause scroll jank */
   overscroll-behavior: contain;
   isolation: isolate;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   overflow: hidden;
-  touch-action: none;
 }
 #tchat-overlay.open { display: flex; }
 .tchat-header {
@@ -1964,9 +1970,13 @@ body.keyboard-open #chat-page.active {
   gap: 12px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  /* iOS Safari: prevent touches from bleeding through to background */
-  isolation: isolate;
+  touch-action: pan-y pinch-zoom;
+  /* GPU-accelerate the scroll container to prevent background bleed on iOS */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: scroll-position;
+  /* Prevent rubber-band scroll from showing body background */
+  background: #080a0e;
 }
 .tchat-messages::-webkit-scrollbar { width: 2px; }
 .tchat-messages::-webkit-scrollbar-thumb { background: var(--accent-orange-dim); }
@@ -3462,6 +3472,12 @@ window.onload = async function() {
 
 // ========= NAVIGATION =========
 function switchPage(page) {
+  // Always clear keyboard-open state on page switch —
+  // prevents nav from staying hidden if user navigated while keyboard was open
+  document.body.classList.remove('keyboard-open');
+  const _cp = document.getElementById('chat-page');
+  if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   
@@ -4466,58 +4482,94 @@ function closeNewsDetail() {
 
 // ========= KEYBOARD DETECTION — keep input above keyboard =========
 (function() {
-  if (!window.visualViewport) return;
-  const threshold = 150; // px shrink = keyboard open
+  let _kbOpen = false;
+  let _kbTimer = null;
+  const threshold = 150;
 
-  function onViewportResize() {
-    const vvHeight = window.visualViewport.height;
-    const vvTop    = window.visualViewport.offsetTop;
-    const shrink   = window.screen.height - vvHeight - vvTop;
+  function setKeyboardOpen(open) {
+    if (_kbOpen === open) return;
+    _kbOpen = open;
 
-    // ── Main chat page ────────────────────────────────────────────
-    const chatPage = document.getElementById('chat-page');
-    const isOnChatPage = chatPage && chatPage.classList.contains('active');
-
-    if (shrink > threshold) {
+    if (open) {
       document.body.classList.add('keyboard-open');
-      if (isOnChatPage) {
-        // Anchor the whole chat page to the visual viewport so header
-        // stays at real top and input bar sits just above the keyboard
-        chatPage.style.top    = vvTop + 'px';
-        chatPage.style.height = vvHeight + 'px';
-        chatPage.style.bottom = 'auto';
-        chatPage.style.transform = 'translateX(-50%)';
-      }
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
     } else {
       document.body.classList.remove('keyboard-open');
-      if (isOnChatPage) {
-        chatPage.style.top    = '';
+      // Always restore #chat-page native styles when keyboard closes
+      const chatPage = document.getElementById('chat-page');
+      if (chatPage) {
+        chatPage.style.top = '';
         chatPage.style.height = '';
         chatPage.style.bottom = '';
+        chatPage.style.transform = '';
       }
-    }
-
-    // ── Tournament chat overlay ───────────────────────────────────
-    const overlay = document.getElementById('tchat-overlay');
-    if (overlay && overlay.classList.contains('open')) {
-      if (shrink > threshold) {
-        overlay.style.top    = vvTop + 'px';
-        overlay.style.height = vvHeight + 'px';
-        overlay.style.bottom = 'auto';
-        const tmsgs = document.getElementById('tchat-messages');
-        if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
-      } else {
-        overlay.style.top    = '';
+      // Always restore #tchat-overlay native styles
+      const overlay = document.getElementById('tchat-overlay');
+      if (overlay) {
+        overlay.style.top = '';
         overlay.style.height = '';
         overlay.style.bottom = '';
       }
     }
   }
 
-  window.visualViewport.addEventListener('resize', onViewportResize);
-  window.visualViewport.addEventListener('scroll', onViewportResize);
+  function onViewportResize() {
+    if (!window.visualViewport) return;
+    const vvHeight = window.visualViewport.height;
+    const vvTop    = window.visualViewport.offsetTop;
+    const shrink   = window.screen.height - vvHeight - vvTop;
+    const open     = shrink > threshold;
+
+    clearTimeout(_kbTimer);
+
+    if (open) {
+      setKeyboardOpen(true);
+
+      // ── Main chat page ────────────────────────────────────────────
+      const chatPage = document.getElementById('chat-page');
+      const isOnChatPage = chatPage && chatPage.classList.contains('active');
+      if (isOnChatPage) {
+        chatPage.style.top       = vvTop + 'px';
+        chatPage.style.height    = vvHeight + 'px';
+        chatPage.style.bottom    = 'auto';
+        chatPage.style.transform = 'translateX(-50%)';
+      }
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+
+      // ── Tournament chat overlay ───────────────────────────────────
+      const overlay = document.getElementById('tchat-overlay');
+      if (overlay && overlay.classList.contains('open')) {
+        overlay.style.top    = vvTop + 'px';
+        overlay.style.height = vvHeight + 'px';
+        overlay.style.bottom = 'auto';
+        const tmsgs = document.getElementById('tchat-messages');
+        if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
+      }
+    } else {
+      // Debounce slightly — iOS fires resize multiple times on close
+      _kbTimer = setTimeout(() => setKeyboardOpen(false), 80);
+    }
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize);
+    window.visualViewport.addEventListener('scroll', onViewportResize);
+  }
+
+  // ── Blur fallback for iOS — fires when user taps "Done" / dismisses keyboard
+  // This catches cases where visualViewport doesn't fire reliably
+  document.addEventListener('focusout', function(e) {
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+      // Short delay so visualViewport can fire first; if it doesn't, we clean up
+      clearTimeout(_kbTimer);
+      _kbTimer = setTimeout(() => {
+        if (!window.visualViewport) { setKeyboardOpen(false); return; }
+        const shrink = window.screen.height - window.visualViewport.height - window.visualViewport.offsetTop;
+        if (shrink <= threshold) setKeyboardOpen(false);
+      }, 300);
+    }
+  }, true);
 })();
 </script>
 </body>
