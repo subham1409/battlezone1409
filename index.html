@@ -1791,13 +1791,10 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open, chat page expands to fill viewport and nav hides.
-   Requires .on-chat-page so navigating away always restores the nav. */
-body.keyboard-open.on-chat-page #bottom-nav {
-  display: none;
-}
+/* Bottom nav stays visible at all times — even when keyboard is open.
+   Chat page always stops above the 68px nav. */
 body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 0;
+  bottom: 68px;
 }
 
 /* ===== NEWS PAGE ===== */
