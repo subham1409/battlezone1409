@@ -823,12 +823,12 @@ body::after {
 
 /* === CHAT PAGE === */
 .chat-header {
-  padding: 0 18px;
-  height: 56px;
+  padding: 0 14px 0 12px;
+  height: 52px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   background: linear-gradient(135deg, rgba(8,10,14,0.97) 0%, rgba(13,17,27,0.97) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -847,50 +847,61 @@ body::after {
 }
 .chat-header-left {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 .chat-title {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   color: var(--accent-orange);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   text-shadow: 0 0 14px rgba(255,120,0,0.45);
   line-height: 1;
+  white-space: nowrap;
 }
 .chat-title-sub {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--text-muted);
-  letter-spacing: 0.14em;
+  color: var(--accent-green);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.85;
 }
 .chat-header-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
 }
 .chat-you-label {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text-muted);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  display: none;
 }
 .chat-you-name {
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 700;
   color: var(--accent-green);
-  letter-spacing: 0.06em;
-  max-width: 130px;
+  letter-spacing: 0.04em;
+  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-shadow: 0 0 10px rgba(0,255,157,0.3);
+  background: rgba(0,255,157,0.08);
+  border: 1px solid rgba(0,255,157,0.2);
+  border-radius: 20px;
+  padding: 3px 9px;
 }
 .online-badge {
   display: flex;
@@ -1791,10 +1802,12 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* Bottom nav stays visible at all times — even when keyboard is open.
-   Chat page always stops above the 68px nav. */
+/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
+body.keyboard-open.on-chat-page #bottom-nav {
+  display: none !important;
+}
 body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 68px;
+  bottom: 0;
 }
 
 /* ===== NEWS PAGE ===== */
@@ -2504,13 +2517,12 @@ body.keyboard-open.on-chat-page #chat-page.active {
     <!-- ===== CHAT PAGE ===== -->
     <div id="chat-page" class="page">
       <div class="chat-header">
-        <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0;margin-right:4px">←</div>
-        <div class="chat-header-left" style="flex:1;min-width:0">
+        <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
+        <div class="chat-header-left">
           <div class="chat-title">💬 Community Talk</div>
-          <div class="chat-title-sub">⚡ Live · Open Lobby</div>
+          <div class="chat-title-sub">⚡ Live</div>
         </div>
         <div class="chat-header-right">
-          <div class="chat-you-label">You</div>
           <div class="chat-you-name" id="chat-you-label">Anonymous</div>
         </div>
       </div>
@@ -3507,6 +3519,13 @@ function switchPage(page) {
   
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
+
+  // Track if user is on chat page (used to hide bottom nav when keyboard opens)
+  if (page === 'chat') {
+    document.body.classList.add('on-chat-page');
+  } else {
+    document.body.classList.remove('on-chat-page');
+  }
 
   // Persist current section so reload returns to same tab
   try { sessionStorage.setItem('bz_page', page); } catch(e) {}
@@ -4541,7 +4560,8 @@ function closeNewsDetail() {
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    const navHeight = document.getElementById('bottom-nav')?.offsetHeight || 68;
+    const onChatPage = document.body.classList.contains('on-chat-page');
+    const navHeight = onChatPage ? 0 : (document.getElementById('bottom-nav')?.offsetHeight || 68);
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
       chatPage.style.top       = vvTop + 'px';
