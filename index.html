@@ -1791,10 +1791,12 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* Bottom nav stays visible at all times — even when keyboard is open.
-   Chat page always stops above the 68px nav. */
+/* Hide nav only while keyboard is open on chat page — chat fills full viewport */
+body.keyboard-open.on-chat-page #bottom-nav {
+  display: none;
+}
 body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 68px;
+  bottom: 0;
 }
 
 /* ===== NEWS PAGE ===== */
@@ -4540,11 +4542,10 @@ function closeNewsDetail() {
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    const navHeight = document.getElementById('bottom-nav')?.offsetHeight || 68;
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
       chatPage.style.top       = vvTop + 'px';
-      chatPage.style.height    = (vvHeight - navHeight) + 'px';
+      chatPage.style.height    = vvHeight + 'px';
       chatPage.style.bottom    = 'auto';
       chatPage.style.transform = 'translateX(-50%)';
       const msgs = document.getElementById('chat-messages');
