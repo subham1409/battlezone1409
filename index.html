@@ -1791,11 +1791,12 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open, chat page expands to fill viewport and nav hides */
-body.keyboard-open #bottom-nav {
+/* When keyboard is open on chat page, nav hides and chat fills viewport.
+   Scoped to .on-chat-page so navigating away always restores the nav. */
+body.keyboard-open.on-chat-page #bottom-nav {
   display: none;
 }
-body.keyboard-open #chat-page.active {
+body.keyboard-open.on-chat-page #chat-page.active {
   bottom: 0;
 }
 
@@ -3495,6 +3496,12 @@ function switchPage(page) {
   // Always clear keyboard-open state on page switch —
   // prevents nav from staying hidden if user navigated while keyboard was open
   document.body.classList.remove('keyboard-open');
+  // Track whether we're on chat so keyboard-open only hides the nav on chat page
+  if (page === 'chat') {
+    document.body.classList.add('on-chat-page');
+  } else {
+    document.body.classList.remove('on-chat-page');
+  }
   const _cp = document.getElementById('chat-page');
   if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
 
@@ -4542,11 +4549,16 @@ function closeNewsDetail() {
     clearTimeout(_kbTimer);
 
     if (open) {
+      // Only activate keyboard mode when the chat UI is in view
+      const overlay = document.getElementById('tchat-overlay');
+      const chatPage = document.getElementById('chat-page');
+      const isOnChatPage = chatPage && chatPage.classList.contains('active');
+      const isTchatOpen = overlay && overlay.classList.contains('open');
+      if (!isOnChatPage && !isTchatOpen) return; // keyboard on a different page — leave nav alone
+
       setKeyboardOpen(true);
 
       // ── Main chat page ────────────────────────────────────────────
-      const chatPage = document.getElementById('chat-page');
-      const isOnChatPage = chatPage && chatPage.classList.contains('active');
       if (isOnChatPage) {
         chatPage.style.top       = vvTop + 'px';
         chatPage.style.height    = vvHeight + 'px';
@@ -4557,8 +4569,7 @@ function closeNewsDetail() {
       if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
 
       // ── Tournament chat overlay ───────────────────────────────────
-      const overlay = document.getElementById('tchat-overlay');
-      if (overlay && overlay.classList.contains('open')) {
+      if (isTchatOpen) {
         overlay.style.top    = vvTop + 'px';
         overlay.style.height = vvHeight + 'px';
         overlay.style.bottom = 'auto';
@@ -4567,7 +4578,7 @@ function closeNewsDetail() {
       }
     } else {
       // Debounce slightly — iOS fires resize multiple times on close
-      _kbTimer = setTimeout(() => setKeyboardOpen(false), 80);
+      _kbTimer = setTimeout(() => setKeyboardOpen(false), 350);
     }
   }
 
@@ -4587,7 +4598,7 @@ function closeNewsDetail() {
         if (!window.visualViewport) { setKeyboardOpen(false); return; }
         const shrink = window.screen.height - window.visualViewport.height - window.visualViewport.offsetTop;
         if (shrink <= threshold) setKeyboardOpen(false);
-      }, 300);
+      }, 500);
     }
   }, true);
 })();
