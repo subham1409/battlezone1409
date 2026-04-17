@@ -1791,8 +1791,8 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open on chat page, nav hides and chat fills viewport.
-   Scoped to .on-chat-page so navigating away always restores the nav. */
+/* When keyboard is open, chat page expands to fill viewport and nav hides.
+   Requires .on-chat-page so navigating away always restores the nav. */
 body.keyboard-open.on-chat-page #bottom-nav {
   display: none;
 }
@@ -3493,15 +3493,10 @@ window.onload = async function() {
 
 // ========= NAVIGATION =========
 function switchPage(page) {
-  // Always clear keyboard-open state on page switch —
-  // prevents nav from staying hidden if user navigated while keyboard was open
+  // Always clear keyboard-open state on page switch
   document.body.classList.remove('keyboard-open');
-  // Track whether we're on chat so keyboard-open only hides the nav on chat page
-  if (page === 'chat') {
-    document.body.classList.add('on-chat-page');
-  } else {
-    document.body.classList.remove('on-chat-page');
-  }
+  // on-chat-page gates the nav-hiding CSS — only true when chat tab is active
+  document.body.classList.toggle('on-chat-page', page === 'chat');
   const _cp = document.getElementById('chat-page');
   if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
 
@@ -4511,7 +4506,6 @@ function closeNewsDetail() {
 (function() {
   let _kbOpen = false;
   let _kbTimer = null;
-  const threshold = 150;
 
   function setKeyboardOpen(open) {
     if (_kbOpen === open) return;
@@ -4521,7 +4515,6 @@ function closeNewsDetail() {
       document.body.classList.add('keyboard-open');
     } else {
       document.body.classList.remove('keyboard-open');
-      // Always restore #chat-page native styles when keyboard closes
       const chatPage = document.getElementById('chat-page');
       if (chatPage) {
         chatPage.style.top = '';
@@ -4529,7 +4522,6 @@ function closeNewsDetail() {
         chatPage.style.bottom = '';
         chatPage.style.transform = '';
       }
-      // Always restore #tchat-overlay native styles
       const overlay = document.getElementById('tchat-overlay');
       if (overlay) {
         overlay.style.top = '';
@@ -4539,66 +4531,67 @@ function closeNewsDetail() {
     }
   }
 
-  function onViewportResize() {
+  // ── Helper: is a chat input currently focused? ─────────────────────────────
+  function chatInputFocused() {
+    const a = document.activeElement;
+    return a && (a.id === 'chat-input' || a.id === 'tchat-input');
+  }
+
+  // ── Layout adjustment when keyboard is open ────────────────────────────────
+  function adjustLayout() {
     if (!window.visualViewport) return;
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
-    const shrink   = window.screen.height - vvHeight - vvTop;
-    const open     = shrink > threshold;
 
-    clearTimeout(_kbTimer);
-
-    if (open) {
-      // Only activate keyboard mode when the chat UI is in view
-      const overlay = document.getElementById('tchat-overlay');
-      const chatPage = document.getElementById('chat-page');
-      const isOnChatPage = chatPage && chatPage.classList.contains('active');
-      const isTchatOpen = overlay && overlay.classList.contains('open');
-      if (!isOnChatPage && !isTchatOpen) return; // keyboard on a different page — leave nav alone
-
-      setKeyboardOpen(true);
-
-      // ── Main chat page ────────────────────────────────────────────
-      if (isOnChatPage) {
-        chatPage.style.top       = vvTop + 'px';
-        chatPage.style.height    = vvHeight + 'px';
-        chatPage.style.bottom    = 'auto';
-        chatPage.style.transform = 'translateX(-50%)';
-      }
+    const chatPage = document.getElementById('chat-page');
+    if (chatPage && chatPage.classList.contains('active')) {
+      chatPage.style.top       = vvTop + 'px';
+      chatPage.style.height    = vvHeight + 'px';
+      chatPage.style.bottom    = 'auto';
+      chatPage.style.transform = 'translateX(-50%)';
       const msgs = document.getElementById('chat-messages');
       if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+    }
 
-      // ── Tournament chat overlay ───────────────────────────────────
-      if (isTchatOpen) {
-        overlay.style.top    = vvTop + 'px';
-        overlay.style.height = vvHeight + 'px';
-        overlay.style.bottom = 'auto';
-        const tmsgs = document.getElementById('tchat-messages');
-        if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
-      }
-    } else {
-      // Debounce slightly — iOS fires resize multiple times on close
-      _kbTimer = setTimeout(() => setKeyboardOpen(false), 350);
+    const overlay = document.getElementById('tchat-overlay');
+    if (overlay && overlay.classList.contains('open')) {
+      overlay.style.top    = vvTop + 'px';
+      overlay.style.height = vvHeight + 'px';
+      overlay.style.bottom = 'auto';
+      const tmsgs = document.getElementById('tchat-messages');
+      if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
     }
   }
 
+  // ── visualViewport: only used for layout, NOT for keyboard-open state ──────
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onViewportResize);
-    window.visualViewport.addEventListener('scroll', onViewportResize);
+    window.visualViewport.addEventListener('resize', function() {
+      // Only adjust layout while a chat input actually has focus.
+      // Ignores all the stray resize events that fire while the iOS keyboard
+      // is animating closed (Done pressed) — at that point activeElement is
+      // already body, so we skip and let the blur handler clean up.
+      if (chatInputFocused()) adjustLayout();
+    });
   }
 
-  // ── Blur fallback for iOS — fires when user taps "Done" / dismisses keyboard
-  // This catches cases where visualViewport doesn't fire reliably
-  document.addEventListener('focusout', function(e) {
-    const tag = e.target && e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      // Short delay so visualViewport can fire first; if it doesn't, we clean up
+  // ── Focus on a chat input → show keyboard state ────────────────────────────
+  document.addEventListener('focusin', function(e) {
+    if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
       clearTimeout(_kbTimer);
+      setKeyboardOpen(true);
+      adjustLayout();
+    }
+  }, true);
+
+  // ── Blur on a chat input → hide keyboard state (Done / navigate away) ──────
+  document.addEventListener('focusout', function(e) {
+    if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
+      clearTimeout(_kbTimer);
+      // Small delay: lets iOS re-focus the same input (e.g. emoji tap) without
+      // flickering, but fast enough that nav snaps back when Done is pressed.
       _kbTimer = setTimeout(() => {
-        if (!window.visualViewport) { setKeyboardOpen(false); return; }
-        const shrink = window.screen.height - window.visualViewport.height - window.visualViewport.offsetTop;
-        if (shrink <= threshold) setKeyboardOpen(false);
-      }, 500);
+        if (!chatInputFocused()) setKeyboardOpen(false);
+      }, 50);
     }
   }, true);
 })();
