@@ -2908,6 +2908,7 @@ function checkRegisteredChatAccess() {
   // Guests are blocked; any logged-in user can chat
   if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
+    clearPersistedRegisteredIds();
     updateChatAccessUI(false);
     renderTournaments();
     return;
@@ -2929,9 +2930,11 @@ function checkRegisteredChatAccess() {
       });
     });
     registeredTournamentIds = newIds;
+    persistRegisteredIds(); // Save so page reload keeps CHAT buttons
     renderTournaments();
   }).catch(() => {
-    registeredTournamentIds = new Set();
+    // Query failed (network or permissions) — keep whatever IDs we already have
+    // so players don't lose their CHAT buttons on transient errors
     renderTournaments();
   });
 }
@@ -2964,6 +2967,7 @@ function updateChatAccessUI(hasAccess) {
 
 function doLogout() {
   clearSession();
+  clearPersistedRegisteredIds();
   currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
   firebase.auth().signOut().catch(() => {});
   const authScr = document.getElementById('auth-screen');
@@ -3233,6 +3237,21 @@ let tournaments = []; // Now loaded from API
 let results = [];     // Now loaded from API
 let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered for
 
+// ── Persist registered tournament IDs so page reload doesn't reset them ──
+function persistRegisteredIds() {
+  try { localStorage.setItem('bz_reg_ids', JSON.stringify([...registeredTournamentIds])); } catch(e) {}
+}
+function loadPersistedRegisteredIds() {
+  try {
+    const raw = localStorage.getItem('bz_reg_ids');
+    if (raw) return new Set(JSON.parse(raw));
+  } catch(e) {}
+  return new Set();
+}
+function clearPersistedRegisteredIds() {
+  try { localStorage.removeItem('bz_reg_ids'); } catch(e) {}
+}
+
 // ========= API HELPERS =========
 async function apiFetch(path) {
   try {
@@ -3269,6 +3288,9 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // ── RESTORE REGISTERED IDS IMMEDIATELY so renders show correct CHAT buttons ──
+  registeredTournamentIds = loadPersistedRegisteredIds();
+
   // ── RESTORE SESSION FROM localStorage (prevents redirect on refresh) ──
   const savedSession = loadPersistedSession();
   if (savedSession) {
@@ -3809,6 +3831,7 @@ async function registerTeam() {
     document.getElementById('success-modal').classList.add('open');
     // Unlock chat immediately after registration
     registeredTournamentIds.add(currentDetail.id);
+    persistRegisteredIds(); // Persist so page reload keeps CHAT button
     renderTournaments();
     checkRegisteredChatAccess();
 
