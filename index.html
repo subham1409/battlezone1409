@@ -2322,10 +2322,6 @@ body.keyboard-open.on-chat-page #chat-page.active {
         <div class="pw-toggle" onclick="togglePw()" id="pw-toggle">👁</div>
       </div>
       <div class="pw-strength"><div class="pw-strength-fill" id="pw-bar"></div></div>
-      <label class="auth-label">BGMI Player ID <span class="optional-tag">Optional</span></label>
-      <div class="auth-input-wrap" style="margin-bottom:16px">
-        <input class="auth-input no-prefix" id="auth-bgmi" type="tel" maxlength="12" placeholder="e.g. 5561234567" style="padding:14px 16px">
-      </div>
       <button class="auth-submit-btn" onclick="authFinish()">🎮 ENTER THE ZONE</button>
       <div class="auth-phone-hint" style="margin-top:14px;text-align:center">Skip for now? <span style="color:var(--accent-orange);cursor:pointer;font-weight:600" onclick="authGuest()">Continue as Guest →</span></div>
     </div>
@@ -2489,27 +2485,6 @@ body.keyboard-open.on-chat-page #chat-page.active {
             </div>
           </div>
 
-          <!-- BGMI IDs -->
-          <div style="margin:4px 0 2px;padding:10px 12px;background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.1);border-radius:10px;">
-            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase;margin-bottom:10px;">🎮 Player BGMI IDs</div>
-            <div class="field-group" style="margin-bottom:10px">
-              <div class="form-label">Player 1 BGMI ID <span style="color:var(--accent-orange);font-size:9px;font-weight:700;letter-spacing:0.08em">(Captain)</span> <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="tel" class="form-input" placeholder="5561234567" id="p1-input" maxlength="12">
-            </div>
-            <div class="field-group" style="margin-bottom:10px">
-              <div class="form-label">Player 2 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="tel" class="form-input" placeholder="5569876543" id="p2-input" maxlength="12">
-            </div>
-            <div class="field-group" style="margin-bottom:10px">
-              <div class="form-label">Player 3 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="tel" class="form-input" placeholder="5564561234" id="p3-input" maxlength="12">
-            </div>
-            <div class="field-group">
-              <div class="form-label">Player 4 BGMI ID <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="tel" class="form-input" placeholder="5562348765" id="p4-input" maxlength="12">
-            </div>
-          </div>
-
           <button class="submit-btn" onclick="registerTeam()">⚡ Register Squad</button>
         </div>
       </div>
@@ -2574,7 +2549,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
       <div class="top-header" style="justify-content:center;text-align:center">
         <div class="page-brand-header">
           <div class="header-logo">⚔ BATTLEZONE</div>
-          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ news · latest updates &amp; announcements</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center"> news · latest updates &amp; announcements</div>
         </div>
       </div>
       <div id="news-list" style="padding-top:14px">
@@ -2590,7 +2565,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
       <div class="top-header" style="justify-content:center;text-align:center">
         <div class="page-brand-header">
           <div class="header-logo">⚔ BATTLEZONE</div>
-          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ results · match outcomes &amp; standings</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center"> results · match outcomes &amp; standings</div>
         </div>
       </div>
       <div class="results-filter">
@@ -2607,7 +2582,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
       <div class="top-header" style="justify-content:center;text-align:center">
         <div class="page-brand-header">
           <div class="header-logo">⚔ BATTLEZONE</div>
-          <div class="page-brand-sub" style="display:block;width:100%;text-align:center">~ my account · profile &amp; match history</div>
+          <div class="page-brand-sub" style="display:block;width:100%;text-align:center"> my account · profile &amp; match history</div>
         </div>
       </div>
       <div class="profile-hero">
@@ -2627,6 +2602,31 @@ body.keyboard-open.on-chat-page #chat-page.active {
       </div>
       <button class="edit-profile-btn" onclick="openEditProfile()">✏️ Edit Profile</button>
       <div style="height:20px"></div>
+
+      <!-- Social Floating Buttons -->
+      <div id="social-floats" style="display:flex;justify-content:center;gap:18px;padding:18px 0 28px;">
+        <!-- WhatsApp -->
+        <a href="https://wa.me/918849110467" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,211,102,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(37,211,102,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(37,211,102,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.533 5.858L.057 23.57a.75.75 0 00.916.916l5.712-1.476A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.525-5.388-1.437l-.386-.228-4.003 1.034 1.053-3.885-.25-.4A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#25D366;text-transform:uppercase">WhatsApp</span>
+        </a>
+        <!-- Instagram -->
+        <a href="https://www.instagram.com/battlezone.esportz?igsh=MXJlZDdiZ3Z4aWZqZQ==" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(220,39,67,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(220,39,67,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(220,39,67,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#e1306c;text-transform:uppercase">Instagram</span>
+        </a>
+        <!-- YouTube -->
+        <a href="https://youtube.com/@battle_zone_gamerz?si=QdcY5jfYCEaAaNJz" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FF0000,#CC0000);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(255,0,0,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(255,0,0,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(255,0,0,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#FF0000;text-transform:uppercase">YouTube</span>
+        </a>
+      </div>
     </div>
 
   </div><!-- end #content -->
@@ -2671,7 +2671,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
           <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
         </svg>
       </div>
-      <span>My Matches</span>
+      <span>My Account</span>
     </div>
   </nav>
 </div>
@@ -2684,10 +2684,6 @@ body.keyboard-open.on-chat-page #chat-page.active {
     <div class="edit-field">
       <div class="edit-field-label">Username</div>
       <input type="text" class="edit-field-input" id="ep-username" placeholder="Your gamer tag" maxlength="20">
-    </div>
-    <div class="edit-field">
-      <div class="edit-field-label">BGMI Player ID</div>
-      <input type="tel" class="edit-field-input" id="ep-bgmi" placeholder="e.g. 5561234567" maxlength="12">
     </div>
     <div class="edit-field">
       <div class="edit-field-label">New Password <span style="font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></div>
@@ -2899,7 +2895,7 @@ function applyLoggedInUser(userData, skipToast) {
   const initials = username.slice(0,2).toUpperCase();
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   const av = document.querySelector('.profile-avatar');
-  if (av) av.textContent = initials;  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
+  if (av) av.textContent = initials;  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
   if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
@@ -3142,7 +3138,7 @@ async function authFinish() {
   const username = document.getElementById('auth-username').value.trim();
   const pwEl = document.getElementById('auth-password');
   const password = pwEl ? pwEl.value : '';
-  const bgmiId = document.getElementById('auth-bgmi').value.trim();
+  const bgmiId = '';
 
   if (!phoneRaw || phoneRaw.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!username || username.length < 3) { showToast('⚠️ Username must be at least 3 characters'); return; }
@@ -3214,7 +3210,7 @@ async function authFinish() {
   const initials = username.slice(0,2).toUpperCase();
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   document.querySelector('.profile-avatar').textContent = initials;
-  document.querySelectorAll('.profile-id').forEach(el => el.textContent = bgmiId ? 'BGMI ID: ' + bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
+  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
   // Chat shows chatName, profile shows username
   const chatLabel = document.getElementById('chat-you-label');
   if (chatLabel) chatLabel.textContent = chatName;
@@ -3690,10 +3686,6 @@ function openDetail(id) {
   document.getElementById('phone2-input').value = '';
   document.getElementById('email1-input').value = '';
   document.getElementById('email2-input').value = '';
-  document.getElementById('p1-input').value = '';
-  document.getElementById('p2-input').value = '';
-  document.getElementById('p3-input').value = '';
-  document.getElementById('p4-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
 
@@ -3726,15 +3718,14 @@ async function registerTeam() {
   const phone2 = document.getElementById('phone2-input').value.trim();
   const email1 = document.getElementById('email1-input').value.trim();
   const email2 = document.getElementById('email2-input').value.trim();
-  const p1 = document.getElementById('p1-input').value.trim();
-  const p2 = document.getElementById('p2-input').value.trim();
-  const p3 = document.getElementById('p3-input').value.trim();
-  const p4 = document.getElementById('p4-input').value.trim();
+  const p1 = '';
+  const p2 = '';
+  const p3 = '';
+  const p4 = '';
 
   if (!name) { showToast('⚠️ Enter your team name'); return; }
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
-  if (!p1 || !p2 || !p3 || !p4) { showToast('⚠️ Enter all 4 BGMI Player IDs'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // Disable button to prevent double-submit
@@ -3744,10 +3735,9 @@ async function registerTeam() {
   try {
     // ── DUPLICATE CHECK ──────────────────────────────────────────────────
     // Check if this tournament already has a registration with matching
-    // email, phone number, or any of the 4 BGMI IDs
+    // email or phone number
     const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
     if (existingSnap.exists()) {
-      const submittedBgmiIds = [p1, p2, p3, p4].filter(Boolean);
       const submittedPhone = '+91' + phone1;
       const submittedEmail = email1.toLowerCase();
 
@@ -3768,15 +3758,6 @@ async function registerTeam() {
         if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) {
           dupReason = 'phone number';
           return;
-        }
-
-        // BGMI ID match — check submitted IDs against all registered players
-        const regPlayers = Array.isArray(r.players) ? r.players : [];
-        for (const bid of submittedBgmiIds) {
-          if (regPlayers.includes(bid)) {
-            dupReason = 'BGMI ID (' + bid + ')';
-            return;
-          }
         }
       });
 
@@ -3813,7 +3794,6 @@ async function registerTeam() {
       phone2:         phone2 ? '+91' + phone2 : '',
       email1:         email1,
       email2:         email2 || '',
-      players:        [p1, p2, p3, p4],
       registeredAt:   timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
     });
@@ -3849,10 +3829,6 @@ async function registerTeam() {
           phone2: phone2 ? '+91' + phone2 : '',
           email1: email1,
           email2: email2 || '',
-          bgmiId1: p1,
-          bgmiId2: p2,
-          bgmiId3: p3,
-          bgmiId4: p4,
           registeredAt: timeStr
         })
       }).catch(() => {});
@@ -4036,7 +4012,6 @@ function reportMsg(id) {
 // ========= EDIT PROFILE =========
 function openEditProfile() {
   document.getElementById('ep-username').value = currentUser.username || '';
-  document.getElementById('ep-bgmi').value = currentUser.bgmiId || '';
   document.getElementById('ep-password').value = '';
   document.getElementById('edit-profile-overlay').classList.add('open');
 }
@@ -4047,7 +4022,6 @@ function closeEditProfile() {
 
 async function saveProfile() {
   const newUsername = document.getElementById('ep-username').value.trim();
-  const newBgmi = document.getElementById('ep-bgmi').value.trim();
   const newPassword = document.getElementById('ep-password').value;
 
   if (!newUsername) { showToast('⚠️ Username cannot be empty'); return; }
@@ -4060,7 +4034,6 @@ async function saveProfile() {
     if (currentUser.email && !currentUser.isGuest) {
       const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
       const updates = { username: newUsername };
-      if (newBgmi) updates.bgmiId = newBgmi;
 
       // Update password in Firebase DB if provided
       if (newPassword && newPassword.length >= 6) {
@@ -4085,13 +4058,12 @@ async function saveProfile() {
     // Update local state
     currentUser.username = newUsername;
     currentUser.chatName = newUsername;
-    if (newBgmi) currentUser.bgmiId = newBgmi;
 
     // Update UI
     const initials = newUsername.slice(0,2).toUpperCase();
     document.querySelectorAll('.profile-username').forEach(el => el.textContent = newUsername);
     document.querySelector('.profile-avatar').textContent = initials;
-    document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.bgmiId ? 'BGMI ID: ' + currentUser.bgmiId : '⚠️ No BGMI ID — add one in Edit Profile');
+    document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
     const chatLabel = document.getElementById('chat-you-label');
     if (chatLabel) chatLabel.textContent = newUsername;
 
@@ -4116,7 +4088,7 @@ async function loadMyMatches() {
     if (av) av.textContent = '👤';
     document.querySelectorAll('.profile-username').forEach(el => el.textContent = 'Guest');
     document.querySelectorAll('.profile-id').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
-    // Hide edit button and BGMI ID for guests
+    // Hide edit button for guests
     const editBtn = document.querySelector('.edit-profile-btn');
     if (editBtn) editBtn.style.display = 'none';
     list.innerHTML = `
