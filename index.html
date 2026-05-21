@@ -3373,11 +3373,10 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
-  // ---- Load tournaments from Firebase ----
-  try {
-    const tSnap = await db.ref('tournaments').once('value');
+  // ---- Load tournaments from Firebase (real-time listener — fires on add/edit/delete) ----
+  db.ref('tournaments').on('value', snap => {
     const tArr = [];
-    tSnap.forEach(c => tArr.push({ _key: c.key, ...c.val() }));
+    snap.forEach(c => tArr.push({ _key: c.key, ...c.val() }));
     tArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
     if (tArr.length > 0) {
@@ -3388,19 +3387,16 @@ window.onload = async function() {
         date: t.date || '',
         time: t.time || '',
         matchSchedule: (() => {
-          // Firebase may store arrays as objects {0:{...}, 1:{...}} — handle both
           let sched = t.matchSchedule;
           if (sched && !Array.isArray(sched) && typeof sched === 'object') {
             sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
           }
           if (Array.isArray(sched) && sched.length > 0) return sched;
-          // Legacy fallback
           return [
             { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
             ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
           ].filter(m => m.time);
         })(),
-        // legacy compat
         match1Title: t.match1Title || 'Match 1',
         match1Time: t.match1Time || t.time || '',
         match2Title: t.match2Title || 'Match 2',
@@ -3408,41 +3404,30 @@ window.onload = async function() {
         map: t.map || t.game || '',
         fee: t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
-        slots: 0, // always start at 0, real count comes from registrationCounts
+        slots: 0,
         total: t.maxTeams || 25,
         status: mapTournamentStatus(t.status),
         prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [])
       }));
     } else {
-      tournaments = []; // No tournaments yet — show empty state
+      tournaments = [];
     }
-  } catch(e) {
-    console.warn('Firebase tournaments load failed:', e);
-    tournaments = [];
-  }
 
-  // ---- Load registrationCounts from Firebase — REAL slot count ----
-  // registrationCounts is the only source of truth for filled slots
-  try {
-    const rcSnap = await db.ref('registrationCounts').once('value');
-    if (rcSnap.exists()) {
-      rcSnap.forEach(child => {
-        const t = tournaments.find(x => x.id === child.key);
-        if (t) {
-          t.slots = Math.min(child.val() || 0, t.total);
-          if (t.slots >= t.total) t.status = 'full';
-        }
-      });
-    }
-  } catch(e) { console.warn('registrationCounts load failed:', e); }
+    // Apply current registration counts then render
+    db.ref('registrationCounts').once('value').then(rcSnap => {
+      if (rcSnap.exists()) {
+        rcSnap.forEach(child => {
+          const t = tournaments.find(x => x.id === child.key);
+          if (t) { t.slots = Math.min(child.val() || 0, t.total); if (t.slots >= t.total) t.status = 'full'; }
+        });
+      }
+      renderTournaments();
+    }).catch(() => renderTournaments());
+  });
 
-  // ---- Real-time listener: slot bar updates instantly across all devices ----
-  // Also handles deletions: resets all slots to 0 first, then applies current counts
+  // ---- Real-time slot bar updates (registration counts only, not tournaments) ----
   db.ref('registrationCounts').on('value', snap => {
-    // Always reset all tournament slots to 0 before applying fresh data
-    // This ensures deletions from Firebase console reflect immediately
     tournaments.forEach(t => { t.slots = 0; });
-
     if (snap.exists()) {
       snap.forEach(child => {
         const t = tournaments.find(x => x.id === child.key);
@@ -3450,16 +3435,10 @@ window.onload = async function() {
         t.slots = Math.min(child.val() || 0, t.total);
       });
     }
-
-    // Recompute status based on fresh slot counts
     tournaments.forEach(t => {
-      if (t.slots >= t.total) {
-        t.status = 'full';
-      } else if (t.status === 'full') {
-        t.status = 'open';
-      }
+      if (t.slots >= t.total) t.status = 'full';
+      else if (t.status === 'full') t.status = 'open';
     });
-
     renderTournaments();
     if (currentDetail) {
       const td = tournaments.find(x => x.id === currentDetail.id);
@@ -3508,7 +3487,7 @@ window.onload = async function() {
   // Chat — Firebase listener
   initFirebaseChat();
 
-  renderTournaments();
+  // NOTE: renderTournaments() is called by the db.ref('tournaments').on('value') listener above.
   renderResults();
 
   // ── RESTORE LAST SECTION (section persistence on reload) ──
@@ -3639,7 +3618,7 @@ function renderTournaments() {
               const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
               const cs = matchColors[mi % matchColors.length];
               const ic = matchIcons[mi % matchIcons.length];
-              const imgHtml = m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,0.12);flex-shrink:0;margin-left:4px" onerror="this.style.display='none'">` : '';
+              const imgHtml = m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:38px;height:32px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.15);flex-shrink:0;margin-left:6px;box-shadow:0 0 10px rgba(255,120,0,0.35)" onerror="this.style.display='none'">` : '';
               return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} · ${m.time}${imgHtml}</span>` : '';
             }).join('')}
           </div>
@@ -3699,7 +3678,7 @@ function openDetail(id) {
           <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:${c.titleColor};text-transform:uppercase;margin-bottom:3px">${(m.title||'Match '+(i+1)).toUpperCase()}</div>
           <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600">${m.time||'—'}</div>
         </div>
-        ${m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.15);flex-shrink:0" onerror="this.style.display='none'">` : `<div style="font-size:22px">${c.icon}</div>`}
+        ${m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:72px;height:56px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.18);flex-shrink:0;box-shadow:0 0 18px ${c.border},0 4px 18px rgba(0,0,0,0.5)" onerror="this.style.display='none'">` : `<div style="font-size:22px">${c.icon}</div>`}
       </div>`;
     }).join('');
   }
