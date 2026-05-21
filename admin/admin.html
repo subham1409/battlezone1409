@@ -659,29 +659,13 @@ body::after {
           </div>
         </div>
 
-        <!-- Match 1 & Match 2 Schedule -->
+        <!-- Dynamic Match Schedule -->
         <div style="background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px;padding:14px 16px;margin-bottom:12px">
-          <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase;margin-bottom:12px">⚔ Match Schedule (2 matches per tournament)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div class="field" style="margin-bottom:0">
-              <label>Match 1 Title</label>
-              <input type="text" id="t-match1-title" placeholder="e.g. Qualifier Round" maxlength="40">
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label>Match 1 Time *</label>
-              <input type="text" id="t-match1-time" placeholder="e.g. 8:00 PM IST" maxlength="40">
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase">⚔ Match Schedule</div>
+            <button type="button" onclick="addMatchRow()" style="background:rgba(0,255,157,0.12);border:1px solid rgba(0,255,157,0.3);color:var(--accent-green);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer">+ ADD MATCH</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="field" style="margin-bottom:0">
-              <label>Match 2 Title</label>
-              <input type="text" id="t-match2-title" placeholder="e.g. Grand Finals" maxlength="40">
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label>Match 2 Time <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
-              <input type="text" id="t-match2-time" placeholder="e.g. 9:30 PM IST" maxlength="40">
-            </div>
-          </div>
+          <div id="match-rows-container" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="field" style="margin-bottom:0">
@@ -711,31 +695,11 @@ body::after {
           <input type="text" id="t-room" placeholder="Room ID (shown only after registration)" maxlength="60">
         </div>
         <div class="field">
-          <label>Prize Distribution <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Shown on home screen tournament cards)</span></label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-            <div>
-              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥇 1st Place</div>
-              <input type="text" id="t-prize1" placeholder="e.g. ₹3,000" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥈 2nd Place</div>
-              <input type="text" id="t-prize2" placeholder="e.g. ₹1,500" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🥉 3rd Place</div>
-              <input type="text" id="t-prize3" placeholder="e.g. ₹500" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <label style="margin-bottom:0">Prize Distribution <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Shown on home screen tournament cards)</span></label>
+            <button type="button" onclick="addPrizeRow()" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:var(--accent-orange);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer;flex-shrink:0">+ ADD PLACE</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div>
-              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🏅 4th Place <span style="opacity:0.5">(optional)</span></div>
-              <input type="text" id="t-prize4" placeholder="e.g. ₹200" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:4px">🏅 5th Place <span style="opacity:0.5">(optional)</span></div>
-              <input type="text" id="t-prize5" placeholder="e.g. ₹100" maxlength="20" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none">
-            </div>
-          </div>
+          <div id="prize-rows-container" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
         <div class="field">
           <label>Description / Rules</label>
@@ -1060,6 +1024,7 @@ function doLogin() {
     loadTournamentPinDropdown();
     loadTournamentsAdmin();
     loadResultsAdmin();
+    initTournamentFormDefaults();
     showToast('✅ Welcome back, Admin!');
   } else {
     showToast('❌ Wrong credentials');
@@ -1384,29 +1349,132 @@ function updateStats() {
 let tourData = [];
 let editingTourId = null;
 
+// ── MATCH ROW HELPERS ──────────────────────────────────────────────────────
+let matchRowCount = 0;
+function addMatchRow(titleVal = '', timeVal = '', imgVal = '') {
+  matchRowCount++;
+  const n = matchRowCount;
+  const icons = ['🎯','🔥','⚡','💥','🎮','🏆'];
+  const icon = icons[(n - 1) % icons.length];
+  const container = document.getElementById('match-rows-container');
+  const div = document.createElement('div');
+  div.id = 'match-row-' + n;
+  div.style.cssText = 'display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:10px 12px';
+  div.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+      <div class="field" style="margin-bottom:0">
+        <label style="font-size:9px">${icon} Match ${n} Title</label>
+        <input type="text" id="t-match-title-${n}" placeholder="e.g. Qualifier Round" maxlength="40" value="${escHTML(titleVal)}">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label style="font-size:9px">⏰ Time</label>
+        <input type="text" id="t-match-time-${n}" placeholder="e.g. 8:00 PM IST" maxlength="40" value="${escHTML(timeVal)}">
+      </div>
+      <button type="button" onclick="removeMatchRow(${n})" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:8px 11px;border-radius:7px;cursor:pointer;margin-bottom:0;height:38px">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label style="font-size:9px">🖼️ Match Image URL <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:10px">(optional — shown right of match time)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="url" id="t-match-img-${n}" placeholder="https://i.imgur.com/... or imgbb link" maxlength="400" value="${escHTML(imgVal)}" oninput="previewMatchImg(${n})" style="flex:1">
+        <img id="t-match-img-preview-${n}" src="" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:${imgVal ? 'block' : 'none'}" onerror="this.style.display='none'">
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+function removeMatchRow(n) {
+  const el = document.getElementById('match-row-' + n);
+  if (el) el.remove();
+}
+function getMatchSchedule() {
+  const rows = document.querySelectorAll('#match-rows-container > div');
+  const matches = [];
+  rows.forEach(row => {
+    const n = row.id.replace('match-row-', '');
+    const title    = (document.getElementById('t-match-title-' + n) || {}).value?.trim() || '';
+    const time     = (document.getElementById('t-match-time-' + n) || {}).value?.trim() || '';
+    const imageUrl = (document.getElementById('t-match-img-' + n) || {}).value?.trim() || '';
+    if (title || time) matches.push({ title: title || 'Match ' + (matches.length + 1), time, imageUrl });
+  });
+  return matches;
+}
+function clearMatchRows() {
+  document.getElementById('match-rows-container').innerHTML = '';
+  matchRowCount = 0;
+}
+
+function previewMatchImg(n) {
+  const url = (document.getElementById('t-match-img-' + n) || {}).value?.trim() || '';
+  const preview = document.getElementById('t-match-img-preview-' + n);
+  if (preview) {
+    if (url) { preview.src = url; preview.style.display = 'block'; }
+    else { preview.style.display = 'none'; }
+  }
+}
+
+// ── PRIZE ROW HELPERS ──────────────────────────────────────────────────────
+let prizeRowCount = 0;
+const PRIZE_ICONS = ['🥇','🥈','🥉','🏅','🏅'];
+const PRIZE_LABELS = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
+const PRIZE_PLACEHOLDERS = ['e.g. ₹3,000','e.g. ₹1,500','e.g. ₹500','e.g. ₹200','e.g. ₹100'];
+function addPrizeRow(val = '') {
+  prizeRowCount++;
+  const n = prizeRowCount;
+  const icon = PRIZE_ICONS[n - 1] || '🏅';
+  const label = PRIZE_LABELS[n - 1] || (n + 'th Place');
+  const ph = PRIZE_PLACEHOLDERS[n - 1] || 'e.g. ₹50';
+  const container = document.getElementById('prize-rows-container');
+  const div = document.createElement('div');
+  div.id = 'prize-row-' + n;
+  div.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px 12px';
+  div.innerHTML = `
+    <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;min-width:80px">${icon} ${label}</div>
+    <input type="text" id="t-prize-val-${n}" placeholder="${ph}" maxlength="20" value="${escHTML(val)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%">
+    ${n > 1 ? `<button type="button" onclick="removePrizeRow(${n})" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>` : '<div style="width:34px"></div>'}`;
+  container.appendChild(div);
+}
+function removePrizeRow(n) {
+  const el = document.getElementById('prize-row-' + n);
+  if (el) el.remove();
+}
+function getPrizeList() {
+  const rows = document.querySelectorAll('#prize-rows-container > div');
+  const prizes = [];
+  rows.forEach(row => {
+    const n = row.id.replace('prize-row-', '');
+    const val = (document.getElementById('t-prize-val-' + n) || {}).value?.trim() || '';
+    if (val) prizes.push(val);
+  });
+  return prizes;
+}
+function clearPrizeRows() {
+  document.getElementById('prize-rows-container').innerHTML = '';
+  prizeRowCount = 0;
+}
+// Initialise form with 2 match rows + 3 prize rows on load
+function initTournamentFormDefaults() {
+  clearMatchRows(); addMatchRow(); addMatchRow();
+  clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
+}
+
 async function submitTournament() {
   if (!tournamentsRef) { showToast('❌ Firebase not connected'); return; }
   const name = document.getElementById('t-name').value.trim();
   if (!name) { showToast('⚠️ Tournament name required'); return; }
 
-  // Build prizeList array from prize1–prize5 fields
-  const prizeList = [
-    document.getElementById('t-prize1').value.trim(),
-    document.getElementById('t-prize2').value.trim(),
-    document.getElementById('t-prize3').value.trim(),
-    document.getElementById('t-prize4').value.trim(),
-    document.getElementById('t-prize5').value.trim(),
-  ].filter(p => p !== '');
+  const matchSchedule = getMatchSchedule();
+  const prizeList = getPrizeList();
 
   const payload = {
     name,
     map: document.getElementById('t-map').value.trim(),
     date: document.getElementById('t-date').value.trim(),
     time: document.getElementById('t-time').value.trim(),
-    match1Title: document.getElementById('t-match1-title').value.trim() || 'Match 1',
-    match1Time:  document.getElementById('t-match1-time').value.trim(),
-    match2Title: document.getElementById('t-match2-title').value.trim() || 'Match 2',
-    match2Time:  document.getElementById('t-match2-time').value.trim(),
+    matchSchedule,
+    // Keep legacy fields for backward compat
+    match1Title: matchSchedule[0]?.title || '',
+    match1Time:  matchSchedule[0]?.time || '',
+    match2Title: matchSchedule[1]?.title || '',
+    match2Time:  matchSchedule[1]?.time || '',
     prize: document.getElementById('t-prize').value.trim(),
     entryFee: document.getElementById('t-entry').value.trim(),
     maxTeams: parseInt(document.getElementById('t-maxteams').value) || 0,
@@ -1414,7 +1482,7 @@ async function submitTournament() {
     status: document.getElementById('t-status').value,
     roomId: document.getElementById('t-room').value.trim(),
     description: document.getElementById('t-desc').value.trim(),
-    prizeList: prizeList,
+    prizeList,
     ts: Date.now()
   };
   const btn = document.getElementById('t-submit-btn');
@@ -1435,12 +1503,12 @@ async function submitTournament() {
 }
 
 function resetTournamentForm() {
-  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc',
-   't-prize1','t-prize2','t-prize3','t-prize4','t-prize5',
-   't-match1-title','t-match1-time','t-match2-title','t-match2-time'].forEach(id => {
+  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('t-status').value = 'UPCOMING';
+  clearMatchRows(); addMatchRow(); addMatchRow();
+  clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
 function editTournament(id) {
@@ -1457,15 +1525,24 @@ function editTournament(id) {
   document.getElementById('t-status').value     = t.status || 'UPCOMING';
   document.getElementById('t-room').value       = t.roomId || '';
   document.getElementById('t-desc').value       = t.description || '';
-  document.getElementById('t-match1-title').value = t.match1Title || '';
-  document.getElementById('t-match1-time').value  = t.match1Time || '';
-  document.getElementById('t-match2-title').value = t.match2Title || '';
-  document.getElementById('t-match2-time').value  = t.match2Time || '';
+
+  // Fill match schedule — prefer new array, fall back to legacy fields
+  clearMatchRows();
+  const sched = Array.isArray(t.matchSchedule) && t.matchSchedule.length > 0
+    ? t.matchSchedule
+    : [
+        { title: t.match1Title || '', time: t.match1Time || '' },
+        { title: t.match2Title || '', time: t.match2Time || '' }
+      ].filter(m => m.title || m.time);
+  if (sched.length === 0) { addMatchRow(); addMatchRow(); }
+  else sched.forEach(m => addMatchRow(m.title || '', m.time || '', m.imageUrl || ''));
+
   // Fill prize distribution
+  clearPrizeRows();
   const pl = t.prizeList || [];
-  ['t-prize1','t-prize2','t-prize3','t-prize4','t-prize5'].forEach((fid, i) => {
-    const el = document.getElementById(fid); if (el) el.value = pl[i] || '';
-  });
+  if (pl.length === 0) { addPrizeRow(); addPrizeRow(); addPrizeRow(); }
+  else pl.forEach(v => addPrizeRow(v));
+
   document.getElementById('t-form-title').textContent = 'Edit Tournament';
   document.getElementById('t-submit-btn').textContent  = '✏️ Update Tournament';
   document.getElementById('t-cancel-btn').style.display = 'inline-block';

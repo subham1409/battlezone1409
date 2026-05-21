@@ -2409,22 +2409,8 @@ body.keyboard-open.on-chat-page #chat-page.active {
           </div>
         </div>
         <!-- Match Schedule Grid -->
-        <div id="d-schedule" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-          <div style="background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.15);border-radius:10px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--accent-green);text-transform:uppercase;margin-bottom:3px" id="d-match1-title">MATCH 1</div>
-              <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600" id="d-match1-time">8:00 PM IST</div>
-            </div>
-            <div style="font-size:22px">🎯</div>
-          </div>
-          <div id="d-match2-wrap" style="background:rgba(255,120,0,0.06);border:1px solid rgba(255,120,0,0.15);border-radius:10px;padding:11px 14px;display:none;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:3px" id="d-match2-title">MATCH 2</div>
-              <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600" id="d-match2-time">9:30 PM IST</div>
-            </div>
-            <div style="font-size:22px">🔥</div>
-          </div>
-        </div>
+        <!-- Match Schedule — rendered dynamically -->
+        <div id="d-schedule" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
         <button class="rules-toggle" onclick="toggleRules()">
           <span>📋 Match Rules</span>
           <span id="rules-arrow">▼</span>
@@ -3401,6 +3387,20 @@ window.onload = async function() {
         name: t.name || '',
         date: t.date || '',
         time: t.time || '',
+        matchSchedule: (() => {
+          // Firebase may store arrays as objects {0:{...}, 1:{...}} — handle both
+          let sched = t.matchSchedule;
+          if (sched && !Array.isArray(sched) && typeof sched === 'object') {
+            sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
+          }
+          if (Array.isArray(sched) && sched.length > 0) return sched;
+          // Legacy fallback
+          return [
+            { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
+            ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
+          ].filter(m => m.time);
+        })(),
+        // legacy compat
         match1Title: t.match1Title || 'Match 1',
         match1Time: t.match1Time || t.time || '',
         match2Title: t.match2Title || 'Match 2',
@@ -3594,6 +3594,10 @@ function renderTournaments() {
     if (pl.length > 0) {
       const rankIcons = ['🥇','🥈','🥉','🏅','🏅'];
       const posLabels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
+      const ordinal = n => {
+        const s = ['th','st','nd','rd'], v = n % 100;
+        return n + (s[(v-20)%10] || s[v] || s[0]) + ' Place';
+      };
       prizeListHTML = `
       <div class="prize-list-section">
         <div class="prize-list-header">🏆 Prize Distribution</div>
@@ -3606,7 +3610,7 @@ function renderTournaments() {
           ${pl.map((p, i) => `
           <div class="prize-list-row">
             <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
-            <div class="prize-list-pos">${posLabels[i] || (i+1)+'th Place'}</div>
+            <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
             <div class="prize-list-amount">${p}</div>
           </div>`).join('')}
         </div>
@@ -3624,10 +3628,20 @@ function renderTournaments() {
             <span>🗺 ${t.map}</span>
           </div>
           <div class="tournament-meta" style="margin-top:5px;gap:6px;flex-direction:column;align-items:flex-start">
-            <span style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);border-radius:5px;padding:2px 7px;color:var(--accent-green);font-size:10px">
-              🎯 ${t.match1Title || 'Match 1'} · ${t.match1Time || t.time || '—'}
-            </span>
-            ${t.match2Time ? `<span style="background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);border-radius:5px;padding:2px 7px;color:var(--accent-orange);font-size:10px">🔥 ${t.match2Title || 'Match 2'} · ${t.match2Time}</span>` : ''}
+            ${(t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).map((m, mi) => {
+              const matchColors = [
+                'background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);color:var(--accent-green)',
+                'background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);color:var(--accent-orange)',
+                'background:rgba(100,149,237,0.08);border:1px solid rgba(100,149,237,0.18);color:#6495ed',
+                'background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);color:#ffd700',
+                'background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.18);color:#ff6464',
+              ];
+              const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
+              const cs = matchColors[mi % matchColors.length];
+              const ic = matchIcons[mi % matchIcons.length];
+              const imgHtml = m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,0.12);flex-shrink:0;margin-left:4px" onerror="this.style.display='none'">` : '';
+              return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} · ${m.time}${imgHtml}</span>` : '';
+            }).join('')}
           </div>
         </div>
         <div class="prize-label">
@@ -3667,18 +3681,27 @@ function openDetail(id) {
   document.getElementById('d-map').textContent = '🗺 ' + t.map;
   document.getElementById('d-date').textContent = t.date;
 
-  // Match 1
-  document.getElementById('d-match1-title').textContent = (t.match1Title || 'Match 1').toUpperCase();
-  document.getElementById('d-match1-time').textContent = t.match1Time || t.time || '—';
-
-  // Match 2 — only show if time is set
-  const m2wrap = document.getElementById('d-match2-wrap');
-  if (t.match2Time) {
-    document.getElementById('d-match2-title').textContent = (t.match2Title || 'Match 2').toUpperCase();
-    document.getElementById('d-match2-time').textContent = t.match2Time;
-    m2wrap.style.display = 'flex';
-  } else {
-    m2wrap.style.display = 'none';
+  // Match Schedule — render all matches dynamically
+  const scheduleEl = document.getElementById('d-schedule');
+  if (scheduleEl) {
+    const matchColors = [
+      { bg: 'rgba(0,255,157,0.06)', border: 'rgba(0,255,157,0.15)', titleColor: 'var(--accent-green)', icon: '🎯' },
+      { bg: 'rgba(255,120,0,0.06)', border: 'rgba(255,120,0,0.15)', titleColor: 'var(--accent-orange)', icon: '🔥' },
+      { bg: 'rgba(100,149,237,0.06)', border: 'rgba(100,149,237,0.15)', titleColor: '#6495ed', icon: '⚡' },
+      { bg: 'rgba(255,215,0,0.06)', border: 'rgba(255,215,0,0.15)', titleColor: '#ffd700', icon: '💥' },
+      { bg: 'rgba(200,100,255,0.06)', border: 'rgba(200,100,255,0.15)', titleColor: '#c864ff', icon: '🎮' },
+    ];
+    const sched = t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : [];
+    scheduleEl.innerHTML = sched.map((m, i) => {
+      const c = matchColors[i % matchColors.length];
+      return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:${c.titleColor};text-transform:uppercase;margin-bottom:3px">${(m.title||'Match '+(i+1)).toUpperCase()}</div>
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600">${m.time||'—'}</div>
+        </div>
+        ${m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.15);flex-shrink:0" onerror="this.style.display='none'">` : `<div style="font-size:22px">${c.icon}</div>`}
+      </div>`;
+    }).join('');
   }
 
   document.getElementById('team-name-input').value = '';
