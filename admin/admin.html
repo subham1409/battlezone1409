@@ -1036,6 +1036,7 @@ function doLogout() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('admin-app').classList.remove('visible');
   document.getElementById('login-pass').value = '';
+  _tourAdminListenerOn = false;
   showToast('👋 Logged out');
 }
 
@@ -1045,7 +1046,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   event.currentTarget.classList.add('active');
-  if (tab === 'tournaments') loadTournamentsAdmin();
+  // tournaments list is kept live by real-time Firebase listener — no reload needed
   if (tab === 'results') loadResultsAdmin();
   if (tab === 'chat') { loadChatAdmin(); loadPinnedMessageAdmin(); loadTournamentPinDropdown(); }
   if (tab === 'registrations') loadRegistrationsAdmin();
@@ -1358,7 +1359,7 @@ function addMatchRow(titleVal = '', timeVal = '', imgVal = '') {
   const icon = icons[(n - 1) % icons.length];
   const container = document.getElementById('match-rows-container');
   const div = document.createElement('div');
-  div.id = 'match-row-' + n;
+  div.dataset.rowId = n;  // use data attribute — never rely on id for lookup
   div.style.cssText = 'display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:10px 12px';
   div.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
@@ -1370,45 +1371,25 @@ function addMatchRow(titleVal = '', timeVal = '', imgVal = '') {
         <label style="font-size:9px">⏰ Time</label>
         <input type="text" id="t-match-time-${n}" placeholder="e.g. 8:00 PM IST" maxlength="40" value="${escHTML(timeVal)}">
       </div>
-      <button type="button" onclick="removeMatchRow(${n})" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:8px 11px;border-radius:7px;cursor:pointer;margin-bottom:0;height:38px">✕</button>
+      <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:8px 11px;border-radius:7px;cursor:pointer;margin-bottom:0;height:38px">✕</button>
     </div>
     <div class="field" style="margin-bottom:0">
-      <label style="font-size:9px">🖼️ Match Image URL <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:10px">(optional — shown right of match time)</span></label>
+      <label style="font-size:9px">🖼️ Match Image URL <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="url" id="t-match-img-${n}" placeholder="https://i.imgur.com/... or imgbb link" maxlength="400" value="${escHTML(imgVal)}" oninput="previewMatchImg(${n})" style="flex:1">
+        <input type="url" id="t-match-img-${n}" placeholder="https://i.imgur.com/..." maxlength="400" value="${escHTML(imgVal)}" oninput="previewMatchImg(${n})" style="flex:1">
         <img id="t-match-img-preview-${n}" src="" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:${imgVal ? 'block' : 'none'}" onerror="this.style.display='none'">
       </div>
     </div>`;
   container.appendChild(div);
 }
-function removeMatchRow(n) {
-  const el = document.getElementById('match-row-' + n);
-  if (el) el.remove();
-}
-function getMatchSchedule() {
-  const rows = document.querySelectorAll('#match-rows-container > div');
-  const matches = [];
-  rows.forEach(row => {
-    const n = row.id.replace('match-row-', '');
-    const title    = (document.getElementById('t-match-title-' + n) || {}).value?.trim() || '';
-    const time     = (document.getElementById('t-match-time-' + n) || {}).value?.trim() || '';
-    const imageUrl = (document.getElementById('t-match-img-' + n) || {}).value?.trim() || '';
-    if (title || time) matches.push({ title: title || 'Match ' + (matches.length + 1), time, imageUrl });
-  });
-  return matches;
-}
 function clearMatchRows() {
   document.getElementById('match-rows-container').innerHTML = '';
   matchRowCount = 0;
 }
-
 function previewMatchImg(n) {
   const url = (document.getElementById('t-match-img-' + n) || {}).value?.trim() || '';
   const preview = document.getElementById('t-match-img-preview-' + n);
-  if (preview) {
-    if (url) { preview.src = url; preview.style.display = 'block'; }
-    else { preview.style.display = 'none'; }
-  }
+  if (preview) { preview.src = url; preview.style.display = url ? 'block' : 'none'; }
 }
 
 // ── PRIZE ROW HELPERS ──────────────────────────────────────────────────────
@@ -1424,27 +1405,13 @@ function addPrizeRow(val = '') {
   const ph = PRIZE_PLACEHOLDERS[n - 1] || 'e.g. ₹50';
   const container = document.getElementById('prize-rows-container');
   const div = document.createElement('div');
-  div.id = 'prize-row-' + n;
+  div.dataset.rowId = n;  // use data attribute
   div.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px 12px';
   div.innerHTML = `
     <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;min-width:80px">${icon} ${label}</div>
     <input type="text" id="t-prize-val-${n}" placeholder="${ph}" maxlength="20" value="${escHTML(val)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%">
-    ${n > 1 ? `<button type="button" onclick="removePrizeRow(${n})" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>` : '<div style="width:34px"></div>'}`;
+    <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>`;
   container.appendChild(div);
-}
-function removePrizeRow(n) {
-  const el = document.getElementById('prize-row-' + n);
-  if (el) el.remove();
-}
-function getPrizeList() {
-  const rows = document.querySelectorAll('#prize-rows-container > div');
-  const prizes = [];
-  rows.forEach(row => {
-    const n = row.id.replace('prize-row-', '');
-    const val = (document.getElementById('t-prize-val-' + n) || {}).value?.trim() || '';
-    if (val) prizes.push(val);
-  });
-  return prizes;
 }
 function clearPrizeRows() {
   document.getElementById('prize-rows-container').innerHTML = '';
@@ -1461,45 +1428,69 @@ async function submitTournament() {
   const name = document.getElementById('t-name').value.trim();
   if (!name) { showToast('⚠️ Tournament name required'); return; }
 
-  const matchSchedule = getMatchSchedule();
-  const prizeList = getPrizeList();
+  // Collect match schedule — filter only rows with at least a title or time
+  const matchSchedule = [];
+  document.querySelectorAll('#match-rows-container > div').forEach(row => {
+    const n = row.dataset.rowId;
+    const title = (document.getElementById('t-match-title-' + n) || {}).value?.trim() || '';
+    const time  = (document.getElementById('t-match-time-'  + n) || {}).value?.trim() || '';
+    const img   = (document.getElementById('t-match-img-'   + n) || {}).value?.trim() || '';
+    if (title || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), time, imageUrl: img });
+  });
 
+  // Collect prize list
+  const prizeList = [];
+  document.querySelectorAll('#prize-rows-container > div').forEach(row => {
+    const n = row.dataset.rowId;
+    const val = (document.getElementById('t-prize-val-' + n) || {}).value?.trim() || '';
+    if (val) prizeList.push(val);
+  });
+
+  // Build payload — never store empty arrays (Firebase drops them anyway, but be explicit)
   const payload = {
     name,
-    map: document.getElementById('t-map').value.trim(),
-    date: document.getElementById('t-date').value.trim(),
-    time: document.getElementById('t-time').value.trim(),
-    matchSchedule,
-    // Keep legacy fields for backward compat
-    match1Title: matchSchedule[0]?.title || '',
-    match1Time:  matchSchedule[0]?.time || '',
-    match2Title: matchSchedule[1]?.title || '',
-    match2Time:  matchSchedule[1]?.time || '',
-    prize: document.getElementById('t-prize').value.trim(),
-    entryFee: document.getElementById('t-entry').value.trim(),
-    maxTeams: parseInt(document.getElementById('t-maxteams').value) || 0,
-    slotsLeft: parseInt(document.getElementById('t-slots').value) || 0,
-    status: document.getElementById('t-status').value,
-    roomId: document.getElementById('t-room').value.trim(),
+    map:         document.getElementById('t-map').value.trim(),
+    date:        document.getElementById('t-date').value.trim(),
+    time:        document.getElementById('t-time').value.trim(),
+    prize:       document.getElementById('t-prize').value.trim(),
+    entryFee:    document.getElementById('t-entry').value.trim(),
+    maxTeams:    parseInt(document.getElementById('t-maxteams').value) || 25,
+    slotsLeft:   parseInt(document.getElementById('t-slots').value)    || 0,
+    status:      document.getElementById('t-status').value || 'UPCOMING',
+    roomId:      document.getElementById('t-room').value.trim(),
     description: document.getElementById('t-desc').value.trim(),
-    prizeList,
     ts: Date.now()
   };
+  // Only add arrays if non-empty (Firebase silently drops empty arrays)
+  if (matchSchedule.length > 0) {
+    payload.matchSchedule = matchSchedule;
+    payload.match1Title   = matchSchedule[0]?.title || '';
+    payload.match1Time    = matchSchedule[0]?.time  || '';
+    payload.match2Title   = matchSchedule[1]?.title || '';
+    payload.match2Time    = matchSchedule[1]?.time  || '';
+  }
+  if (prizeList.length > 0) payload.prizeList = prizeList;
+
   const btn = document.getElementById('t-submit-btn');
   btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
   try {
     if (editingTourId) {
       await tournamentsRef.child(editingTourId).update(payload);
       showToast('✅ Tournament updated!');
       cancelEditTournament();
     } else {
-      await tournamentsRef.push(payload);
-      showToast('🚀 Tournament added!');
+      const ref = await tournamentsRef.push(payload);
+      showToast('🚀 Tournament added! ID: ' + ref.key);
       resetTournamentForm();
     }
-    loadTournamentsAdmin();
-  } catch(e) { showToast('❌ ' + e.message); }
+  } catch(e) {
+    console.error('submitTournament error:', e);
+    showToast('❌ Save failed: ' + e.message);
+    alert('Firebase save error: ' + e.message + '\n\nCheck browser console for details.');
+  }
   btn.disabled = false;
+  btn.textContent = editingTourId ? '✏️ Update Tournament' : '⚡ Save Tournament';
 }
 
 function resetTournamentForm() {
@@ -1565,22 +1556,28 @@ function deleteTournament(id) {
 }
 async function confirmDeleteTournament() {
   if (!deleteTourId) return;
-  try { await tournamentsRef.child(deleteTourId).remove(); showToast('🗑 Deleted'); loadTournamentsAdmin(); } catch(e) { showToast('❌ ' + e.message); }
+  try { await tournamentsRef.child(deleteTourId).remove(); showToast('🗑 Deleted'); } catch(e) { showToast('❌ ' + e.message); }
   deleteTourId = null;
   document.getElementById('delete-modal').classList.remove('open');
   document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore
 }
 
+let _tourAdminListenerOn = false;
 function loadTournamentsAdmin() {
   if (!tournamentsRef) return;
+  // Only attach the real-time listener ONCE — it stays alive and auto-updates
+  if (_tourAdminListenerOn) return;
+  _tourAdminListenerOn = true;
   const list = document.getElementById('tournament-admin-list');
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
-  tournamentsRef.once('value', snap => {
+  tournamentsRef.on('value', snap => {
     tourData = [];
     snap.forEach(c => tourData.push({ id: c.key, ...c.val() }));
     tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    console.log('[BZ-ADMIN] tournaments snapshot — count:', tourData.length, tourData.map(t=>t.name));
     renderTournamentsAdmin();
   }, err => {
+    _tourAdminListenerOn = false; // allow retry on error
     list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
   });
 }

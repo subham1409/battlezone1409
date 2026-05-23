@@ -3373,78 +3373,82 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
-  // ---- Load tournaments from Firebase (real-time listener — fires on add/edit/delete) ----
-  db.ref('tournaments').on('value', snap => {
-    const tArr = [];
-    snap.forEach(c => tArr.push({ _key: c.key, ...c.val() }));
-    tArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-
-    if (tArr.length > 0) {
-      tournaments = tArr.map((t, i) => ({
+  // ---- Tournaments: single real-time listener, no duplicates ----
+  (function() {
+    // Parse a Firebase tournament record into the app's tournament object
+    function parseTournament(t, i, regCounts) {
+      let sched = t.matchSchedule;
+      if (sched && !Array.isArray(sched) && typeof sched === 'object') {
+        sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
+      }
+      if (!Array.isArray(sched) || sched.length === 0) {
+        sched = [
+          { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
+          ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
+        ].filter(m => m.time);
+      }
+      const total  = t.maxTeams || 25;
+      const slots  = Math.min((regCounts || {})[t._key] || 0, total);
+      const status = slots >= total ? 'full' : mapTournamentStatus(t.status);
+      return {
         id: t._key,
-        num: t.num || ('MATCH #' + String(i + 1).padStart(2, '0')),
+        num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
         name: t.name || '',
         date: t.date || '',
         time: t.time || '',
-        matchSchedule: (() => {
-          let sched = t.matchSchedule;
-          if (sched && !Array.isArray(sched) && typeof sched === 'object') {
-            sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
-          }
-          if (Array.isArray(sched) && sched.length > 0) return sched;
-          return [
-            { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
-            ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
-          ].filter(m => m.time);
-        })(),
+        matchSchedule: sched,
         match1Title: t.match1Title || 'Match 1',
-        match1Time: t.match1Time || t.time || '',
+        match1Time:  t.match1Time  || t.time || '',
         match2Title: t.match2Title || 'Match 2',
-        match2Time: t.match2Time || '',
-        map: t.map || t.game || '',
-        fee: t.entryFee || t.fee || 'FREE',
+        match2Time:  t.match2Time  || '',
+        map:   t.map   || t.game   || '',
+        fee:   t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
-        slots: 0,
-        total: t.maxTeams || 25,
-        status: mapTournamentStatus(t.status),
+        slots, total, status,
         prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [])
-      }));
-    } else {
-      tournaments = [];
+      };
     }
 
-    // Apply current registration counts then render
-    db.ref('registrationCounts').once('value').then(rcSnap => {
-      if (rcSnap.exists()) {
-        rcSnap.forEach(child => {
-          const t = tournaments.find(x => x.id === child.key);
-          if (t) { t.slots = Math.min(child.val() || 0, t.total); if (t.slots >= t.total) t.status = 'full'; }
-        });
-      }
-      renderTournaments();
-    }).catch(() => renderTournaments());
-  });
+    let _regCounts  = {};
+    let _tourRaw    = [];   // raw Firebase records, updated by listener
+    let _listenersOn = false;
 
-  // ---- Real-time slot bar updates (registration counts only, not tournaments) ----
-  db.ref('registrationCounts').on('value', snap => {
-    tournaments.forEach(t => { t.slots = 0; });
-    if (snap.exists()) {
-      snap.forEach(child => {
-        const t = tournaments.find(x => x.id === child.key);
-        if (!t) return;
-        t.slots = Math.min(child.val() || 0, t.total);
+    function applyAndRender() {
+      tournaments = _tourRaw.map((t, i) => parseTournament(t, i, _regCounts));
+      renderTournaments();
+    }
+
+    function attachListeners() {
+      if (_listenersOn) return;
+      _listenersOn = true;
+
+      // Tournament listener — fires on every add / edit / delete
+      db.ref('tournaments').on('value', snap => {
+        _tourRaw = [];
+        snap.forEach(c => _tourRaw.push({ _key: c.key, ...c.val() }));
+        _tourRaw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        console.log('[BZ] tournaments snapshot — count:', _tourRaw.length, _tourRaw.map(t=>t.name));
+        applyAndRender();
+      }, err => {
+        console.error('[BZ] tournaments listener error:', err);
+        _listenersOn = false;
+      });
+
+      // Registration counts listener — only updates slot numbers
+      db.ref('registrationCounts').on('value', snap => {
+        _regCounts = {};
+        if (snap.exists()) snap.forEach(c => { _regCounts[c.key] = c.val() || 0; });
+        applyAndRender();
+        if (currentDetail) {
+          const td = tournaments.find(x => x.id === currentDetail.id);
+          const el = document.getElementById('d-slots');
+          if (td && el) el.textContent = td.slots + '/' + td.total;
+        }
       });
     }
-    tournaments.forEach(t => {
-      if (t.slots >= t.total) t.status = 'full';
-      else if (t.status === 'full') t.status = 'open';
-    });
-    renderTournaments();
-    if (currentDetail) {
-      const td = tournaments.find(x => x.id === currentDetail.id);
-      if (td) document.getElementById('d-slots').textContent = td.slots + '/' + td.total;
-    }
-  });
+
+    attachListeners();
+  })();
 
   // ---- Load results from Firebase ----
   try {
