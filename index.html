@@ -3413,20 +3413,31 @@ window.onload = async function() {
       };
     }
 
-    // Single listener — no pre-fetching, no ordering index needed
-    db.ref('tournaments').on('value', snap => {
+    // Direct fetch first — guaranteed fresh data, no cache issues
+    db.ref('tournaments').once('value').then(snap => {
       const raw = [];
       snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
       raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
       tournaments = raw.map((t, i) => parseTournament(t, i));
       console.log('[BZ] tournaments loaded — count:', tournaments.length, tournaments.map(t=>t.name));
       renderTournaments();
-    }, err => {
-      console.error('[BZ] tournaments listener error:', err.message);
-      renderTournaments(); // render empty state
+    }).catch(err => {
+      console.error('[BZ] tournaments fetch error:', err.message);
     });
 
-    // Separate listener for slot counts — updates slots without re-fetching tournaments
+    // Real-time listener for live updates after initial load
+    db.ref('tournaments').on('value', snap => {
+      const raw = [];
+      snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
+      raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      tournaments = raw.map((t, i) => parseTournament(t, i));
+      console.log('[BZ] tournaments live update — count:', tournaments.length, tournaments.map(t=>t.name));
+      renderTournaments();
+    }, err => {
+      console.error('[BZ] tournaments listener error:', err.message);
+    });
+
+    // Separate listener for slot counts
     db.ref('registrationCounts').on('value', snap => {
       if (!tournaments.length) return;
       snap.forEach(c => {
