@@ -3373,9 +3373,8 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
-  // ---- Tournaments: single real-time listener, no duplicates ----
+  // ---- Tournaments: single real-time listener, guaranteed ordering ----
   (function() {
-    // Parse a Firebase tournament record into the app's tournament object
     function parseTournament(t, i, regCounts) {
       let sched = t.matchSchedule;
       if (sched && !Array.isArray(sched) && typeof sched === 'object') {
@@ -3405,50 +3404,67 @@ window.onload = async function() {
         fee:   t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
         slots, total, status,
-        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : []),
+        prizeList: (() => {
+          let pl = t.prizeList;
+          if (pl && !Array.isArray(pl) && typeof pl === 'object') {
+            pl = Object.keys(pl).sort((a,b)=>Number(a)-Number(b)).map(k=>pl[k]);
+          }
+          return Array.isArray(pl) && pl.length ? pl : (t.prize1 ? [t.prize1,t.prize2,t.prize3].filter(Boolean) : []);
+        })(),
         cardImageUrl: t.cardImageUrl || ''
       };
     }
 
-    let _regCounts  = {};
-    let _tourRaw    = [];   // raw Firebase records, updated by listener
-    let _listenersOn = false;
+    let _regCounts = {};
+    let _tourRaw   = [];
+    let _tourLoaded = false;  // don't render until first tournament snapshot arrives
 
     function applyAndRender() {
+      if (!_tourLoaded) return;  // wait for tournament data before ever rendering
       tournaments = _tourRaw.map((t, i) => parseTournament(t, i, _regCounts));
+      console.log('[BZ] renderTournaments — count:', tournaments.length);
       renderTournaments();
     }
 
-    function attachListeners() {
-      if (_listenersOn) return;
-      _listenersOn = true;
+    // Step 1: fetch reg counts ONCE first, then attach tournament listener
+    db.ref('registrationCounts').once('value', rcSnap => {
+      _regCounts = {};
+      if (rcSnap.exists()) rcSnap.forEach(c => { _regCounts[c.key] = c.val() || 0; });
 
-      // Tournament listener — fires on every add / edit / delete
-      db.ref('tournaments').on('value', snap => {
+      // Step 2: now attach tournament listener — reg counts are already ready
+      db.ref('tournaments').orderByChild('ts').on('value', snap => {
         _tourRaw = [];
         snap.forEach(c => _tourRaw.push({ _key: c.key, ...c.val() }));
         _tourRaw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        console.log('[BZ] tournaments snapshot — count:', _tourRaw.length, _tourRaw.map(t=>t.name));
+        _tourLoaded = true;
+        console.log('[BZ] Firebase tournaments — count:', _tourRaw.length, _tourRaw.map(t => t.name));
         applyAndRender();
       }, err => {
         console.error('[BZ] tournaments listener error:', err);
-        _listenersOn = false;
       });
 
-      // Registration counts listener — only updates slot numbers
-      db.ref('registrationCounts').on('value', snap => {
+      // Step 3: keep reg counts live for slot bar updates (after tournament data is ready)
+      db.ref('registrationCounts').on('value', rcLive => {
         _regCounts = {};
-        if (snap.exists()) snap.forEach(c => { _regCounts[c.key] = c.val() || 0; });
-        applyAndRender();
+        if (rcLive.exists()) rcLive.forEach(c => { _regCounts[c.key] = c.val() || 0; });
+        applyAndRender();  // _tourLoaded guards this — won't render if tournaments not ready
         if (currentDetail) {
           const td = tournaments.find(x => x.id === currentDetail.id);
           const el = document.getElementById('d-slots');
           if (td && el) el.textContent = td.slots + '/' + td.total;
         }
       });
-    }
-
-    attachListeners();
+    }, err => {
+      console.error('[BZ] registrationCounts pre-fetch failed, loading tournaments anyway:', err);
+      // Fallback: attach tournament listener without reg counts
+      db.ref('tournaments').orderByChild('ts').on('value', snap => {
+        _tourRaw = [];
+        snap.forEach(c => _tourRaw.push({ _key: c.key, ...c.val() }));
+        _tourRaw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        _tourLoaded = true;
+        applyAndRender();
+      });
+    });
   })();
 
   // ---- Load results from Firebase ----

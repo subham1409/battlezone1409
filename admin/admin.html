@@ -1046,7 +1046,6 @@ function doLogout() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('admin-app').classList.remove('visible');
   document.getElementById('login-pass').value = '';
-  _tourAdminListenerOn = false;
   showToast('👋 Logged out');
 }
 
@@ -1424,11 +1423,18 @@ function initTournamentFormDefaults() {
 }
 
 async function submitTournament() {
-  if (!tournamentsRef) { showToast('❌ Firebase not connected'); return; }
+  // --- GUARD CHECKS ---
+  if (!tournamentsRef) { alert('tournamentsRef is null — Firebase not connected'); return; }
+  if (!db) { alert('db is null'); return; }
+
   const name = document.getElementById('t-name').value.trim();
   if (!name) { showToast('⚠️ Tournament name required'); return; }
 
-  // Collect match schedule — filter only rows with at least a title or time
+  console.log('[SUBMIT] editingTourId =', editingTourId);
+  console.log('[SUBMIT] tournamentsRef path =', tournamentsRef.toString());
+  console.log('[SUBMIT] db.ref path =', db.ref('tournaments').toString());
+
+  // Collect match schedule
   const matchSchedule = [];
   document.querySelectorAll('#match-rows-container > div').forEach(row => {
     const n = row.dataset.rowId;
@@ -1445,7 +1451,6 @@ async function submitTournament() {
     if (val) prizeList.push(val);
   });
 
-  // Build payload — never store empty arrays (Firebase drops them anyway, but be explicit)
   const payload = {
     name,
     map:         document.getElementById('t-map').value.trim(),
@@ -1461,36 +1466,52 @@ async function submitTournament() {
     cardImageUrl: (document.getElementById('t-card-img') || {}).value?.trim() || '',
     ts: Date.now()
   };
-  // Only add arrays if non-empty (Firebase silently drops empty arrays)
   if (matchSchedule.length > 0) {
     payload.matchSchedule = matchSchedule;
-    payload.match1Title   = matchSchedule[0]?.title || '';
-    payload.match1Time    = matchSchedule[0]?.time  || '';
-    payload.match2Title   = matchSchedule[1]?.title || '';
-    payload.match2Time    = matchSchedule[1]?.time  || '';
+    payload.match1Title = matchSchedule[0]?.title || '';
+    payload.match1Time  = matchSchedule[0]?.time  || '';
+    payload.match2Title = matchSchedule[1]?.title || '';
+    payload.match2Time  = matchSchedule[1]?.time  || '';
   }
   if (prizeList.length > 0) payload.prizeList = prizeList;
+
+  console.log('[SUBMIT] payload =', JSON.stringify(payload));
 
   const btn = document.getElementById('t-submit-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Saving…';
+
   try {
     if (editingTourId) {
+      console.log('[SUBMIT] UPDATING existing:', editingTourId);
       await tournamentsRef.child(editingTourId).update(payload);
       showToast('✅ Tournament updated!');
+      // Update directly in tourData so UI reflects change immediately
+      const idx = tourData.findIndex(x => x.id === editingTourId);
+      if (idx !== -1) tourData[idx] = { id: editingTourId, ...payload };
+      editingTourId = null;
       cancelEditTournament();
+      renderTournamentsAdmin();
     } else {
-      const ref = await tournamentsRef.push(payload);
-      showToast('🚀 Tournament added! ID: ' + ref.key);
+      console.log('[SUBMIT] PUSHING new tournament...');
+      const newRef = tournamentsRef.push();
+      const newKey = newRef.key;
+      console.log('[SUBMIT] new key will be:', newKey);
+      await newRef.set(payload);
+      console.log('[SUBMIT] PUSH SUCCESS — key:', newKey);
+      showToast('🚀 Tournament added!');
+      // Add directly to tourData so UI updates instantly without waiting for Firebase cache
+      tourData.unshift({ id: newKey, ...payload });
+      renderTournamentsAdmin();
       resetTournamentForm();
     }
   } catch(e) {
-    console.error('submitTournament error:', e);
-    showToast('❌ Save failed: ' + e.message);
-    alert('Firebase save error: ' + e.message + '\n\nCheck browser console for details.');
+    console.error('[SUBMIT] FAILED:', e);
+    alert('SAVE FAILED\n\nError: ' + e.message + '\nCode: ' + e.code + '\n\nCheck Firebase rules & connection.');
   }
+
   btn.disabled = false;
-  btn.textContent = editingTourId ? '✏️ Update Tournament' : '⚡ Save Tournament';
+  btn.textContent = '⚡ Save Tournament';
 }
 
 function previewCardImg() {
@@ -1566,28 +1587,31 @@ function deleteTournament(id) {
 }
 async function confirmDeleteTournament() {
   if (!deleteTourId) return;
-  try { await tournamentsRef.child(deleteTourId).remove(); showToast('🗑 Deleted'); } catch(e) { showToast('❌ ' + e.message); }
+  try {
+    await tournamentsRef.child(deleteTourId).remove();
+    showToast('🗑 Deleted');
+    tourData = tourData.filter(x => x.id !== deleteTourId);
+    renderTournamentsAdmin();
+  } catch(e) { showToast('❌ ' + e.message); }
   deleteTourId = null;
   document.getElementById('delete-modal').classList.remove('open');
   document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore
 }
 
-let _tourAdminListenerOn = false;
 function loadTournamentsAdmin() {
   if (!tournamentsRef) return;
-  // Only attach the real-time listener ONCE — it stays alive and auto-updates
-  if (_tourAdminListenerOn) return;
-  _tourAdminListenerOn = true;
   const list = document.getElementById('tournament-admin-list');
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
-  tournamentsRef.on('value', snap => {
+  
+  // Use get() instead of once() — get() always fetches from server, no local cache
+  tournamentsRef.get().then(snap => {
     tourData = [];
     snap.forEach(c => tourData.push({ id: c.key, ...c.val() }));
     tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    console.log('[BZ-ADMIN] tournaments snapshot — count:', tourData.length, tourData.map(t=>t.name));
+    console.log('[BZ-ADMIN] loaded tournaments from SERVER — count:', tourData.length, tourData.map(t=>t.name));
     renderTournamentsAdmin();
-  }, err => {
-    _tourAdminListenerOn = false; // allow retry on error
+  }).catch(err => {
+    console.error('[BZ-ADMIN] load error:', err);
     list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
   });
 }
