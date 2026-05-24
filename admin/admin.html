@@ -953,7 +953,6 @@ body::after {
 
   </div><!-- end tab-registrations -->
 
-</div><!-- end admin-app -->
 
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal">
@@ -1487,9 +1486,12 @@ async function submitTournament() {
       console.log('[SUBMIT] UPDATING existing:', editingTourId);
       await tournamentsRef.child(editingTourId).update(payload);
       showToast('✅ Tournament updated!');
-      // Real-time listener auto-refreshes the list
+      // Update directly in tourData so UI reflects change immediately
+      const idx = tourData.findIndex(x => x.id === editingTourId);
+      if (idx !== -1) tourData[idx] = { id: editingTourId, ...payload };
       editingTourId = null;
       cancelEditTournament();
+      renderTournamentsAdmin();
     } else {
       console.log('[SUBMIT] PUSHING new tournament...');
       const newRef = tournamentsRef.push();
@@ -1498,7 +1500,9 @@ async function submitTournament() {
       await newRef.set(payload);
       console.log('[SUBMIT] PUSH SUCCESS — key:', newKey);
       showToast('🚀 Tournament added!');
-      // Real-time listener (loadTournamentsAdmin) auto-refreshes the list
+      // Add directly to tourData so UI updates instantly without waiting for Firebase cache
+      tourData.unshift({ id: newKey, ...payload });
+      renderTournamentsAdmin();
       resetTournamentForm();
     }
   } catch(e) {
@@ -1594,36 +1598,19 @@ async function confirmDeleteTournament() {
   document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore
 }
 
-let tourAdminListener = null;
 function loadTournamentsAdmin() {
   if (!tournamentsRef) return;
   const list = document.getElementById('tournament-admin-list');
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
-
-  // Detach any previous listener before attaching a new one
-  if (tourAdminListener) { tournamentsRef.off('value', tourAdminListener); }
-
-  // Use real-time listener so every add/edit/delete reflects instantly
-  tourAdminListener = tournamentsRef.on('value', snap => {
+  
+  // Use get() instead of once() — get() always fetches from server, no local cache
+  tournamentsRef.get().then(snap => {
     tourData = [];
     snap.forEach(c => tourData.push({ id: c.key, ...c.val() }));
     tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    console.log('[BZ-ADMIN] tournaments update — count:', tourData.length, tourData.map(t => t.name));
+    console.log('[BZ-ADMIN] loaded tournaments from SERVER — count:', tourData.length, tourData.map(t=>t.name));
     renderTournamentsAdmin();
-    // Also keep the tournament pin dropdown in sync
-    const sel = document.getElementById('tpin-tournament-select');
-    if (sel) {
-      const prev = sel.value;
-      sel.innerHTML = '<option value="">— Select a tournament —</option>';
-      tourData.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id;
-        opt.textContent = t.name || t.id;
-        sel.appendChild(opt);
-      });
-      if (prev) sel.value = prev;
-    }
-  }, err => {
+  }).catch(err => {
     console.error('[BZ-ADMIN] load error:', err);
     list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
   });
@@ -1933,19 +1920,21 @@ function loadPinnedMessageAdmin() {
 }
 
 // ===== TOURNAMENT PIN =====
-// Populate tournament dropdown — uses tourData already loaded by the real-time listener
+// Populate tournament dropdown when chat tab is opened
 function loadTournamentPinDropdown() {
+  if (!db) return;
   const sel = document.getElementById('tpin-tournament-select');
   if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">— Select a tournament —</option>';
-  tourData.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.id;
-    opt.textContent = t.name || t.id;
-    sel.appendChild(opt);
+  db.ref('tournaments').once('value', snap => {
+    sel.innerHTML = '<option value="">— Select a tournament —</option>';
+    snap.forEach(child => {
+      const t = child.val();
+      const opt = document.createElement('option');
+      opt.value = child.key;
+      opt.textContent = t.name || child.key;
+      sel.appendChild(opt);
+    });
   });
-  if (prev) sel.value = prev;
 }
 
 function buildTpinText() {
