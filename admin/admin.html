@@ -1055,7 +1055,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   event.currentTarget.classList.add('active');
-  // tournaments list is kept live by real-time Firebase listener — no reload needed
+  if (tab === 'tournaments') loadTournamentsAdmin();
   if (tab === 'results') loadResultsAdmin();
   if (tab === 'chat') { loadChatAdmin(); loadPinnedMessageAdmin(); loadTournamentPinDropdown(); }
   if (tab === 'registrations') loadRegistrationsAdmin();
@@ -1486,12 +1486,9 @@ async function submitTournament() {
       console.log('[SUBMIT] UPDATING existing:', editingTourId);
       await tournamentsRef.child(editingTourId).update(payload);
       showToast('✅ Tournament updated!');
-      // Update directly in tourData so UI reflects change immediately
-      const idx = tourData.findIndex(x => x.id === editingTourId);
-      if (idx !== -1) tourData[idx] = { id: editingTourId, ...payload };
+      // Real-time listener will auto-refresh the list
       editingTourId = null;
       cancelEditTournament();
-      renderTournamentsAdmin();
     } else {
       console.log('[SUBMIT] PUSHING new tournament...');
       const newRef = tournamentsRef.push();
@@ -1500,9 +1497,7 @@ async function submitTournament() {
       await newRef.set(payload);
       console.log('[SUBMIT] PUSH SUCCESS — key:', newKey);
       showToast('🚀 Tournament added!');
-      // Add directly to tourData so UI updates instantly without waiting for Firebase cache
-      tourData.unshift({ id: newKey, ...payload });
-      renderTournamentsAdmin();
+      // Real-time listener will auto-refresh the list — no manual update needed
       resetTournamentForm();
     }
   } catch(e) {
@@ -1598,20 +1593,34 @@ async function confirmDeleteTournament() {
   document.getElementById('confirm-delete-btn').onclick = confirmDelete; // restore
 }
 
+let tourListener = null;
 function loadTournamentsAdmin() {
   if (!tournamentsRef) return;
   const list = document.getElementById('tournament-admin-list');
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
-  
-  // Use get() instead of once() — get() always fetches from server, no local cache
-  tournamentsRef.get().then(snap => {
+
+  // Detach any previous listener before attaching a new one
+  if (tourListener) { tournamentsRef.off('value', tourListener); tourListener = null; }
+
+  // Real-time listener — fires immediately AND on every change (add/edit/delete)
+  tourListener = tournamentsRef.on('value', snap => {
     tourData = [];
-    snap.forEach(c => tourData.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => {
+      const val = c.val();
+      // Firebase stores arrays as objects with numeric string keys — normalize back to arrays
+      if (val.prizeList && !Array.isArray(val.prizeList) && typeof val.prizeList === 'object') {
+        val.prizeList = Object.keys(val.prizeList).sort((a,b) => Number(a)-Number(b)).map(k => val.prizeList[k]);
+      }
+      if (val.matchSchedule && !Array.isArray(val.matchSchedule) && typeof val.matchSchedule === 'object') {
+        val.matchSchedule = Object.keys(val.matchSchedule).sort((a,b) => Number(a)-Number(b)).map(k => val.matchSchedule[k]);
+      }
+      tourData.push({ id: c.key, ...val });
+    });
     tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    console.log('[BZ-ADMIN] loaded tournaments from SERVER — count:', tourData.length, tourData.map(t=>t.name));
+    console.log('[BZ-ADMIN] tournaments live update — count:', tourData.length, tourData.map(t => t.name));
     renderTournamentsAdmin();
-  }).catch(err => {
-    console.error('[BZ-ADMIN] load error:', err);
+  }, err => {
+    console.error('[BZ-ADMIN] tournament listener error:', err);
     list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + err.message + '</div></div>';
   });
 }
