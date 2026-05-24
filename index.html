@@ -2894,7 +2894,7 @@ function checkRegisteredChatAccess() {
     registeredTournamentIds = new Set();
     clearPersistedRegisteredIds();
     updateChatAccessUI(false);
-    renderTournaments();
+    if (tournaments.length) renderTournaments(); // only re-render if data is already loaded
     return;
   }
   // Logged-in user always gets chat access immediately
@@ -2914,12 +2914,10 @@ function checkRegisteredChatAccess() {
       });
     });
     registeredTournamentIds = newIds;
-    persistRegisteredIds(); // Save so page reload keeps CHAT buttons
-    renderTournaments();
+    persistRegisteredIds();
+    if (tournaments.length) renderTournaments(); // only re-render if tournament data is ready
   }).catch(() => {
-    // Query failed (network or permissions) — keep whatever IDs we already have
-    // so players don't lose their CHAT buttons on transient errors
-    renderTournaments();
+    if (tournaments.length) renderTournaments();
   });
 }
 
