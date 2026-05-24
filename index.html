@@ -3413,38 +3413,41 @@ window.onload = async function() {
       };
     }
 
-    // Direct fetch first — guaranteed fresh data, no cache issues
-    db.ref('tournaments').once('value').then(snap => {
-      const raw = [];
-      snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
-      raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      tournaments = raw.map((t, i) => parseTournament(t, i));
-      console.log('[BZ] tournaments loaded — count:', tournaments.length, tournaments.map(t=>t.name));
-      renderTournaments();
-    }).catch(err => {
-      console.error('[BZ] tournaments fetch error:', err.message);
-    });
+    // Single real-time listener — fires immediately on attach AND on every change.
+    // Removed duplicate .once() call; .on('value') already fires immediately.
+    let registrationCountsCache = {};
 
-    // Real-time listener for live updates after initial load
     db.ref('tournaments').on('value', snap => {
       const raw = [];
       snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
       raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      tournaments = raw.map((t, i) => parseTournament(t, i));
-      console.log('[BZ] tournaments live update — count:', tournaments.length, tournaments.map(t=>t.name));
+      tournaments = raw.map((t, i) => {
+        const parsed = parseTournament(t, i);
+        // Apply cached slot counts so counts survive re-renders
+        if (registrationCountsCache[parsed.id] !== undefined) {
+          parsed.slots = Math.min(registrationCountsCache[parsed.id], parsed.total);
+        }
+        return parsed;
+      });
+      console.log('[BZ] tournaments update — count:', tournaments.length, tournaments.map(t => t.name));
       renderTournaments();
     }, err => {
       console.error('[BZ] tournaments listener error:', err.message);
     });
 
-    // Separate listener for slot counts
+    // Slot counts — cache so they persist across tournament re-renders
     db.ref('registrationCounts').on('value', snap => {
+      registrationCountsCache = {};
+      snap.forEach(c => { registrationCountsCache[c.key] = c.val() || 0; });
       if (!tournaments.length) return;
-      snap.forEach(c => {
-        const t = tournaments.find(x => x.id === c.key);
-        if (t) t.slots = Math.min(c.val() || 0, t.total);
+      let changed = false;
+      tournaments.forEach(t => {
+        if (registrationCountsCache[t.id] !== undefined) {
+          const newSlots = Math.min(registrationCountsCache[t.id], t.total);
+          if (t.slots !== newSlots) { t.slots = newSlots; changed = true; }
+        }
       });
-      renderTournaments();
+      if (changed) renderTournaments();
     });
   })();
 
@@ -3555,104 +3558,113 @@ function showHome() {
 }
 
 // ========= TOURNAMENTS =========
+function buildTournamentCardHTML(t) {
+  const pct = (t.slots / t.total) * 100;
+  const almostFull = pct >= 80;
+  const full = t.status === 'full';
+  const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
+  const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
+
+  // Prize distribution list
+  let prizeListHTML = '';
+  const pl = t.prizeList || [];
+  if (pl.length > 0) {
+    const rankIcons = ['🥇','🥈','🥉','🏅','🏅'];
+    const posLabels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
+    const ordinal = n => {
+      const s = ['th','st','nd','rd'], v = n % 100;
+      return n + (s[(v-20)%10] || s[v] || s[0]) + ' Place';
+    };
+    prizeListHTML = `
+    <div class="prize-list-section">
+      <div class="prize-list-header">🏆 Prize Distribution</div>
+      <div class="prize-list-table">
+        <div class="prize-list-table-head">
+          <span>Rank</span>
+          <span>Position</span>
+          <span>Prize</span>
+        </div>
+        ${pl.map((p, i) => `
+        <div class="prize-list-row">
+          <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
+          <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
+          <div class="prize-list-amount">${p}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const matchColors = [
+    'background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);color:var(--accent-green)',
+    'background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);color:var(--accent-orange)',
+    'background:rgba(100,149,237,0.08);border:1px solid rgba(100,149,237,0.18);color:#6495ed',
+    'background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);color:#ffd700',
+    'background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.18);color:#ff6464',
+  ];
+  const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
+  const schedHTML = (t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).map((m, mi) => {
+    const cs = matchColors[mi % matchColors.length];
+    const ic = matchIcons[mi % matchIcons.length];
+    return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} \u00b7 ${m.time}</span>` : '';
+  }).join('');
+
+  const safeId = t.id;
+  const safeName = (t.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const joinBtn = registeredTournamentIds.has(t.id)
+    ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT</button>`
+    : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${safeId}')">${full ? 'FULL' : 'JOIN NOW'}</button>`;
+
+  const cardImgHTML = t.cardImageUrl
+    ? `<div style="position:absolute;right:0;top:0;bottom:0;width:100px;overflow:hidden;border-radius:0 10px 10px 0"><img src="${t.cardImageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)" onerror="this.parentElement.style.display='none'"><div style="position:absolute;inset:0;background:linear-gradient(to right,var(--bg-card) 0%,transparent 35%);pointer-events:none"></div></div>`
+    : '';
+
+  return `
+  <div class="tournament-card" onclick="openDetail('${safeId}')">
+    <div class="tournament-card-top" style="position:relative;overflow:hidden">
+      <div style="flex:1;min-width:0;padding-right:${t.cardImageUrl ? '110px' : '0'}">
+        <div class="tournament-badge ${badgeClass}">${badgeLabel}</div>
+        <div class="tournament-name">${t.name || ''}</div>
+        <div class="tournament-meta">
+          <span>📅 ${t.date || ''}</span>
+          <span>🗺 ${t.map || ''}</span>
+        </div>
+        <div class="tournament-meta" style="margin-top:5px;gap:6px;flex-direction:column;align-items:flex-start">
+          ${schedHTML}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <div class="prize-label">
+          <div class="prize-amount">${t.prize || ''}</div>
+          <div class="prize-sub">Prize Pool</div>
+        </div>
+      </div>
+      ${cardImgHTML}
+    </div>
+    ${prizeListHTML}
+    <div class="tournament-card-bottom">
+      <div class="slot-bar-wrap">
+        <div class="slot-label">
+          <span>Squads</span>
+          <span>${t.slots}/${t.total}</span>
+        </div>
+        <div class="slot-bar">
+          <div class="slot-fill ${almostFull ? 'almost' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      ${joinBtn}
+    </div>
+  </div>`;
+}
+
 function renderTournaments() {
   const container = document.getElementById('tournament-list');
-  container.innerHTML = '';
+  if (!container) return;
   if (!tournaments.length) {
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em">No tournaments yet — check back soon!</div>';
     return;
   }
-  tournaments.forEach(t => {
-    const pct = (t.slots / t.total) * 100;
-    const almostFull = pct >= 80;
-    const full = t.status === 'full';
-    const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
-    const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
-
-    // Prize distribution list
-    let prizeListHTML = '';
-    const pl = t.prizeList || [];
-    if (pl.length > 0) {
-      const rankIcons = ['🥇','🥈','🥉','🏅','🏅'];
-      const posLabels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
-      const ordinal = n => {
-        const s = ['th','st','nd','rd'], v = n % 100;
-        return n + (s[(v-20)%10] || s[v] || s[0]) + ' Place';
-      };
-      prizeListHTML = `
-      <div class="prize-list-section">
-        <div class="prize-list-header">🏆 Prize Distribution</div>
-        <div class="prize-list-table">
-          <div class="prize-list-table-head">
-            <span>Rank</span>
-            <span>Position</span>
-            <span>Prize</span>
-          </div>
-          ${pl.map((p, i) => `
-          <div class="prize-list-row">
-            <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
-            <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
-            <div class="prize-list-amount">${p}</div>
-          </div>`).join('')}
-        </div>
-      </div>`;
-    }
-
-    container.innerHTML += `
-    <div class="tournament-card" onclick="openDetail('${t.id}')">
-      <div class="tournament-card-top" style="position:relative;overflow:hidden">
-        <div style="flex:1;min-width:0;padding-right:${t.cardImageUrl ? '110px' : '0'}">
-          <div class="tournament-badge ${badgeClass}">${badgeLabel}</div>
-          <div class="tournament-name">${t.name}</div>
-          <div class="tournament-meta">
-            <span>📅 ${t.date}</span>
-            <span>🗺 ${t.map}</span>
-          </div>
-          <div class="tournament-meta" style="margin-top:5px;gap:6px;flex-direction:column;align-items:flex-start">
-            ${(t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).map((m, mi) => {
-              const matchColors = [
-                'background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);color:var(--accent-green)',
-                'background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);color:var(--accent-orange)',
-                'background:rgba(100,149,237,0.08);border:1px solid rgba(100,149,237,0.18);color:#6495ed',
-                'background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);color:#ffd700',
-                'background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.18);color:#ff6464',
-              ];
-              const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
-              const cs = matchColors[mi % matchColors.length];
-              const ic = matchIcons[mi % matchIcons.length];
-              return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} · ${m.time}</span>` : '';
-            }).join('')}
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-          <div class="prize-label">
-            <div class="prize-amount">${t.prize}</div>
-            <div class="prize-sub">Prize Pool</div>
-          </div>
-        </div>
-        ${t.cardImageUrl ? `<div style="position:absolute;right:0;top:0;bottom:0;width:100px;overflow:hidden;border-radius:0 10px 10px 0">
-          <img src="${t.cardImageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)" onerror="this.parentElement.style.display='none'">
-          <div style="position:absolute;inset:0;background:linear-gradient(to right,var(--bg-card) 0%,transparent 35%);pointer-events:none"></div>
-        </div>` : ''}
-      </div>
-      ${prizeListHTML}
-      <div class="tournament-card-bottom">
-        <div class="slot-bar-wrap">
-          <div class="slot-label">
-            <span>Squads</span>
-            <span>${t.slots}/${t.total}</span>
-          </div>
-          <div class="slot-bar">
-            <div class="slot-fill ${almostFull ? 'almost' : ''}" style="width:${pct}%"></div>
-          </div>
-        </div>
-        ${registeredTournamentIds.has(t.id)
-          ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${t.id}', '${t.name.replace(/'/g,"\\'")}')">💬 CHAT</button>`
-          : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${t.id}')">${full ? 'FULL' : 'JOIN NOW'}</button>`
-        }
-      </div>
-    </div>`;
-  });
+  // Build all HTML as one string, then set once — avoids innerHTML += DOM corruption bug
+  container.innerHTML = tournaments.map(t => buildTournamentCardHTML(t)).join('');
 }
 
 function openDetail(id) {
@@ -4151,15 +4163,14 @@ async function loadMyMatches() {
       return;
     }
 
-    list.innerHTML = '';
-    myRegs.forEach(reg => {
+    list.innerHTML = myRegs.map(reg => {
       const t = tournaments.find(x => x.id === reg.tournamentId);
       const status = t ? t.status : 'upcoming';
       const statusClass = status === 'full' ? 'status-completed' : 'status-upcoming';
       const statusLabel = status === 'full' ? 'Done' : 'Soon';
       const icon = status === 'full' ? '✅' : '🎯';
       const iconClass = status === 'full' ? 'completed' : 'upcoming';
-      list.innerHTML += `
+      return `
       <div class="my-match-card">
         <div class="my-match-icon ${iconClass}">${icon}</div>
         <div class="my-match-info">
@@ -4168,7 +4179,7 @@ async function loadMyMatches() {
         </div>
         <div class="status-pill ${statusClass}">${statusLabel}</div>
       </div>`;
-    });
+    }).join('');
   } catch(e) {
     console.error('loadMyMatches error:', e);
     list.innerHTML = '<div class="my-matches-loading">⚠️ Could not load matches</div>';
@@ -4346,10 +4357,8 @@ async function sendTournamentMessage() {
 // ========= RESULTS =========
 function renderResults(filter) {
   const list = document.getElementById('results-list');
-  list.innerHTML = '';
   const filtered = filter && filter !== 'all' ? results.filter(r => r.map.toLowerCase() === filter) : results;
-  filtered.forEach(r => {
-    list.innerHTML += `
+  list.innerHTML = filtered.map(r => `
     <div class="result-card" onclick="openLeaderboard('${r.id}')">
       <div class="result-card-top">
         <div class="result-match-info">
@@ -4375,8 +4384,7 @@ function renderResults(filter) {
           <div class="result-stat-key">Prize</div>
         </div>
       </div>
-    </div>`;
-  });
+    </div>`).join('');
 }
 
 function setFilter(el, val) {
@@ -4472,14 +4480,12 @@ function renderNews() {
     list.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📰</div><div class="news-empty-text">No news yet — check back soon!</div></div>';
     return;
   }
-  list.innerHTML = '';
-  newsItems.forEach(item => {
+  list.innerHTML = newsItems.map(item => {
     const dateStr = item.ts ? new Date(item.ts).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '';
     const imgHtml = item.imageUrl
-      ? `<img class="news-card-img" src="${item.imageUrl}" alt="${escapeHTML(item.title)}" onerror="this.parentElement.querySelector('.news-card-img')&&(this.style.display='none')">`
-      : ``;
-
-    list.innerHTML += `
+      ? `<img class="news-card-img" src="${item.imageUrl}" alt="${escapeHTML(item.title)}" onerror="this.style.display='none'">`
+      : '';
+    return `
     <div class="news-card" onclick="openNewsDetail('${item.id}')">
       ${imgHtml}
       <div class="news-card-body">
@@ -4492,7 +4498,7 @@ function renderNews() {
         </div>
       </div>
     </div>`;
-  });
+  }).join('');
 }
 
 function openNewsDetail(id) {
