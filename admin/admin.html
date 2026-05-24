@@ -702,6 +702,16 @@ body::after {
           <div id="prize-rows-container" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
         <div class="field">
+          <label>🖼️ Tournament Card Image URL</label>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="flex:1">
+              <input type="url" id="t-card-img" placeholder="https://i.imgur.com/... or any image link" maxlength="500" oninput="previewCardImg()">
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:var(--font-body);text-transform:none;letter-spacing:0">Shown on right side of tournament card on website</div>
+            </div>
+            <img id="t-card-img-preview" src="" alt="" style="width:80px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:none;flex-shrink:0" onerror="this.style.display='none'">
+          </div>
+        </div>
+        <div class="field">
           <label>Description / Rules</label>
           <textarea id="t-desc" placeholder="Rules, format, prize breakdown…" style="min-height:100px" maxlength="2000"></textarea>
         </div>
@@ -1352,7 +1362,7 @@ let editingTourId = null;
 
 // ── MATCH ROW HELPERS ──────────────────────────────────────────────────────
 let matchRowCount = 0;
-function addMatchRow(titleVal = '', timeVal = '', imgVal = '') {
+function addMatchRow(titleVal = '', timeVal = '') {
   matchRowCount++;
   const n = matchRowCount;
   const icons = ['🎯','🔥','⚡','💥','🎮','🏆'];
@@ -1373,24 +1383,14 @@ function addMatchRow(titleVal = '', timeVal = '', imgVal = '') {
       </div>
       <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:8px 11px;border-radius:7px;cursor:pointer;margin-bottom:0;height:38px">✕</button>
     </div>
-    <div class="field" style="margin-bottom:0">
-      <label style="font-size:9px">🖼️ Match Image URL <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="url" id="t-match-img-${n}" placeholder="https://i.imgur.com/..." maxlength="400" value="${escHTML(imgVal)}" oninput="previewMatchImg(${n})" style="flex:1">
-        <img id="t-match-img-preview-${n}" src="" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:${imgVal ? 'block' : 'none'}" onerror="this.style.display='none'">
-      </div>
-    </div>`;
+`;
   container.appendChild(div);
 }
 function clearMatchRows() {
   document.getElementById('match-rows-container').innerHTML = '';
   matchRowCount = 0;
 }
-function previewMatchImg(n) {
-  const url = (document.getElementById('t-match-img-' + n) || {}).value?.trim() || '';
-  const preview = document.getElementById('t-match-img-preview-' + n);
-  if (preview) { preview.src = url; preview.style.display = url ? 'block' : 'none'; }
-}
+
 
 // ── PRIZE ROW HELPERS ──────────────────────────────────────────────────────
 let prizeRowCount = 0;
@@ -1434,8 +1434,7 @@ async function submitTournament() {
     const n = row.dataset.rowId;
     const title = (document.getElementById('t-match-title-' + n) || {}).value?.trim() || '';
     const time  = (document.getElementById('t-match-time-'  + n) || {}).value?.trim() || '';
-    const img   = (document.getElementById('t-match-img-'   + n) || {}).value?.trim() || '';
-    if (title || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), time, imageUrl: img });
+    if (title || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), time });
   });
 
   // Collect prize list
@@ -1459,6 +1458,7 @@ async function submitTournament() {
     status:      document.getElementById('t-status').value || 'UPCOMING',
     roomId:      document.getElementById('t-room').value.trim(),
     description: document.getElementById('t-desc').value.trim(),
+    cardImageUrl: (document.getElementById('t-card-img') || {}).value?.trim() || '',
     ts: Date.now()
   };
   // Only add arrays if non-empty (Firebase silently drops empty arrays)
@@ -1493,11 +1493,19 @@ async function submitTournament() {
   btn.textContent = editingTourId ? '✏️ Update Tournament' : '⚡ Save Tournament';
 }
 
+function previewCardImg() {
+  const url = (document.getElementById('t-card-img') || {}).value?.trim() || '';
+  const preview = document.getElementById('t-card-img-preview');
+  if (preview) { preview.src = url; preview.style.display = url ? 'block' : 'none'; }
+}
+
 function resetTournamentForm() {
-  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc'].forEach(id => {
+  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc','t-card-img'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('t-status').value = 'UPCOMING';
+  const ci = document.getElementById('t-card-img'); if (ci) ci.value = '';
+  const cp = document.getElementById('t-card-img-preview'); if (cp) { cp.src=''; cp.style.display='none'; }
   clearMatchRows(); addMatchRow(); addMatchRow();
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
@@ -1514,6 +1522,8 @@ function editTournament(id) {
   document.getElementById('t-maxteams').value   = t.maxTeams || '';
   document.getElementById('t-slots').value      = t.slotsLeft || '';
   document.getElementById('t-status').value     = t.status || 'UPCOMING';
+  const ciEl = document.getElementById('t-card-img');
+  if (ciEl) { ciEl.value = t.cardImageUrl || ''; previewCardImg(); }
   document.getElementById('t-room').value       = t.roomId || '';
   document.getElementById('t-desc').value       = t.description || '';
 
@@ -1526,7 +1536,7 @@ function editTournament(id) {
         { title: t.match2Title || '', time: t.match2Time || '' }
       ].filter(m => m.title || m.time);
   if (sched.length === 0) { addMatchRow(); addMatchRow(); }
-  else sched.forEach(m => addMatchRow(m.title || '', m.time || '', m.imageUrl || ''));
+  else sched.forEach(m => addMatchRow(m.title || '', m.time || ''));
 
   // Fill prize distribution
   clearPrizeRows();

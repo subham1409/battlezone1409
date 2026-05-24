@@ -3405,7 +3405,8 @@ window.onload = async function() {
         fee:   t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
         slots, total, status,
-        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [])
+        prizeList: t.prizeList || (t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : []),
+        cardImageUrl: t.cardImageUrl || ''
       };
     }
 
@@ -3602,8 +3603,8 @@ function renderTournaments() {
 
     container.innerHTML += `
     <div class="tournament-card" onclick="openDetail('${t.id}')">
-      <div class="tournament-card-top">
-        <div>
+      <div class="tournament-card-top" style="position:relative;overflow:hidden">
+        <div style="flex:1;min-width:0;padding-right:${t.cardImageUrl ? '110px' : '0'}">
           <div class="tournament-badge ${badgeClass}">${badgeLabel}</div>
           <div class="tournament-name">${t.name}</div>
           <div class="tournament-meta">
@@ -3622,15 +3623,20 @@ function renderTournaments() {
               const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
               const cs = matchColors[mi % matchColors.length];
               const ic = matchIcons[mi % matchIcons.length];
-              const imgHtml = m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:38px;height:32px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.15);flex-shrink:0;margin-left:6px;box-shadow:0 0 10px rgba(255,120,0,0.35)" onerror="this.style.display='none'">` : '';
-              return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} · ${m.time}${imgHtml}</span>` : '';
+              return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} · ${m.time}</span>` : '';
             }).join('')}
           </div>
         </div>
-        <div class="prize-label">
-          <div class="prize-amount">${t.prize}</div>
-          <div class="prize-sub">Prize Pool</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <div class="prize-label">
+            <div class="prize-amount">${t.prize}</div>
+            <div class="prize-sub">Prize Pool</div>
+          </div>
         </div>
+        ${t.cardImageUrl ? `<div style="position:absolute;right:0;top:0;bottom:0;width:100px;overflow:hidden;border-radius:0 10px 10px 0">
+          <img src="${t.cardImageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)" onerror="this.parentElement.style.display='none'">
+          <div style="position:absolute;inset:0;background:linear-gradient(to right,var(--bg-card) 0%,transparent 35%);pointer-events:none"></div>
+        </div>` : ''}
       </div>
       ${prizeListHTML}
       <div class="tournament-card-bottom">
