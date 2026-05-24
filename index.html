@@ -3373,9 +3373,9 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
-  // ---- Tournaments: single real-time listener, guaranteed ordering ----
+  // ---- Tournaments: clean simple listener ----
   (function() {
-    function parseTournament(t, i, regCounts) {
+    function parseTournament(t, i) {
       let sched = t.matchSchedule;
       if (sched && !Array.isArray(sched) && typeof sched === 'object') {
         sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
@@ -3386,9 +3386,14 @@ window.onload = async function() {
           ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
         ].filter(m => m.time);
       }
-      const total  = t.maxTeams || 25;
-      const slots  = Math.min((regCounts || {})[t._key] || 0, total);
-      const status = slots >= total ? 'full' : mapTournamentStatus(t.status);
+      let pl = t.prizeList;
+      if (pl && !Array.isArray(pl) && typeof pl === 'object') {
+        pl = Object.keys(pl).sort((a,b) => Number(a)-Number(b)).map(k => pl[k]);
+      }
+      if (!Array.isArray(pl) || !pl.length) {
+        pl = t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [];
+      }
+      const total = t.maxTeams || 25;
       return {
         id: t._key,
         num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
@@ -3403,67 +3408,34 @@ window.onload = async function() {
         map:   t.map   || t.game   || '',
         fee:   t.entryFee || t.fee || 'FREE',
         prize: t.prize || '',
-        slots, total, status,
-        prizeList: (() => {
-          let pl = t.prizeList;
-          if (pl && !Array.isArray(pl) && typeof pl === 'object') {
-            pl = Object.keys(pl).sort((a,b)=>Number(a)-Number(b)).map(k=>pl[k]);
-          }
-          return Array.isArray(pl) && pl.length ? pl : (t.prize1 ? [t.prize1,t.prize2,t.prize3].filter(Boolean) : []);
-        })(),
+        slots: 0, total,
+        status: mapTournamentStatus(t.status),
+        prizeList: pl,
         cardImageUrl: t.cardImageUrl || ''
       };
     }
 
-    let _regCounts = {};
-    let _tourRaw   = [];
-    let _tourLoaded = false;  // don't render until first tournament snapshot arrives
-
-    function applyAndRender() {
-      if (!_tourLoaded) return;  // wait for tournament data before ever rendering
-      tournaments = _tourRaw.map((t, i) => parseTournament(t, i, _regCounts));
-      console.log('[BZ] renderTournaments — count:', tournaments.length);
+    // Single listener — no pre-fetching, no ordering index needed
+    db.ref('tournaments').on('value', snap => {
+      const raw = [];
+      snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
+      raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      tournaments = raw.map((t, i) => parseTournament(t, i));
+      console.log('[BZ] tournaments loaded — count:', tournaments.length, tournaments.map(t=>t.name));
       renderTournaments();
-    }
-
-    // Step 1: fetch reg counts ONCE first, then attach tournament listener
-    db.ref('registrationCounts').once('value', rcSnap => {
-      _regCounts = {};
-      if (rcSnap.exists()) rcSnap.forEach(c => { _regCounts[c.key] = c.val() || 0; });
-
-      // Step 2: now attach tournament listener — reg counts are already ready
-      db.ref('tournaments').orderByChild('ts').on('value', snap => {
-        _tourRaw = [];
-        snap.forEach(c => _tourRaw.push({ _key: c.key, ...c.val() }));
-        _tourRaw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        _tourLoaded = true;
-        console.log('[BZ] Firebase tournaments — count:', _tourRaw.length, _tourRaw.map(t => t.name));
-        applyAndRender();
-      }, err => {
-        console.error('[BZ] tournaments listener error:', err);
-      });
-
-      // Step 3: keep reg counts live for slot bar updates (after tournament data is ready)
-      db.ref('registrationCounts').on('value', rcLive => {
-        _regCounts = {};
-        if (rcLive.exists()) rcLive.forEach(c => { _regCounts[c.key] = c.val() || 0; });
-        applyAndRender();  // _tourLoaded guards this — won't render if tournaments not ready
-        if (currentDetail) {
-          const td = tournaments.find(x => x.id === currentDetail.id);
-          const el = document.getElementById('d-slots');
-          if (td && el) el.textContent = td.slots + '/' + td.total;
-        }
-      });
     }, err => {
-      console.error('[BZ] registrationCounts pre-fetch failed, loading tournaments anyway:', err);
-      // Fallback: attach tournament listener without reg counts
-      db.ref('tournaments').orderByChild('ts').on('value', snap => {
-        _tourRaw = [];
-        snap.forEach(c => _tourRaw.push({ _key: c.key, ...c.val() }));
-        _tourRaw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        _tourLoaded = true;
-        applyAndRender();
+      console.error('[BZ] tournaments listener error:', err.message);
+      renderTournaments(); // render empty state
+    });
+
+    // Separate listener for slot counts — updates slots without re-fetching tournaments
+    db.ref('registrationCounts').on('value', snap => {
+      if (!tournaments.length) return;
+      snap.forEach(c => {
+        const t = tournaments.find(x => x.id === c.key);
+        if (t) t.slots = Math.min(c.val() || 0, t.total);
       });
+      renderTournaments();
     });
   })();
 
