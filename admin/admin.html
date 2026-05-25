@@ -1827,7 +1827,7 @@ function loadResultsAdmin() {
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
   resultsRef.once('value', snap => {
     resultsData = [];
-    snap.forEach(c => resultsData.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { resultsData.push({ id: c.key, ...c.val() }); });
     resultsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     renderResultsAdmin();
   }, err => {

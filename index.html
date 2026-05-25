@@ -89,7 +89,7 @@ body::after {
 
 /* PAGE */
 .page { display: none; padding: 0; }
-.page.active { display: block; }
+.page.active { display: block; min-height: 100%; }
 
 /* === BOTTOM NAV === */
 #bottom-nav {
@@ -3280,6 +3280,9 @@ function mapTournamentStatus(s) {
 
 // ========= INIT — Load from Firebase =========
 window.onload = async function() {
+  // ── Show skeleton FIRST — before any awaits — so Firebase listener can't overwrite it prematurely ──
+  showTournamentSkeleton();
+
   // ── RESTORE REGISTERED IDS IMMEDIATELY so renders show correct CHAT buttons ──
   registeredTournamentIds = loadPersistedRegisteredIds();
 
@@ -3352,8 +3355,6 @@ window.onload = async function() {
     console.error('Redirect result block error (non-fatal):', e);
     sessionStorage.removeItem('pendingGoogleRedirect');
   }
-
-  showTournamentSkeleton();
 
   // ---- Load home announcement from Firebase ----
   try {
@@ -3487,7 +3488,7 @@ window.onload = async function() {
 
   db.ref('tournaments').on('value', snap => {
     const raw = [];
-    snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
+    snap.forEach(c => { raw.push({ _key: c.key, ...c.val() }); });
     raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     tournaments = raw.map((t, i) => {
       const parsed = parseTournament(t, i);
