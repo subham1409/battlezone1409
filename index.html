@@ -3314,8 +3314,13 @@ window.onload = async function() {
     }
   }
 
+  // ── Google redirect result — wrapped so ANY error here never blocks tournament loading ──
   try {
-    const result = await auth.getRedirectResult();
+    let result = null;
+    try { result = await auth.getRedirectResult(); } catch(authErr) {
+      console.warn('getRedirectResult error (non-fatal):', authErr.code, authErr.message);
+      sessionStorage.removeItem('pendingGoogleRedirect');
+    }
     if (result && result.user) {
       sessionStorage.removeItem('pendingGoogleRedirect');
       handleGoogleResult(result);
@@ -3334,11 +3339,8 @@ window.onload = async function() {
       }
     }
   } catch(e) {
-    console.error('Redirect result error:', e);
+    console.error('Redirect result block error (non-fatal):', e);
     sessionStorage.removeItem('pendingGoogleRedirect');
-    if (e.code !== 'auth/no-current-user') {
-      showToast('❌ Google sign-in failed: ' + (e.message || 'Please try again'));
-    }
   }
 
   showTournamentSkeleton();
@@ -3371,85 +3373,8 @@ window.onload = async function() {
     });
   } catch(e) { console.warn('Announcement load failed:', e); }
 
-  // ---- Tournaments: clean simple listener ----
-  (function() {
-    function parseTournament(t, i) {
-      let sched = t.matchSchedule;
-      if (sched && !Array.isArray(sched) && typeof sched === 'object') {
-        sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
-      }
-      if (!Array.isArray(sched) || sched.length === 0) {
-        sched = [
-          { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
-          ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
-        ].filter(m => m.time);
-      }
-      let pl = t.prizeList;
-      if (pl && !Array.isArray(pl) && typeof pl === 'object') {
-        pl = Object.keys(pl).sort((a,b) => Number(a)-Number(b)).map(k => pl[k]);
-      }
-      if (!Array.isArray(pl) || !pl.length) {
-        pl = t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [];
-      }
-      const total = t.maxTeams || 25;
-      return {
-        id: t._key,
-        num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
-        name: t.name || '',
-        date: t.date || '',
-        time: t.time || '',
-        matchSchedule: sched,
-        match1Title: t.match1Title || 'Match 1',
-        match1Time:  t.match1Time  || t.time || '',
-        match2Title: t.match2Title || 'Match 2',
-        match2Time:  t.match2Time  || '',
-        map:   t.map   || t.game   || '',
-        fee:   t.entryFee || t.fee || 'FREE',
-        prize: t.prize || '',
-        slots: 0, total,
-        status: mapTournamentStatus(t.status),
-        prizeList: pl,
-        cardImageUrl: t.cardImageUrl || ''
-      };
-    }
-
-    // Single real-time listener — fires immediately on attach AND on every change.
-    // Removed duplicate .once() call; .on('value') already fires immediately.
-    let registrationCountsCache = {};
-
-    db.ref('tournaments').on('value', snap => {
-      const raw = [];
-      snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
-      raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      tournaments = raw.map((t, i) => {
-        const parsed = parseTournament(t, i);
-        // Apply cached slot counts so counts survive re-renders
-        if (registrationCountsCache[parsed.id] !== undefined) {
-          parsed.slots = Math.min(registrationCountsCache[parsed.id], parsed.total);
-        }
-        return parsed;
-      });
-      console.log('[BZ] tournaments update — count:', tournaments.length, tournaments.map(t => t.name));
-      renderTournaments();
-    }, err => {
-      console.error('[BZ] tournaments listener error:', err.message);
-    });
-
-    // Slot counts — cache so they persist across tournament re-renders
-    db.ref('registrationCounts').on('value', snap => {
-      registrationCountsCache = {};
-      snap.forEach(c => { registrationCountsCache[c.key] = c.val() || 0; });
-      if (!tournaments.length) return;
-      let changed = false;
-      tournaments.forEach(t => {
-        if (registrationCountsCache[t.id] !== undefined) {
-          const newSlots = Math.min(registrationCountsCache[t.id], t.total);
-          if (t.slots !== newSlots) { t.slots = newSlots; changed = true; }
-        }
-      });
-      if (changed) renderTournaments();
-    });
-  })();
+  // NOTE: Tournament listener is now started immediately at page load (below window.onload)
+  // so it cannot be blocked by auth errors or any other async failures above.
 
   // ---- Load results from Firebase ----
   try {
@@ -3504,6 +3429,83 @@ window.onload = async function() {
   // ── HIDE LOADING SCREEN ──
   hideLoadingScreen();
 };
+
+// ========= TOURNAMENT LISTENER — runs immediately, outside window.onload =========
+// This ensures tournaments always load even if auth or other async code above throws.
+(function() {
+  function parseTournament(t, i) {
+    let sched = t.matchSchedule;
+    if (sched && !Array.isArray(sched) && typeof sched === 'object') {
+      sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
+    }
+    if (!Array.isArray(sched) || sched.length === 0) {
+      sched = [
+        { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
+        ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
+      ].filter(m => m.time);
+    }
+    let pl = t.prizeList;
+    if (pl && !Array.isArray(pl) && typeof pl === 'object') {
+      pl = Object.keys(pl).sort((a,b) => Number(a)-Number(b)).map(k => pl[k]);
+    }
+    if (!Array.isArray(pl) || !pl.length) {
+      pl = t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [];
+    }
+    const total = t.maxTeams || 25;
+    return {
+      id: t._key,
+      num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
+      name: t.name || '',
+      date: t.date || '',
+      time: t.time || '',
+      matchSchedule: sched,
+      match1Title: t.match1Title || 'Match 1',
+      match1Time:  t.match1Time  || t.time || '',
+      match2Title: t.match2Title || 'Match 2',
+      match2Time:  t.match2Time  || '',
+      map:   t.map   || t.game   || '',
+      fee:   t.entryFee || t.fee || 'FREE',
+      prize: t.prize || '',
+      slots: 0, total,
+      status: mapTournamentStatus(t.status),
+      prizeList: pl,
+      cardImageUrl: t.cardImageUrl || ''
+    };
+  }
+
+  let registrationCountsCache = {};
+
+  db.ref('tournaments').on('value', snap => {
+    const raw = [];
+    snap.forEach(c => raw.push({ _key: c.key, ...c.val() }));
+    raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    tournaments = raw.map((t, i) => {
+      const parsed = parseTournament(t, i);
+      if (registrationCountsCache[parsed.id] !== undefined) {
+        parsed.slots = Math.min(registrationCountsCache[parsed.id], parsed.total);
+      }
+      return parsed;
+    });
+    console.log('[BZ] tournaments update — count:', tournaments.length, tournaments.map(t => t.name));
+    renderTournaments();
+  }, err => {
+    console.error('[BZ] tournaments listener error:', err.message);
+  });
+
+  db.ref('registrationCounts').on('value', snap => {
+    registrationCountsCache = {};
+    snap.forEach(c => { registrationCountsCache[c.key] = c.val() || 0; });
+    if (!tournaments.length) return;
+    let changed = false;
+    tournaments.forEach(t => {
+      if (registrationCountsCache[t.id] !== undefined) {
+        const newSlots = Math.min(registrationCountsCache[t.id], t.total);
+        if (t.slots !== newSlots) { t.slots = newSlots; changed = true; }
+      }
+    });
+    if (changed) renderTournaments();
+  });
+})();
 
 // ========= NAVIGATION =========
 function switchPage(page) {
