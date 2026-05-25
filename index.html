@@ -2520,7 +2520,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
       <!-- Input bar — shown only to registered users -->
       <div id="chat-input-bar" style="display:none">
       <div class="chat-input-area">
-        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)"></textarea>
+        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
         <button class="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2711,7 +2711,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
     <div class="chat-input-area">
       <textarea class="chat-input chat-textarea" id="tchat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendTournamentMessage()}"
-        oninput="autoGrowChat(this)"></textarea>
+        oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
       <button class="send-btn" onclick="sendTournamentMessage()">
         <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2788,6 +2788,16 @@ const auth = firebase.auth();
 
 const db = firebase.database();
 const chatRef = db.ref('chat');
+
+// ── ANONYMOUS AUTH — ensures Firebase rules that require auth still allow reads ──
+// Sign in anonymously so db.ref reads are authenticated (fixes "tournaments not showing" issue)
+(function ensureFirebaseAuth() {
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      auth.signInAnonymously().catch(e => console.warn('[BZ] Anonymous auth failed (non-fatal):', e.message));
+    }
+  });
+})();
 
 // =====================================================================
 // LOADING SCREEN
@@ -3489,7 +3499,14 @@ window.onload = async function() {
     console.log('[BZ] tournaments update — count:', tournaments.length, tournaments.map(t => t.name));
     renderTournaments();
   }, err => {
-    console.error('[BZ] tournaments listener error:', err.message);
+    console.error('[BZ] tournaments listener error:', err.message, err.code);
+    // If permission denied, it may be a Firebase rules issue — show helpful message
+    if (err.code === 'PERMISSION_DENIED') {
+      const container = document.getElementById('tournament-list');
+      if (container) {
+        container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em">⚠️ Could not load tournaments.<br><span style="font-size:10px;margin-top:6px;display:block">Check Firebase database rules — set <code style="color:var(--accent-orange)">.read: true</code> for /tournaments</span></div>';
+      }
+    }
   });
 
   db.ref('registrationCounts').on('value', snap => {
@@ -4224,10 +4241,16 @@ function openTournamentChat(tournamentId, tournamentName) {
     const textEl = document.getElementById('tchat-pinned-text');
     if (!banner || !textEl) return;
     if (snap.exists() && snap.val() && snap.val().text) {
-      textEl.textContent = snap.val().text;
-      banner.style.display = 'block';
+      const val = snap.val();
+      let displayText = val.text || '';
+      if (val.roomId) displayText = '\ud83c\udfe0 Room ID: ' + val.roomId + '\n' + displayText;
+      textEl.textContent = displayText;
+      banner.dataset.hasmsg = '1';
+      const inputFocused = document.activeElement && document.activeElement.id === 'tchat-input';
+      if (!inputFocused) banner.style.display = 'block';
     } else {
       banner.style.display = 'none';
+      banner.dataset.hasmsg = '0';
       textEl.textContent = '';
     }
   });
@@ -4305,6 +4328,16 @@ function addTchatMessageToDOM(m) {
     </div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+}
+
+// ========= TOURNAMENT CHAT INPUT FOCUS — hide pinned banner when typing =========
+function tchatInputFocus() {
+  const banner = document.getElementById('tchat-pinned-banner');
+  if (banner) banner.style.display = 'none';
+}
+function tchatInputBlur() {
+  const banner = document.getElementById('tchat-pinned-banner');
+  if (banner && banner.dataset.hasmsg === '1') banner.style.display = 'block';
 }
 
 let _tchatSending = false;
