@@ -825,42 +825,7 @@ body::after {
 }
 .submit-btn:hover { background: #ff9500; }
 
-/* === CHAT PAGE — full-screen fixed layout === */
-#chat-page {
-  position: fixed !important;
-  inset: 0 !important;
-  max-width: 480px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  display: none;
-  flex-direction: column !important;
-  z-index: 110 !important;
-  background: var(--bg-primary);
-  overflow: hidden !important;
-  min-height: unset !important;
-}
-#chat-page.active {
-  display: flex !important;
-}
-
-/* When keyboard is open the JS overrides top/height/bottom — let it */
-
-/* Messages area must flex-grow */
-#chat-page .chat-messages {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  min-height: 0 !important;
-}
-
-/* Input bar pinned at bottom inside the chat page flex column */
-#chat-input-bar {
-  flex-shrink: 0 !important;
-}
-#chat-locked-msg {
-  flex-shrink: 0 !important;
-}
-
-/* === CHAT PAGE HEADER === */
+/* === CHAT PAGE === */
 .chat-header {
   padding: 0 14px 0 12px;
   height: 52px;
@@ -1043,7 +1008,8 @@ body::after {
 }
 .report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
-  position: relative;
+  position: sticky;
+  bottom: 0;
   background: rgba(8,10,14,0.95);
   backdrop-filter: blur(12px);
   padding: 12px 14px;
@@ -1804,7 +1770,22 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE FIX — superseded by #chat-page rules above ===== */
+/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
+#chat-page.active {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  bottom: 68px;
+  display: flex !important;
+  flex-direction: column;
+  z-index: 20;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
 #chat-page.active .chat-header {
   flex-shrink: 0;
   position: relative;
@@ -1825,9 +1806,12 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open — hide bottom nav (chat page already full-screen) */
+/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
 body.keyboard-open.on-chat-page #bottom-nav {
   display: none !important;
+}
+body.keyboard-open.on-chat-page #chat-page.active {
+  bottom: 0;
 }
 
 /* ===== NEWS PAGE ===== */
@@ -4680,8 +4664,8 @@ function closeNewsDetail() {
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    const onChatPage = chatPage && chatPage.classList.contains('active');
-    const navHeight = 0; // chat page is fixed fullscreen, no nav offset needed
+    const onChatPage = document.body.classList.contains('on-chat-page');
+    const navHeight = onChatPage ? 0 : (document.getElementById('bottom-nav')?.offsetHeight || 68);
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
       chatPage.style.top       = vvTop + 'px';
