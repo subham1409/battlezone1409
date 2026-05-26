@@ -505,7 +505,7 @@ body::after {
 }
 /* Prize List Table inside tournament card */
 .prize-list-section {
-  padding: 0 16px 10px;
+  padding: 0 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -523,16 +523,20 @@ body::after {
   margin-bottom: 6px;
   padding: 0 2px;
 }
+.prize-toggle-bar:hover {
+  background: rgba(255,120,0,0.10) !important;
+}
 .prize-list-table {
   background: rgba(0,0,0,0.3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid rgba(255,120,0,0.18);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
 }
 .prize-list-table-head {
   display: grid;
   grid-template-columns: 36px 1fr auto;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: rgba(255,120,0,0.08);
   border-bottom: 1px solid var(--border);
 }
@@ -547,24 +551,24 @@ body::after {
 .prize-list-row {
   display: grid;
   grid-template-columns: 36px 1fr auto;
-  padding: 7px 10px;
+  padding: 9px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   align-items: center;
 }
 .prize-list-row:last-child { border-bottom: none; }
 .prize-list-rank {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 .prize-list-pos {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   font-weight: 600;
 }
 .prize-list-amount {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--accent-green);
   text-align: right;
@@ -821,7 +825,42 @@ body::after {
 }
 .submit-btn:hover { background: #ff9500; }
 
-/* === CHAT PAGE === */
+/* === CHAT PAGE — full-screen fixed layout === */
+#chat-page {
+  position: fixed !important;
+  inset: 0 !important;
+  max-width: 480px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: none;
+  flex-direction: column !important;
+  z-index: 110 !important;
+  background: var(--bg-primary);
+  overflow: hidden !important;
+  min-height: unset !important;
+}
+#chat-page.active {
+  display: flex !important;
+}
+
+/* When keyboard is open the JS overrides top/height/bottom — let it */
+
+/* Messages area must flex-grow */
+#chat-page .chat-messages {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+/* Input bar pinned at bottom inside the chat page flex column */
+#chat-input-bar {
+  flex-shrink: 0 !important;
+}
+#chat-locked-msg {
+  flex-shrink: 0 !important;
+}
+
+/* === CHAT PAGE HEADER === */
 .chat-header {
   padding: 0 14px 0 12px;
   height: 52px;
@@ -1004,8 +1043,7 @@ body::after {
 }
 .report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
-  position: sticky;
-  bottom: 0;
+  position: relative;
   background: rgba(8,10,14,0.95);
   backdrop-filter: blur(12px);
   padding: 12px 14px;
@@ -1766,22 +1804,7 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
-#chat-page.active {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  bottom: 68px;
-  display: flex !important;
-  flex-direction: column;
-  z-index: 20;
-  background: var(--bg-primary);
-  overflow: hidden;
-}
-/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
+/* ===== CHAT PAGE FIX — superseded by #chat-page rules above ===== */
 #chat-page.active .chat-header {
   flex-shrink: 0;
   position: relative;
@@ -1802,12 +1825,9 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
+/* When keyboard is open — hide bottom nav (chat page already full-screen) */
 body.keyboard-open.on-chat-page #bottom-nav {
   display: none !important;
-}
-body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 0;
 }
 
 /* ===== NEWS PAGE ===== */
@@ -3585,7 +3605,7 @@ function buildTournamentCardHTML(t) {
   const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
   const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
 
-  // Prize distribution list
+  // Prize distribution list — collapsible
   let prizeListHTML = '';
   const pl = t.prizeList || [];
   if (pl.length > 0) {
@@ -3595,37 +3615,52 @@ function buildTournamentCardHTML(t) {
       const s = ['th','st','nd','rd'], v = n % 100;
       return n + (s[(v-20)%10] || s[v] || s[0]) + ' Place';
     };
+    const prizeRowsHTML = pl.map((p, i) => `
+      <div class="prize-list-row">
+        <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
+        <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
+        <div class="prize-list-amount">${p}</div>
+      </div>`).join('');
     prizeListHTML = `
-    <div class="prize-list-section">
-      <div class="prize-list-header">🏆 Prize Distribution</div>
-      <div class="prize-list-table">
-        <div class="prize-list-table-head">
-          <span>Rank</span>
-          <span>Position</span>
-          <span>Prize</span>
+    <div class="prize-list-section" style="padding:0 16px 5px">
+      <div class="prize-toggle-bar" onclick="event.stopPropagation();togglePrize(this)" style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:13px 14px;cursor:pointer;
+        background:rgba(255,120,0,0.06);
+        border:1px solid rgba(255,120,0,0.18);
+        border-radius:10px;margin-bottom:0;
+        transition:background 0.2s;">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">🏆</span>
+          <span style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-orange);text-transform:uppercase">Prize Distribution</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">· Tap to view</span>
         </div>
-        ${pl.map((p, i) => `
-        <div class="prize-list-row">
-          <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
-          <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
-          <div class="prize-list-amount">${p}</div>
-        </div>`).join('')}
+        <span class="prize-arrow" style="color:var(--accent-orange);font-size:12px;transition:transform 0.25s">▼</span>
+      </div>
+      <div class="prize-list-body" style="display:none;overflow:hidden">
+        <div class="prize-list-table" style="border-top:none;border-radius:0 0 10px 10px;margin-top:-1px">
+          <div class="prize-list-table-head">
+            <span>Rank</span><span>Position</span><span>Prize</span>
+          </div>
+          ${prizeRowsHTML}
+        </div>
       </div>
     </div>`;
   }
 
+  // Match schedule pills — inline-flex wrap (same line if fits, wrap to next)
   const matchColors = [
-    'background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.18);color:var(--accent-green)',
-    'background:rgba(255,120,0,0.08);border:1px solid rgba(255,120,0,0.18);color:var(--accent-orange)',
-    'background:rgba(100,149,237,0.08);border:1px solid rgba(100,149,237,0.18);color:#6495ed',
-    'background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);color:#ffd700',
-    'background:rgba(255,100,100,0.08);border:1px solid rgba(255,100,100,0.18);color:#ff6464',
+    { bg:'rgba(0,255,157,0.10)', border:'rgba(0,255,157,0.30)', color:'#00ff9d' },
+    { bg:'rgba(255,120,0,0.10)',  border:'rgba(255,120,0,0.30)',  color:'#ff7800' },
+    { bg:'rgba(100,149,237,0.10)',border:'rgba(100,149,237,0.30)',color:'#6495ed' },
+    { bg:'rgba(255,215,0,0.10)',  border:'rgba(255,215,0,0.30)',  color:'#ffd700' },
+    { bg:'rgba(255,100,100,0.10)',border:'rgba(255,100,100,0.30)',color:'#ff6464' },
   ];
   const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
   const schedHTML = (t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).map((m, mi) => {
-    const cs = matchColors[mi % matchColors.length];
+    const c = matchColors[mi % matchColors.length];
     const ic = matchIcons[mi % matchIcons.length];
-    return m.time ? `<span style="${cs};border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center">${ic} ${m.title || 'Match '+(mi+1)} \u00b7 ${m.time}</span>` : '';
+    return m.time ? `<span style="background:${c.bg};border:1px solid ${c.border};color:${c.color};border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;letter-spacing:0.04em">${ic} ${(m.title||'Match '+(mi+1)).toUpperCase()} · ${m.time}</span>` : '';
   }).join('');
 
   const safeId = t.id;
@@ -3634,31 +3669,58 @@ function buildTournamentCardHTML(t) {
     ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT</button>`
     : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${safeId}')">${full ? 'FULL' : 'JOIN NOW'}</button>`;
 
-  const cardImgHTML = t.cardImageUrl
-    ? `<div style="position:absolute;right:0;top:0;bottom:0;width:100px;overflow:hidden;border-radius:0 10px 10px 0"><img src="${t.cardImageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)" onerror="this.parentElement.style.display='none'"><div style="position:absolute;inset:0;background:linear-gradient(to right,var(--bg-card) 0%,transparent 35%);pointer-events:none"></div></div>`
-    : '';
+  // Map-based gradient colors for placeholder
+  const mapColors = {
+    erangel:  { from:'#0d2b1a', to:'#0a1a0d', accent:'rgba(0,255,157,0.18)', icon:'🌿', label:'ERANGEL' },
+    miramar:  { from:'#2b1e0a', to:'#1a1005', accent:'rgba(255,180,0,0.18)',  icon:'🏜', label:'MIRAMAR' },
+    sanhok:   { from:'#0d2008', to:'#081408', accent:'rgba(100,220,80,0.18)', icon:'🌴', label:'SANHOK'  },
+    vikendi:  { from:'#0a1428', to:'#060e1c', accent:'rgba(100,160,255,0.18)',icon:'❄️', label:'VIKENDI' },
+    rondo:    { from:'#1a0a28', to:'#10061a', accent:'rgba(180,80,255,0.18)', icon:'🌆', label:'RONDO'   },
+  };
+  const mapKey = (t.map || '').toLowerCase().split(',')[0].trim();
+  const mc = mapColors[mapKey] || { from:'#0d1020', to:'#080a14', accent:'rgba(255,120,0,0.18)', icon:'🎮', label:(t.map||'BGMI').toUpperCase() };
+
+  // Card image banner — always shown (image if URL, styled placeholder if not)
+  const cardImgBanner = t.cardImageUrl
+    ? `<div style="width:100%;height:150px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:#0a0d14">
+        <img src="${t.cardImageUrl}" alt="${(t.name||'').replace(/"/g,'&quot;')}"
+          style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)"
+          onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
+        <div class="img-fallback" style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,${mc.from},${mc.to});align-items:center;justify-content:center;font-size:48px">${mc.icon}</div>
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.3) 55%,rgba(13,17,23,0.92) 100%);pointer-events:none"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:65px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
+        <div style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;align-items:flex-end;justify-content:space-between">
+          <div class="tournament-badge ${badgeClass}" style="font-size:10px;padding:4px 10px">${badgeLabel}</div>
+          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.1em;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:5px;backdrop-filter:blur(4px)">📅 ${t.date||''}</div>
+        </div>
+      </div>`
+    : `<div style="width:100%;height:130px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:linear-gradient(135deg,${mc.from} 0%,${mc.to} 100%)">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(${mc.accent} 1px,transparent 1px),linear-gradient(90deg,${mc.accent} 1px,transparent 1px);background-size:28px 28px;opacity:0.6"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,${mc.accent} 0%,transparent 65%)"></div>
+        <div style="position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:56px;opacity:0.35;filter:drop-shadow(0 0 18px ${mc.accent})">${mc.icon}</div>
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(0,0,0,0.3) 60%,rgba(13,17,23,0.92) 100%)"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:38px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${mc.accent.replace('0.18','0.8')},transparent)"></div>
+        <div style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;align-items:flex-end;justify-content:space-between">
+          <div class="tournament-badge ${badgeClass}" style="font-size:10px;padding:4px 10px">${badgeLabel}</div>
+          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.1em;background:rgba(0,0,0,0.4);padding:3px 8px;border-radius:5px;backdrop-filter:blur(4px)">📅 ${t.date||''}</div>
+        </div>
+      </div>`;
 
   return `
   <div class="tournament-card" onclick="openDetail('${safeId}')">
-    <div class="tournament-card-top" style="position:relative;overflow:hidden">
-      <div style="flex:1;min-width:0;padding-right:${t.cardImageUrl ? '110px' : '0'}">
-        <div class="tournament-badge ${badgeClass}">${badgeLabel}</div>
-        <div class="tournament-name">${t.name || ''}</div>
-        <div class="tournament-meta">
-          <span>📅 ${t.date || ''}</span>
-          <span>🗺 ${t.map || ''}</span>
-        </div>
-        <div class="tournament-meta" style="margin-top:5px;gap:6px;flex-direction:column;align-items:flex-start">
+    ${cardImgBanner}
+    <div class="tournament-card-top" style="position:relative;padding-bottom:8px">
+      <div style="flex:1;min-width:0">
+        <div class="tournament-name" style="margin-bottom:8px">${t.name || ''}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
           ${schedHTML}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-        <div class="prize-label">
-          <div class="prize-amount">${t.prize || ''}</div>
-          <div class="prize-sub">Prize Pool</div>
-        </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;padding-left:10px">
+        <div class="prize-amount">${t.prize || ''}</div>
+        <div class="prize-sub">Prize Pool</div>
       </div>
-      ${cardImgHTML}
     </div>
     ${prizeListHTML}
     <div class="tournament-card-bottom">
@@ -3738,6 +3800,16 @@ function openDetail(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('detail-page').classList.add('active');
   document.getElementById('content').scrollTop = 0;
+}
+
+function togglePrize(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('.prize-arrow');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  btn.style.borderRadius = isOpen ? '10px' : '10px 10px 0 0';
+  btn.style.borderBottomColor = isOpen ? 'rgba(255,120,0,0.18)' : 'transparent';
 }
 
 function toggleRules() {
@@ -4608,8 +4680,8 @@ function closeNewsDetail() {
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    const onChatPage = document.body.classList.contains('on-chat-page');
-    const navHeight = onChatPage ? 0 : (document.getElementById('bottom-nav')?.offsetHeight || 68);
+    const onChatPage = chatPage && chatPage.classList.contains('active');
+    const navHeight = 0; // chat page is fixed fullscreen, no nav offset needed
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
       chatPage.style.top       = vvTop + 'px';
