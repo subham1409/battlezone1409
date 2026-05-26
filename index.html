@@ -3594,7 +3594,7 @@ function showHome() {
 function buildTournamentCardHTML(t) {
   const pct = (t.slots / t.total) * 100;
   const almostFull = pct >= 80;
-  const full = t.status === 'full';
+  const full = t.status === 'full' || (t.slots >= t.total && t.total > 0);
   const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
   const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
 
