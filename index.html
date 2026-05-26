@@ -668,6 +668,15 @@ body::after {
 .join-btn:hover { background: #ff9500; }
 .join-btn:active { transform: scale(0.97); }
 .join-btn:disabled { background: var(--text-muted); color: var(--text-secondary); cursor: not-allowed; }
+.join-btn.slot-filled {
+  background: transparent;
+  color: var(--accent-red);
+  border: 1.5px solid rgba(255,58,58,0.35);
+  cursor: not-allowed;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+.join-btn.slot-filled:hover { background: rgba(255,58,58,0.06); }
 
 /* === TOURNAMENT DETAIL PAGE === */
 #detail-page { display: none; }
@@ -3651,7 +3660,9 @@ function buildTournamentCardHTML(t) {
   const safeName = (t.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const joinBtn = registeredTournamentIds.has(t.id)
     ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT</button>`
-    : `<button class="join-btn" ${full ? 'disabled' : ''} onclick="event.stopPropagation(); openDetail('${safeId}')">${full ? 'FULL' : 'JOIN NOW'}</button>`;
+    : full
+      ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
+      : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
 
   // Map-based gradient colors for placeholder
   const mapColors = {

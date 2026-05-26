@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BATTLEZONE — User Export</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAGHy9nE9asRkyy6ZZjE9q2Sj0tgF7V8_8",
+      authDomain: "esportnetwork-833c2.firebaseapp.com",
+      databaseURL: "https://esportnetwork-833c2-default-rtdb.firebaseio.com",
+      projectId: "esportnetwork-833c2",
+      storageBucket: "esportnetwork-833c2.firebasestorage.app",
+      messagingSenderId: "1083526135565",
+      appId: "1:1083526135565:web:69d8a8205665534514fa44",
+      measurementId: "G-RRKPCPNBMP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let usersData = [];
+
+    async function fetchUsers() {
+      const btn = document.getElementById("fetchBtn");
+      const status = document.getElementById("status");
+      const tableBody = document.getElementById("tableBody");
+      const tableWrap = document.getElementById("tableWrap");
+      const exportBtn = document.getElementById("exportBtn");
+      const countEl = document.getElementById("count");
+
+      btn.disabled = true;
+      btn.textContent = "Fetching...";
+      status.textContent = "";
+      tableBody.innerHTML = "";
+      usersData = [];
+
+      try {
+        const snapshot = await get(ref(db, "users"));
+        if (!snapshot.exists()) {
+          status.textContent = "⚠️ No users found in /users node.";
+          btn.disabled = false;
+          btn.textContent = "Fetch Users";
+          return;
+        }
+
+        const raw = snapshot.val();
+        const rows = [];
+
+        Object.entries(raw).forEach(([uid, user]) => {
+          const name  = user.name  || user.displayName || user.username || "—";
+          const phone = user.phone || user.phoneNumber  || user.mobile   || "—";
+          const email = user.email || "—";
+          rows.push({ uid, name, phone, email });
+        });
+
+        usersData = rows;
+        countEl.textContent = `${rows.length} user${rows.length !== 1 ? "s" : ""} found`;
+
+        rows.forEach((u, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${esc(u.name)}</td>
+            <td>${esc(u.phone)}</td>
+            <td>${esc(u.email)}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        tableWrap.style.display = "block";
+        exportBtn.style.display = "inline-flex";
+        status.textContent = "";
+      } catch (err) {
+        status.textContent = "❌ Error: " + err.message;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Fetch Users";
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function exportPDF() {
+      if (!usersData.length) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      // Header bar
+      doc.setFillColor(15, 15, 20);
+      doc.rect(0, 0, 210, 30, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(255, 60, 60);
+      doc.text("BATTLEZONE", 14, 14);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(180, 180, 180);
+      doc.text("Esports Platform — User Directory", 14, 21);
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+      const timeStr = now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
+      doc.text(`Generated: ${dateStr}, ${timeStr}`, 210 - 14, 21, { align: "right" });
+      doc.text(`Total Users: ${usersData.length}`, 210 - 14, 14, { align: "right" });
+
+      // Table
+      doc.autoTable({
+        startY: 36,
+        head: [["#", "Name", "Phone Number", "Email"]],
+        body: usersData.map((u, i) => [i + 1, u.name, u.phone, u.email]),
+        styles: {
+          font: "helvetica",
+          fontSize: 9,
+          cellPadding: 4,
+          textColor: [30, 30, 30],
+          lineColor: [220, 220, 220],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [255, 60, 60],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 10,
+        },
+        alternateRowStyles: {
+          fillColor: [248, 248, 248],
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: "auto" },
+        },
+        margin: { left: 14, right: 14 },
+        theme: "grid",
+      });
+
+      // Footer on each page
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFillColor(240, 240, 240);
+        doc.rect(0, 285, 210, 12, "F");
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text("BATTLEZONE Esports Platform — Confidential", 14, 292);
+        doc.text(`Page ${i} of ${pageCount}`, 210 - 14, 292, { align: "right" });
+      }
+
+      doc.save(`battlezone_users_${now.toISOString().slice(0,10)}.pdf`);
+    }
+
+    window.fetchUsers  = fetchUsers;
+    window.exportPDF   = exportPDF;
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .logo-box {
+      width: 48px; height: 48px;
+      background: #ff3c3c;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; color: #fff;
+      letter-spacing: -1px;
+    }
+    .header h1 { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+    .header p  { font-size: 13px; color: #888; margin-top: 2px; }
+
+    /* Card */
+    .card {
+      background: #13131a;
+      border: 1px solid #222;
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary  { background: #ff3c3c; color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+    .btn-export   { background: #1a8a4a; color: #fff; display: none; margin-left: 10px; }
+    .btn-export:hover { opacity: 0.88; }
+
+    #status { margin-top: 14px; font-size: 13px; color: #f59e0b; min-height: 20px; }
+    #count  { font-size: 13px; color: #4ade80; font-weight: 600; margin-left: 14px; }
+
+    /* Table */
+    #tableWrap { display: none; margin-top: 24px; overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead tr { background: #ff3c3c; }
+    thead th { padding: 10px 12px; text-align: left; color: #fff; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    tbody tr { border-bottom: 1px solid #1e1e28; transition: background 0.1s; }
+    tbody tr:hover { background: #1a1a26; }
+    tbody td { padding: 10px 12px; color: #ccc; }
+    tbody td:first-child { color: #555; text-align: center; }
+
+    .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <div class="logo-box">BZ</div>
+      <div>
+        <h1>BATTLEZONE</h1>
+        <p>User Directory Export Tool</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Export Users</div>
+      <p style="font-size:13px;color:#888;margin-bottom:18px;">
+        Fetches all registered users from Firebase and exports their <strong style="color:#ccc">Name</strong>, <strong style="color:#ccc">Phone</strong>, and <strong style="color:#ccc">Email</strong> as a PDF.
+      </p>
+      <div class="actions">
+        <button class="btn btn-primary" id="fetchBtn" onclick="fetchUsers()">
+          ⚡ Fetch Users
+        </button>
+        <button class="btn btn-export" id="exportBtn" onclick="exportPDF()">
+          ↓ Download PDF
+        </button>
+        <span id="count"></span>
+      </div>
+      <div id="status"></div>
+
+      <div id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Phone Number</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
