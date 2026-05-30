@@ -3703,7 +3703,7 @@ function buildTournamentCardHTML(t) {
       </div>`;
 
   return `
-  <div class="tournament-card" onclick="openDetail('${safeId}')">
+  <div class="tournament-card" ${full ? 'style="cursor:default;opacity:0.78"' : `onclick="openDetail('${safeId}')"`}>
     ${cardImgBanner}
     <div class="tournament-card-top" style="position:relative;padding-bottom:8px">
       <div style="flex:1;min-width:0">
@@ -3835,6 +3835,19 @@ async function registerTeam() {
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
+
+  // ── SLOT FULL GUARD — re-check live count before allowing registration ──
+  const liveCountSnap = await db.ref('registrationCounts/' + currentDetail.id).once('value');
+  const liveCount = liveCountSnap.val() || 0;
+  if (liveCount >= currentDetail.total) {
+    showToast('🔒 Tournament is full — no more slots available');
+    // Update local state to reflect full status
+    const tFull = tournaments.find(x => x.id === currentDetail.id);
+    if (tFull) { tFull.slots = tFull.total; tFull.status = 'full'; }
+    renderTournaments();
+    goBack();
+    return;
+  }
 
   // Disable button to prevent double-submit
   const btn = document.querySelector('.submit-btn');
