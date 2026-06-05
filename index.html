@@ -2958,63 +2958,34 @@ function checkRegisteredChatAccess() {
     db.ref('registrations').off('value', _registrationsListener);
     _registrationsListener = null;
   }
-  const emailLower = currentUser.email ? currentUser.email.toLowerCase() : '';
 
-  // ── Listen to accepted registrations ──
+  // ── Single source of truth: /registrations/ listener ──
+  // When admin accepts a request it writes here → we confirm registration
+  // and remove from pendingTournamentIds atomically. No race condition.
   _registrationsListener = db.ref('registrations').on('value', snap => {
     const newIds = new Set();
-    snap.forEach(tourneyNode => {
-      tourneyNode.forEach(reg => {
-        const r = reg.val();
-        if (currentUser.phone) {
-          const ph = currentUser.phone.replace(/\D/g, '');
+    if (currentUser.phone) {
+      const ph = currentUser.phone.replace(/\D/g, '').slice(-10);
+      snap.forEach(tourneyNode => {
+        tourneyNode.forEach(reg => {
+          const r = reg.val();
           const rph1 = (r.phone1 || '').replace(/\D/g, '');
           const rph2 = (r.phone2 || '').replace(/\D/g, '');
           if (ph && (rph1.endsWith(ph) || rph2.endsWith(ph))) {
             newIds.add(tourneyNode.key);
           }
-        }
+        });
       });
-    });
+    }
     registeredTournamentIds = newIds;
     persistRegisteredIds();
-    // If any pending tournament got accepted, remove from pending
-    if (newIds.size > 0) {
-      newIds.forEach(id => pendingTournamentIds.delete(id));
-      persistPendingIds();
-    }
+    // Atomically promote: remove from pending any tournament now confirmed accepted
+    newIds.forEach(id => pendingTournamentIds.delete(id));
+    persistPendingIds();
     if (tournaments.length) renderTournaments();
   }, () => {
     if (tournaments.length) renderTournaments();
   });
-
-  // ── Listen to pending registrationRequests for this user ──
-  if (currentUser.phone) {
-    const userPhone = '+91' + currentUser.phone.replace(/\D/g, '').slice(-10);
-    db.ref('registrationRequests').on('value', snap => {
-      const pendingIds = new Set();
-      snap.forEach(tourneyNode => {
-        tourneyNode.forEach(req => {
-          const r = req.val();
-          const rph1 = (r.phone1 || '').replace(/\D/g, '');
-          const ph   = userPhone.replace(/\D/g, '');
-          if (ph && rph1.endsWith(ph.slice(-10))) {
-            pendingIds.add(tourneyNode.key);
-          }
-        });
-      });
-      // Only keep as pending if not already accepted
-      pendingIds.forEach(id => {
-        if (!registeredTournamentIds.has(id)) pendingTournamentIds.add(id);
-      });
-      // Remove from pending any that are no longer in requests (declined or accepted)
-      [...pendingTournamentIds].forEach(id => {
-        if (!pendingIds.has(id) && !registeredTournamentIds.has(id)) pendingTournamentIds.delete(id);
-      });
-      persistPendingIds();
-      if (tournaments.length) renderTournaments();
-    });
-  }
 }
 
 function showAuthScreen() {
