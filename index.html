@@ -1779,7 +1779,7 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
+/* ===== CHAT PAGE — fixed layout, input always visible above nav ===== */
 #chat-page.active {
   position: fixed;
   top: 0;
@@ -1787,58 +1787,51 @@ body::after {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  bottom: 68px; /* height of bottom nav */
+  height: calc(100% - 68px);
   display: flex !important;
   flex-direction: column;
   z-index: 20;
   background: var(--bg-primary);
-  overflow: visible;
-  /* Ensure the page itself doesn't overflow under the nav */
-  padding-bottom: 0;
+  overflow: hidden;
 }
-/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
 #chat-page.active .chat-header {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   position: relative;
   top: auto;
-}
-#chat-page.active .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 12px;
-  min-height: 0; /* critical: allows flex child to shrink below content size */
-}
-#chat-page.active #chat-input-bar {
-  flex-shrink: 0;
-  width: 100%;
-  position: relative;
-  z-index: 5;
-  /* Ensure input bar is fully visible above nav */
-  background: var(--bg-primary);
-}
-#chat-page.active #chat-locked-msg {
-  flex-shrink: 0;
-  width: 100%;
-  position: relative;
-  z-index: 5;
-}
-#chat-page.active .chat-input-area {
-  position: relative !important;
-  flex-shrink: 0;
-  margin-top: 0;
-  bottom: auto !important;
-  z-index: 10;
 }
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
+#chat-page.active #pinned-banner {
+  flex: 0 0 auto;
+}
+#chat-page.active .chat-messages {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  min-height: 0;
+}
+#chat-page.active #chat-locked-msg {
+  flex: 0 0 auto;
+  width: 100%;
+}
+#chat-page.active #chat-input-bar {
+  flex: 0 0 auto;
+  width: 100%;
+  background: var(--bg-primary);
+}
+#chat-page.active .chat-input-area {
+  position: relative !important;
+  bottom: auto !important;
+  margin-top: 0;
+}
+/* Keyboard open: hide nav and expand chat to full screen */
 body.keyboard-open.on-chat-page #bottom-nav {
   display: none !important;
 }
 body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 0;
+  height: 100%;
 }
 
 /* ===== NEWS PAGE ===== */
