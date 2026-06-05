@@ -1787,7 +1787,6 @@ body::after {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  /* stop at bottom nav top edge */
   bottom: 68px;
   display: flex !important;
   flex-direction: column;
@@ -1799,10 +1798,9 @@ body::after {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  /* pad enough so last message is never hidden under the fixed input bar (~70px tall) */
-  padding-bottom: 75px;
+  padding-bottom: 120px;
 }
-/* ---- Input bar: fixed, sits exactly above bottom nav ---- */
+/* Input bar: fixed exactly above bottom nav */
 #chat-input-bar {
   position: fixed !important;
   left: 50%;
@@ -1820,7 +1818,7 @@ body::after {
   margin-top: 0;
   padding: 10px 14px;
 }
-/* ---- Locked bar: same fixed position ---- */
+/* Locked bar: same fixed position */
 #chat-locked-msg {
   position: fixed !important;
   left: 50%;
@@ -1836,7 +1834,7 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard opens: nav hides, both bars slide to bottom: 0 */
+/* Keyboard open: nav hides, bars move to bottom: 0 */
 body.keyboard-open #bottom-nav {
   display: none;
 }
@@ -1846,9 +1844,6 @@ body.keyboard-open #chat-page.active {
 body.keyboard-open #chat-input-bar,
 body.keyboard-open #chat-locked-msg {
   bottom: 0 !important;
-}
-body.keyboard-open #chat-page.active .chat-messages {
-  padding-bottom: 75px;
 }
 
 /* ===== NEWS PAGE ===== */
