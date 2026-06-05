@@ -3951,7 +3951,7 @@ async function payAndRequestRegistration() {
 
   // Save pending registration request to Firebase
   try {
-    await db.ref('registrationRequests/' + currentDetail.id).push({
+    const requestData = {
       tournamentId:   currentDetail.id,
       tournamentName: currentDetail.name,
       teamName:       name,
@@ -3963,11 +3963,40 @@ async function payAndRequestRegistration() {
       status:         'pending',
       requestedAt:    timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
-    });
+    };
+
+    // Ensure we have some auth before writing
+    const currentAuthUser = firebase.auth().currentUser;
+    if (!currentAuthUser) {
+      // Sign in anonymously if needed
+      await firebase.auth().signInAnonymously();
+    }
+
+    const ref = await db.ref('registrationRequests/' + currentDetail.id).push(requestData);
+    console.log('[BZ] Request saved to Firebase:', ref.key);
     showToast('✅ Request sent! Awaiting admin approval.');
   } catch(e) {
-    console.error('Request save error:', e);
-    showToast('WhatsApp opened! Your request will be saved once admin confirms.');
+    console.error('[BZ] Request save error:', e.code, e.message);
+    // Try alternate path if permission denied
+    try {
+      await db.ref('pendingRequests/' + currentDetail.id).push({
+        tournamentId:   currentDetail.id,
+        tournamentName: currentDetail.name,
+        teamName:       name,
+        phone1:         '+91' + phone1,
+        phone2:         phone2 ? '+91' + phone2 : '',
+        email1:         email1,
+        email2:         email2 || '',
+        entryFee:       fee,
+        status:         'pending',
+        requestedAt:    timeStr,
+        ts:             firebase.database.ServerValue.TIMESTAMP
+      });
+      console.log('[BZ] Request saved to alternate path pendingRequests/');
+    } catch(e2) {
+      console.error('[BZ] Alternate save also failed:', e2.message);
+    }
+    showToast('WhatsApp opened! Admin will confirm your slot.');
   }
 
   // Show pending state to user

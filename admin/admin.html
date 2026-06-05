@@ -2177,25 +2177,45 @@ async function loadRequestsAdmin() {
     const tournamentNames = {};
     tSnap.forEach(c => { tournamentNames[c.key] = c.val().name || c.key; });
 
-    // Load all pending requests
-    const reqSnap = await db.ref('registrationRequests').once('value');
     allRequestsData = [];
 
-    reqSnap.forEach(tourneyNode => {
-      const tId = tourneyNode.key;
-      const tName = tournamentNames[tId] || tId;
-      tourneyNode.forEach(reqNode => {
-        const val = reqNode.val();
-        if (val.status === 'pending') {
-          allRequestsData.push({
-            tournamentId:   tId,
-            tournamentName: tName,
-            reqKey:         reqNode.key,
-            ...val
-          });
-        }
+    // Helper to flatten a snapshot into allRequestsData
+    function flattenSnap(reqSnap) {
+      console.log('[BZ-ADMIN] snapshot path exists:', reqSnap.exists(), 'numChildren:', reqSnap.numChildren());
+      reqSnap.forEach(tourneyNode => {
+        const tId = tourneyNode.key;
+        const tName = tournamentNames[tId] || tId;
+        tourneyNode.forEach(reqNode => {
+          const val = reqNode.val();
+          console.log('[BZ-ADMIN] request found:', tId, reqNode.key, val);
+          // Avoid duplicates
+          if (!allRequestsData.find(x => x.reqKey === reqNode.key)) {
+            allRequestsData.push({
+              tournamentId:   tId,
+              tournamentName: tName,
+              reqKey:         reqNode.key,
+              ...val
+            });
+          }
+        });
       });
-    });
+    }
+
+    // Primary path
+    try {
+      const reqSnap = await db.ref('registrationRequests').once('value');
+      flattenSnap(reqSnap);
+    } catch(e1) {
+      console.warn('[BZ-ADMIN] registrationRequests read failed:', e1.message);
+    }
+
+    // Fallback path (used if primary write failed)
+    try {
+      const altSnap = await db.ref('pendingRequests').once('value');
+      flattenSnap(altSnap);
+    } catch(e2) {
+      console.warn('[BZ-ADMIN] pendingRequests read failed:', e2.message);
+    }
 
     allRequestsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
@@ -2232,7 +2252,8 @@ async function loadRequestsAdmin() {
     filterRequests();
 
   } catch(e) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + escHTML(e.message) + '</div></div>';
+    console.error('[BZ-ADMIN] loadRequestsAdmin error:', e);
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">Error: ' + escHTML(e.message) + '<br><span style="font-size:10px;color:var(--accent-orange)">Check Firebase rules — registrationRequests must allow .read for admin</span></div></div>';
   }
 }
 
@@ -2286,10 +2307,19 @@ function renderRequestsAdmin(data) {
 async function acceptRequest(tournamentId, reqKey) {
   if (!db) { showToast('❌ Firebase not connected'); return; }
   try {
-    // 1. Get the request data
-    const reqSnap = await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).once('value');
-    if (!reqSnap.exists()) { showToast('⚠️ Request not found'); return; }
-    const reqData = reqSnap.val();
+    // Try primary path first, then fallback
+    let reqData = null;
+    let sourcePath = null;
+
+    const snap1 = await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).once('value');
+    if (snap1.exists()) { reqData = snap1.val(); sourcePath = 'registrationRequests'; }
+
+    if (!reqData) {
+      const snap2 = await db.ref('pendingRequests/' + tournamentId + '/' + reqKey).once('value');
+      if (snap2.exists()) { reqData = snap2.val(); sourcePath = 'pendingRequests'; }
+    }
+
+    if (!reqData) { showToast('⚠️ Request not found'); return; }
 
     const now = new Date();
     const timeStr = now.toLocaleString('en-IN', {
@@ -2314,8 +2344,8 @@ async function acceptRequest(tournamentId, reqKey) {
     // 3. Increment slot count
     await db.ref('registrationCounts/' + tournamentId).transaction(c => (c || 0) + 1);
 
-    // 4. Mark request as accepted (or delete it)
-    await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).remove();
+    // 4. Remove from source path
+    await db.ref(sourcePath + '/' + tournamentId + '/' + reqKey).remove();
 
     showToast('✅ ' + (reqData.teamName || 'Team') + ' accepted & registered!');
     // Remove row from local data
@@ -2337,9 +2367,19 @@ async function declineRequest(tournamentId, reqKey) {
   if (!confirm('Decline this registration request? The team will not be registered.')) return;
   if (!db) { showToast('❌ Firebase not connected'); return; }
   try {
-    const reqSnap = await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).once('value');
-    const teamName = reqSnap.exists() ? (reqSnap.val().teamName || 'Team') : 'Team';
-    await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).remove();
+    // Try both paths
+    let teamName = 'Team';
+    const snap1 = await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).once('value');
+    if (snap1.exists()) {
+      teamName = snap1.val().teamName || 'Team';
+      await db.ref('registrationRequests/' + tournamentId + '/' + reqKey).remove();
+    } else {
+      const snap2 = await db.ref('pendingRequests/' + tournamentId + '/' + reqKey).once('value');
+      if (snap2.exists()) {
+        teamName = snap2.val().teamName || 'Team';
+        await db.ref('pendingRequests/' + tournamentId + '/' + reqKey).remove();
+      }
+    }
     showToast('❌ ' + teamName + ' request declined.');
     allRequestsData = allRequestsData.filter(r => r.reqKey !== reqKey);
     const badge = document.getElementById('requests-badge');
@@ -2358,15 +2398,21 @@ async function declineRequest(tournamentId, reqKey) {
 function startRequestsBadgePoller() {
   if (!db) return;
   function refreshBadge() {
-    db.ref('registrationRequests').once('value', snap => {
-      let count = 0;
-      snap.forEach(t => { t.forEach(r => { if (r.val().status === 'pending') count++; }); });
+    let count = 0;
+    const updateBadge = () => {
       const badge = document.getElementById('requests-badge');
       if (badge) {
         if (count > 0) { badge.textContent = count; badge.style.display = 'inline-block'; }
         else { badge.style.display = 'none'; }
       }
-    });
+    };
+    db.ref('registrationRequests').once('value', snap => {
+      snap.forEach(t => { count += t.numChildren(); });
+      db.ref('pendingRequests').once('value', snap2 => {
+        snap2.forEach(t => { count += t.numChildren(); });
+        updateBadge();
+      }).catch(() => updateBadge());
+    }).catch(() => updateBadge());
   }
   refreshBadge();
   setInterval(refreshBadge, 30000);
