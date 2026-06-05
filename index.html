@@ -1017,8 +1017,8 @@ body::after {
 }
 .report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
-  position: sticky;
-  bottom: 0;
+  position: relative;
+  bottom: auto;
   background: rgba(8,10,14,0.95);
   backdrop-filter: blur(12px);
   padding: 12px 14px;
@@ -1787,12 +1787,14 @@ body::after {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  bottom: 68px;
+  bottom: 68px; /* height of bottom nav */
   display: flex !important;
   flex-direction: column;
   z-index: 20;
   background: var(--bg-primary);
   overflow: hidden;
+  /* Ensure the page itself doesn't overflow under the nav */
+  padding-bottom: 0;
 }
 /* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
 #chat-page.active .chat-header {
@@ -1819,10 +1821,12 @@ body::after {
   z-index: 5;
 }
 #chat-page.active .chat-input-area {
-  position: relative;
+  position: relative !important;
   flex-shrink: 0;
   margin-top: 0;
-  bottom: auto;
+  bottom: auto !important;
+  /* Ensure it never overlaps the bottom nav */
+  z-index: 10;
 }
 #chat-page.active .emoji-row {
   display: none;
