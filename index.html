@@ -939,7 +939,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 300px;
+  min-height: 0;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y pinch-zoom;
@@ -1805,6 +1805,18 @@ body::after {
   overflow-y: auto;
   padding-bottom: 12px;
   min-height: unset;
+}
+#chat-page.active #chat-input-bar {
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+#chat-page.active #chat-locked-msg {
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+  z-index: 5;
 }
 #chat-page.active .chat-input-area {
   position: relative;
@@ -3745,7 +3757,10 @@ function buildTournamentCardHTML(t) {
           ${schedHTML}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;padding-left:10px">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;padding-left:10px">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase">Entry Fee</div>
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent-orange);letter-spacing:0.04em">${t.fee || 'FREE'}</div>
+        <div style="width:100%;height:1px;background:rgba(255,255,255,0.07);margin:3px 0"></div>
         <div class="prize-amount">${t.prize || ''}</div>
         <div class="prize-sub">Prize Pool</div>
       </div>
