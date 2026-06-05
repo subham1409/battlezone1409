@@ -2484,7 +2484,19 @@ body.keyboard-open.on-chat-page #chat-page.active {
             </div>
           </div>
 
-          <button class="submit-btn" onclick="registerTeam()">⚡ Register Squad</button>
+          <!-- Step 1: Form submit → show pay now panel -->
+          <button class="submit-btn" id="reg-submit-btn" onclick="validateAndShowPayment()">⚡ Continue to Payment</button>
+
+          <!-- Step 2: Pay Now panel (hidden until form validated) -->
+          <div id="pay-now-panel" style="display:none;margin-top:14px;background:linear-gradient(135deg,rgba(255,120,0,0.1),rgba(255,60,0,0.05));border:1px solid rgba(255,120,0,0.35);border-radius:14px;padding:18px 16px">
+            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:10px">⚡ Payment &amp; Confirmation</div>
+            <div id="pay-summary" style="font-size:13px;color:var(--text-secondary);line-height:1.8;margin-bottom:14px;font-family:var(--font-mono);background:rgba(0,0,0,0.3);border-radius:10px;padding:12px 14px;border:1px solid rgba(255,255,255,0.05)"></div>
+            <button class="submit-btn" id="pay-now-btn" onclick="payAndRequestRegistration()" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px">
+              <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.533 5.858L.057 23.57a.75.75 0 00.916.916l5.712-1.476A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.525-5.388-1.437l-.386-.228-4.003 1.034 1.053-3.885-.25-.4A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              PAY NOW — WhatsApp
+            </button>
+            <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;font-family:var(--font-mono)">You'll be redirected to WhatsApp to complete payment &amp; send your details. Your slot will be confirmed by admin.</div>
+          </div>
         </div>
       </div>
       <div style="height:20px"></div>
@@ -3786,6 +3798,11 @@ function openDetail(id) {
   document.getElementById('email2-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
+  // Reset pay-now panel
+  const payPanel = document.getElementById('pay-now-panel');
+  const regBtn = document.getElementById('reg-submit-btn');
+  if (payPanel) payPanel.style.display = 'none';
+  if (regBtn) { regBtn.style.display = ''; regBtn.disabled = false; regBtn.textContent = '⚡ Continue to Payment'; }
 
   // Show "already registered" panel or the reg form depending on user's status
   const alreadyReg = registeredTournamentIds.has(id);
@@ -3814,34 +3831,29 @@ function toggleRules() {
   arrow.textContent = open ? '▲' : '▼';
 }
 
-async function registerTeam() {
-  // Block guests
+// ── STEP 1: Validate form → show Pay Now panel ──────────────────────────
+async function validateAndShowPayment() {
   if (currentUser.isGuest) {
     showToast('🔒 Sign up to register in tournaments');
     setTimeout(() => showAuthScreen(), 600);
     return;
   }
-  const name = document.getElementById('team-name-input').value.trim();
+  const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
   const email1 = document.getElementById('email1-input').value.trim();
   const email2 = document.getElementById('email2-input').value.trim();
-  const p1 = '';
-  const p2 = '';
-  const p3 = '';
-  const p4 = '';
 
-  if (!name) { showToast('⚠️ Enter your team name'); return; }
+  if (!name)   { showToast('⚠️ Enter your team name'); return; }
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
   if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
-  // ── SLOT FULL GUARD — re-check live count before allowing registration ──
+  // ── SLOT FULL GUARD ──
   const liveCountSnap = await db.ref('registrationCounts/' + currentDetail.id).once('value');
   const liveCount = liveCountSnap.val() || 0;
   if (liveCount >= currentDetail.total) {
     showToast('🔒 Tournament is full — no more slots available');
-    // Update local state to reflect full status
     const tFull = tournaments.find(x => x.id === currentDetail.id);
     if (tFull) { tFull.slots = tFull.total; tFull.status = 'full'; }
     renderTournaments();
@@ -3849,65 +3861,97 @@ async function registerTeam() {
     return;
   }
 
-  // Disable button to prevent double-submit
-  const btn = document.querySelector('.submit-btn');
+  // ── DUPLICATE CHECK ──
+  const btn = document.getElementById('reg-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
-
   try {
-    // ── DUPLICATE CHECK ──────────────────────────────────────────────────
-    // Check if this tournament already has a registration with matching
-    // email or phone number
     const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
-    if (existingSnap.exists()) {
-      const submittedPhone = '+91' + phone1;
-      const submittedEmail = email1.toLowerCase();
+    // Also check pending requests
+    const pendingSnap  = await db.ref('registrationRequests/' + currentDetail.id).once('value');
+    const submittedPhone = '+91' + phone1;
+    const submittedEmail = email1.toLowerCase();
+    let dupReason = null;
 
-      let dupReason = null;
-
-      existingSnap.forEach(regNode => {
-        if (dupReason) return; // already found
-        const r = regNode.val();
-
-        // Email match
-        if ((r.email1 || '').toLowerCase() === submittedEmail ||
-            (r.email2 || '').toLowerCase() === submittedEmail) {
-          dupReason = 'email address';
-          return;
-        }
-
-        // Phone match
-        if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) {
-          dupReason = 'phone number';
-          return;
-        }
+    [existingSnap, pendingSnap].forEach(snap => {
+      if (!snap.exists()) return;
+      snap.forEach(node => {
+        if (dupReason) return;
+        const r = node.val();
+        if ((r.email1||'').toLowerCase() === submittedEmail || (r.email2||'').toLowerCase() === submittedEmail) { dupReason = 'email address'; return; }
+        if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) { dupReason = 'phone number'; return; }
       });
-
-      if (dupReason) {
-        showToast('⚠️ Already registered! Duplicate ' + dupReason + ' found.');
-        if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Squad'; }
-        // Show a clear "already registered" panel
-        document.getElementById('detail-reg-form-section').style.display = 'none';
-        const alreadyEl = document.getElementById('detail-registered-state');
-        alreadyEl.style.display = 'block';
-        alreadyEl.querySelector('div > div:nth-child(3)').textContent =
-          'A squad with the same ' + dupReason + ' is already registered for this tournament.';
-        registeredTournamentIds.add(currentDetail.id);
-        renderTournaments();
-        return;
-      }
-    }
-    // ─────────────────────────────────────────────────────────────────────
-
-    if (btn) btn.textContent = 'REGISTERING...';
-
-    const now = new Date();
-    const timeStr = now.toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short',
-      year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // 1: Save registration entry under /registrations/{tournamentId}/
-    await db.ref('registrations/' + currentDetail.id).push({
+    if (dupReason) {
+      showToast('⚠️ Already registered! Duplicate ' + dupReason + ' found.');
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Continue to Payment'; }
+      document.getElementById('detail-reg-form-section').style.display = 'none';
+      const alreadyEl = document.getElementById('detail-registered-state');
+      alreadyEl.style.display = 'block';
+      alreadyEl.querySelector('div > div:nth-child(3)').textContent =
+        'A squad with the same ' + dupReason + ' is already registered for this tournament.';
+      registeredTournamentIds.add(currentDetail.id);
+      renderTournaments();
+      return;
+    }
+  } catch(e) { /* non-fatal — proceed */ }
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Continue to Payment'; }
+
+  // ── Show payment panel ──
+  const fee = currentDetail.fee || 'FREE';
+  const summaryEl = document.getElementById('pay-summary');
+  summaryEl.innerHTML =
+    '🏆 Tournament : ' + escapeHTML(currentDetail.name) + '<br>' +
+    '👥 Team Name  : ' + escapeHTML(name) + '<br>' +
+    '📞 Phone 1    : +91' + escapeHTML(phone1) + (phone2 ? '<br>📞 Phone 2    : +91' + escapeHTML(phone2) : '') + '<br>' +
+    '📧 Email      : ' + escapeHTML(email1) + (email2 ? '<br>📧 Email 2    : ' + escapeHTML(email2) : '') + '<br>' +
+    '💰 Entry Fee  : ' + escapeHTML(fee);
+
+  document.getElementById('pay-now-panel').style.display = 'block';
+  document.getElementById('reg-submit-btn').style.display = 'none';
+  document.getElementById('pay-now-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── STEP 2: WhatsApp redirect + save pending request ─────────────────────
+async function payAndRequestRegistration() {
+  if (!currentDetail) return;
+  const name   = document.getElementById('team-name-input').value.trim();
+  const phone1 = document.getElementById('phone1-input').value.trim();
+  const phone2 = document.getElementById('phone2-input').value.trim();
+  const email1 = document.getElementById('email1-input').value.trim();
+  const email2 = document.getElementById('email2-input').value.trim();
+  const fee    = currentDetail.fee || 'FREE';
+
+  const now = new Date();
+  const timeStr = now.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short',
+    year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  // Build WhatsApp message
+  const waMsg = [
+    '🎮 *BATTLEZONE — Tournament Registration*',
+    '',
+    '🏆 Tournament : ' + currentDetail.name,
+    '👥 Team Name  : ' + name,
+    '📞 Phone 1    : +91' + phone1,
+    phone2 ? '📞 Phone 2    : +91' + phone2 : '',
+    '📧 Email      : ' + email1,
+    email2 ? '📧 Email 2    : ' + email2 : '',
+    '',
+    '💰 Entry Fee  : ' + fee,
+    '',
+    '⚡ Please confirm registration after payment. Thank you!'
+  ].filter(l => l !== undefined && l !== '').join('\n');
+
+  // Open WhatsApp (your number)
+  const waNumber = '918849110467'; // your WhatsApp number
+  const waUrl = 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent(waMsg);
+  window.open(waUrl, '_blank');
+
+  // Save pending registration request to Firebase
+  try {
+    await db.ref('registrationRequests/' + currentDetail.id).push({
       tournamentId:   currentDetail.id,
       tournamentName: currentDetail.name,
       teamName:       name,
@@ -3915,53 +3959,34 @@ async function registerTeam() {
       phone2:         phone2 ? '+91' + phone2 : '',
       email1:         email1,
       email2:         email2 || '',
-      registeredAt:   timeStr,
+      entryFee:       fee,
+      status:         'pending',
+      requestedAt:    timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
     });
-
-    // 2: Increment registrationCount in a separate writable node
-    await db.ref('registrationCounts/' + currentDetail.id).transaction(current => {
-      return (current || 0) + 1;
-    });
-
-    // 3: Update local slot count for UI
-    const t = tournaments.find(x => x.id === currentDetail.id);
-    if (t) {
-      t.slots = Math.min(t.slots + 1, t.total);
-      if (t.slots >= t.total) t.status = 'full';
-    }
-
-    document.getElementById('success-modal').classList.add('open');
-    // Unlock chat immediately after registration
-    registeredTournamentIds.add(currentDetail.id);
-    persistRegisteredIds(); // Persist so page reload keeps CHAT button
-    renderTournaments();
-    checkRegisteredChatAccess();
-
-    // Save tournament registration to Excel (non-blocking)
-    try {
-      fetch('/api/save-tournament-excel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tournamentName: currentDetail.name,
-          teamName: name,
-          phone1: '+91' + phone1,
-          phone2: phone2 ? '+91' + phone2 : '',
-          email1: email1,
-          email2: email2 || '',
-          registeredAt: timeStr
-        })
-      }).catch(() => {});
-    } catch(e) {}
-
+    showToast('✅ Request sent! Awaiting admin approval.');
   } catch(e) {
-    console.error('Registration error:', e);
-    showToast('Registration failed: ' + (e.message || 'Check connection'));
+    console.error('Request save error:', e);
+    showToast('WhatsApp opened! Your request will be saved once admin confirms.');
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Register Squad'; }
+  // Show pending state to user
+  document.getElementById('detail-reg-form-section').style.display = 'none';
+  document.getElementById('detail-registered-state').style.display = 'block';
+  // Update the registered state message for "pending" state
+  const stateBox = document.getElementById('detail-registered-state').querySelector('div');
+  if (stateBox) {
+    stateBox.innerHTML = `
+      <div style="font-size:36px;margin-bottom:10px">⏳</div>
+      <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Request Pending!</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your registration request has been sent to the admin via WhatsApp.<br>Your slot will be confirmed after admin approval.</div>
+      <button class="join-btn" onclick="openTournamentChat('${currentDetail.id}','${escapeHTML(currentDetail.name)}')" style="width:100%;margin:0">💬 Tournament Chat</button>
+    `;
+  }
 }
+
+// Legacy alias kept for any stale references
+async function registerTeam() { await validateAndShowPayment(); }
 
 function closeModal() {
   document.getElementById('success-modal').classList.remove('open');
