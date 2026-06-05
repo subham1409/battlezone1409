@@ -2494,14 +2494,7 @@ body.keyboard-open #chat-locked-msg {
                 <input type="tel" class="form-input" placeholder="9876543210" id="phone2-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone2-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone2-wrap').style.borderColor='rgba(255,255,255,0.07)'">
               </div>
             </div>
-            <div class="field-group" style="margin-bottom:10px">
-              <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="email" class="form-input" placeholder="captain@example.com" id="email1-input">
-            </div>
-            <div class="field-group">
-              <div class="form-label">Email 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
-              <input type="email" class="form-input" placeholder="player2@example.com" id="email2-input">
-            </div>
+
           </div>
 
           <!-- Step 1: Form submit → show pay now panel -->
@@ -2962,18 +2955,12 @@ function checkRegisteredChatAccess() {
     db.ref('registrations').off('value', _registrationsListener);
     _registrationsListener = null;
   }
-  const emailLower = currentUser.email.toLowerCase();
+  const emailLower = currentUser.email ? currentUser.email.toLowerCase() : '';
   _registrationsListener = db.ref('registrations').on('value', snap => {
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
         const r = reg.val();
-        const e1 = (r.email1 || '').toLowerCase();
-        const e2 = (r.email2 || '').toLowerCase();
-        if (e1 === emailLower || (e2 && e2 === emailLower)) {
-          newIds.add(tourneyNode.key);
-          return;
-        }
         if (currentUser.phone) {
           const ph = currentUser.phone.replace(/\D/g, '');
           const rph1 = (r.phone1 || '').replace(/\D/g, '');
@@ -3845,8 +3832,6 @@ function openDetail(id) {
   document.getElementById('team-name-input').value = '';
   document.getElementById('phone1-input').value = '';
   document.getElementById('phone2-input').value = '';
-  document.getElementById('email1-input').value = '';
-  document.getElementById('email2-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
   // Reset pay-now panel
@@ -3892,12 +3877,9 @@ async function validateAndShowPayment() {
   const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
-  const email1 = document.getElementById('email1-input').value.trim();
-  const email2 = document.getElementById('email2-input').value.trim();
 
   if (!name)   { showToast('⚠️ Enter your team name'); return; }
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
-  if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // ── SLOT FULL GUARD ──
@@ -3920,7 +3902,6 @@ async function validateAndShowPayment() {
     // Also check pending requests
     const pendingSnap  = await db.ref('registrationRequests/' + currentDetail.id).once('value');
     const submittedPhone = '+91' + phone1;
-    const submittedEmail = email1.toLowerCase();
     let dupReason = null;
 
     [existingSnap, pendingSnap].forEach(snap => {
@@ -3928,7 +3909,6 @@ async function validateAndShowPayment() {
       snap.forEach(node => {
         if (dupReason) return;
         const r = node.val();
-        if ((r.email1||'').toLowerCase() === submittedEmail || (r.email2||'').toLowerCase() === submittedEmail) { dupReason = 'email address'; return; }
         if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) { dupReason = 'phone number'; return; }
       });
     });
@@ -3955,7 +3935,6 @@ async function validateAndShowPayment() {
     '🏆 Tournament : ' + escapeHTML(currentDetail.name) + '<br>' +
     '👥 Team Name  : ' + escapeHTML(name) + '<br>' +
     '📞 Phone 1    : +91' + escapeHTML(phone1) + (phone2 ? '<br>📞 Phone 2    : +91' + escapeHTML(phone2) : '') + '<br>' +
-    '📧 Email      : ' + escapeHTML(email1) + (email2 ? '<br>📧 Email 2    : ' + escapeHTML(email2) : '') + '<br>' +
     '💰 Entry Fee  : ' + escapeHTML(fee);
 
   document.getElementById('pay-now-panel').style.display = 'block';
@@ -3969,8 +3948,6 @@ async function payAndRequestRegistration() {
   const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
-  const email1 = document.getElementById('email1-input').value.trim();
-  const email2 = document.getElementById('email2-input').value.trim();
   const fee    = currentDetail.fee || 'FREE';
 
   const now = new Date();
@@ -3987,8 +3964,6 @@ async function payAndRequestRegistration() {
     '👥 Team Name  : ' + name,
     '📞 Phone 1    : +91' + phone1,
     phone2 ? '📞 Phone 2    : +91' + phone2 : '',
-    '📧 Email      : ' + email1,
-    email2 ? '📧 Email 2    : ' + email2 : '',
     '',
     '💰 Entry Fee  : ' + fee,
     '',
@@ -4008,8 +3983,6 @@ async function payAndRequestRegistration() {
       teamName:       name,
       phone1:         '+91' + phone1,
       phone2:         phone2 ? '+91' + phone2 : '',
-      email1:         email1,
-      email2:         email2 || '',
       entryFee:       fee,
       status:         'pending',
       requestedAt:    timeStr,
@@ -4036,8 +4009,6 @@ async function payAndRequestRegistration() {
         teamName:       name,
         phone1:         '+91' + phone1,
         phone2:         phone2 ? '+91' + phone2 : '',
-        email1:         email1,
-        email2:         email2 || '',
         entryFee:       fee,
         status:         'pending',
         requestedAt:    timeStr,
@@ -4344,8 +4315,8 @@ async function loadMyMatches() {
       const tName = tournaments.find(x => x.id === tourneyId);
       tourneyNode.forEach(reg => {
         const r = reg.val();
-        if (r.email1 === currentUser.email || 
-           (currentUser.bgmiId && r.players && r.players.includes(currentUser.bgmiId))) {
+        if ((currentUser.bgmiId && r.players && r.players.includes(currentUser.bgmiId)) ||
+            (currentUser.phone && r.phone1 && r.phone1.replace(/\D/g,'').endsWith(currentUser.phone.replace(/\D/g,'')))) {
           myRegs.push({
             tournamentId: tourneyId,
             tournamentName: r.tournamentName || (tName ? tName.name : tourneyId),
