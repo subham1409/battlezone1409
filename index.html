@@ -2497,6 +2497,14 @@ body.keyboard-open #chat-locked-msg {
 
           </div>
 
+          <!-- Email for registration -->
+          <div class="field-group" style="margin-top:4px">
+            <div class="form-label">Email Address <span style="color:var(--accent-red);font-size:11px">*</span></div>
+            <input type="email" class="form-input" placeholder="yourname@gmail.com" id="reg-email-input"
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-family:var(--font-body);font-size:14px;width:100%;outline:none"
+              onfocus="this.style.borderColor='rgba(255,120,0,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'">
+          </div>
+
           <!-- Step 1: Form submit → show pay now panel -->
           <button class="submit-btn" id="reg-submit-btn" onclick="validateAndShowPayment()">⚡ Continue to Payment</button>
 
@@ -2938,54 +2946,67 @@ function applyLoggedInUser(userData, skipToast) {
 }
 
 let _registrationsListener = null;
+let _requestsListener = null;
 
 function checkRegisteredChatAccess() {
-  if (currentUser.isGuest || !currentUser.email) {
-    registeredTournamentIds = new Set();
-    pendingTournamentIds    = new Set();
-    clearPersistedRegisteredIds();
-    clearPersistedPendingIds();
-    updateChatAccessUI(false);
-    if (_registrationsListener) {
-      db.ref('registrations').off('value', _registrationsListener);
-      _registrationsListener = null;
-    }
-    if (tournaments.length) renderTournaments();
-    return;
-  }
-  updateChatAccessUI(true);
+  // Detach any old listeners
   if (_registrationsListener) {
     db.ref('registrations').off('value', _registrationsListener);
     _registrationsListener = null;
   }
+  if (_requestsListener) {
+    db.ref('registrationRequests').off('value', _requestsListener);
+    _requestsListener = null;
+  }
 
-  // ── Single source of truth: /registrations/ listener ──
-  // When admin accepts a request it writes here → we confirm registration
-  // and remove from pendingTournamentIds atomically. No race condition.
+  if (currentUser.isGuest || !currentUser.phone) {
+    registeredTournamentIds = new Set();
+    pendingTournamentIds    = new Set();
+    updateChatAccessUI(false);
+    if (tournaments.length) renderTournaments();
+    return;
+  }
+
+  updateChatAccessUI(true);
+  const userPh = currentUser.phone.replace(/\D/g, '').slice(-10);
+
+  // ── Listener 1: /registrations/ → ACCEPTED ──
+  // When admin accepts a request it lands here.
   _registrationsListener = db.ref('registrations').on('value', snap => {
     const newIds = new Set();
-    if (currentUser.phone) {
-      const ph = currentUser.phone.replace(/\D/g, '').slice(-10);
-      snap.forEach(tourneyNode => {
-        tourneyNode.forEach(reg => {
-          const r = reg.val();
-          const rph1 = (r.phone1 || '').replace(/\D/g, '');
-          const rph2 = (r.phone2 || '').replace(/\D/g, '');
-          if (ph && (rph1.endsWith(ph) || rph2.endsWith(ph))) {
-            newIds.add(tourneyNode.key);
-          }
-        });
+    snap.forEach(tourneyNode => {
+      tourneyNode.forEach(reg => {
+        const r = reg.val();
+        const rph1 = (r.phone1 || '').replace(/\D/g, '');
+        const rph2 = (r.phone2 || '').replace(/\D/g, '');
+        if (rph1.endsWith(userPh) || rph2.endsWith(userPh)) {
+          newIds.add(tourneyNode.key);
+        }
       });
-    }
+    });
     registeredTournamentIds = newIds;
-    persistRegisteredIds();
-    // Atomically promote: remove from pending any tournament now confirmed accepted
+    // Remove accepted ones from pending — accepted wins
     newIds.forEach(id => pendingTournamentIds.delete(id));
-    persistPendingIds();
     if (tournaments.length) renderTournaments();
-  }, () => {
+  }, () => { if (tournaments.length) renderTournaments(); });
+
+  // ── Listener 2: /registrationRequests/ → PENDING ──
+  // Shows pending only for tournaments NOT already accepted.
+  _requestsListener = db.ref('registrationRequests').on('value', snap => {
+    const newPending = new Set();
+    snap.forEach(tourneyNode => {
+      tourneyNode.forEach(req => {
+        const r = req.val();
+        const rph1 = (r.phone1 || '').replace(/\D/g, '');
+        if (rph1.endsWith(userPh)) {
+          newPending.add(tourneyNode.key);
+        }
+      });
+    });
+    // Only mark pending if NOT already in accepted registrations
+    pendingTournamentIds = new Set([...newPending].filter(id => !registeredTournamentIds.has(id)));
     if (tournaments.length) renderTournaments();
-  });
+  }, () => { if (tournaments.length) renderTournaments(); });
 }
 
 function showAuthScreen() {
@@ -3016,7 +3037,6 @@ function updateChatAccessUI(hasAccess) {
 
 function doLogout() {
   clearSession();
-  clearPersistedRegisteredIds();
   // Detach real-time registrations listener on logout
   if (typeof _registrationsListener !== 'undefined' && _registrationsListener) {
     db.ref('registrations').off('value', _registrationsListener);
@@ -3293,35 +3313,7 @@ let results = [];     // Now loaded from API
 let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered (accepted) for
 let pendingTournamentIds   = new Set(); // tracks which tournaments current user has a pending request for
 
-// ── Persist registered tournament IDs so page reload doesn't reset them ──
-function persistRegisteredIds() {
-  try { localStorage.setItem('bz_reg_ids', JSON.stringify([...registeredTournamentIds])); } catch(e) {}
-}
-function loadPersistedRegisteredIds() {
-  try {
-    const raw = localStorage.getItem('bz_reg_ids');
-    if (raw) return new Set(JSON.parse(raw));
-  } catch(e) {}
-  return new Set();
-}
-function clearPersistedRegisteredIds() {
-  try { localStorage.removeItem('bz_reg_ids'); } catch(e) {}
-}
 
-// ── Persist pending tournament IDs ──
-function persistPendingIds() {
-  try { localStorage.setItem('bz_pending_ids', JSON.stringify([...pendingTournamentIds])); } catch(e) {}
-}
-function loadPersistedPendingIds() {
-  try {
-    const raw = localStorage.getItem('bz_pending_ids');
-    if (raw) return new Set(JSON.parse(raw));
-  } catch(e) {}
-  return new Set();
-}
-function clearPersistedPendingIds() {
-  try { localStorage.removeItem('bz_pending_ids'); } catch(e) {}
-}
 
 // ========= API HELPERS =========
 async function apiFetch(path) {
@@ -3361,10 +3353,6 @@ function mapTournamentStatus(s) {
 window.onload = async function() {
   // ── Show skeleton FIRST — before any awaits — so Firebase listener can't overwrite it prematurely ──
   showTournamentSkeleton();
-
-  // ── RESTORE REGISTERED & PENDING IDS IMMEDIATELY so renders show correct buttons ──
-  registeredTournamentIds = loadPersistedRegisteredIds();
-  pendingTournamentIds    = loadPersistedPendingIds();
 
   // ── RESTORE SESSION FROM localStorage (prevents redirect on refresh) ──
   const savedSession = loadPersistedSession();
@@ -3862,6 +3850,8 @@ function openDetail(id) {
   document.getElementById('team-name-input').value = '';
   document.getElementById('phone1-input').value = '';
   document.getElementById('phone2-input').value = '';
+  const emailInputEl = document.getElementById('reg-email-input');
+  if (emailInputEl) emailInputEl.value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
   // Reset pay-now panel
@@ -3920,9 +3910,11 @@ async function validateAndShowPayment() {
   const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
+  const regEmail = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
 
   if (!name)   { showToast('⚠️ Enter your team name'); return; }
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
+  if (!regEmail || !regEmail.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // ── SLOT FULL GUARD ──
@@ -3974,10 +3966,12 @@ async function validateAndShowPayment() {
   // ── Show payment panel ──
   const fee = currentDetail.fee || 'FREE';
   const summaryEl = document.getElementById('pay-summary');
+  const regEmailForSummary = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
   summaryEl.innerHTML =
     '🏆 Tournament : ' + escapeHTML(currentDetail.name) + '<br>' +
     '👥 Team Name  : ' + escapeHTML(name) + '<br>' +
     '📞 Phone 1    : +91' + escapeHTML(phone1) + (phone2 ? '<br>📞 Phone 2    : +91' + escapeHTML(phone2) : '') + '<br>' +
+    '📧 Email      : ' + escapeHTML(regEmailForSummary) + '<br>' +
     '💰 Entry Fee  : ' + escapeHTML(fee);
 
   document.getElementById('pay-now-panel').style.display = 'block';
@@ -3991,6 +3985,7 @@ async function payAndRequestRegistration() {
   const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
+  const regEmail = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
   const fee    = currentDetail.fee || 'FREE';
 
   const now = new Date();
@@ -3999,7 +3994,7 @@ async function payAndRequestRegistration() {
     year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
-  // Build WhatsApp message
+  // ── Build WhatsApp message ──
   const waMsg = [
     '🎮 *BATTLEZONE — Tournament Registration*',
     '',
@@ -4007,76 +4002,45 @@ async function payAndRequestRegistration() {
     '👥 Team Name  : ' + name,
     '📞 Phone 1    : +91' + phone1,
     phone2 ? '📞 Phone 2    : +91' + phone2 : '',
+    '📧 Email      : ' + regEmail,
     '',
     '💰 Entry Fee  : ' + fee,
     '',
     '⚡ Please confirm registration after payment. Thank you!'
-  ].filter(l => l !== undefined && l !== '').join('\n');
+  ].filter(l => l !== '').join('\n');
 
-  // Open WhatsApp (your number)
-  const waNumber = '918849110467'; // your WhatsApp number
-  const waUrl = 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent(waMsg);
-  window.open(waUrl, '_blank');
+  window.open('https://wa.me/918849110467?text=' + encodeURIComponent(waMsg), '_blank');
 
-  // Save pending registration request to Firebase
+  // ── Save request to Firebase → registrationRequests/{tournamentId} ──
+  // The real-time listener in checkRegisteredChatAccess() will auto-detect
+  // this and set button to PENDING. When admin accepts, it moves to
+  // /registrations/ and listener switches button to CHAT automatically.
   try {
-    const requestData = {
+    const currentAuthUser = firebase.auth().currentUser;
+    if (!currentAuthUser) await firebase.auth().signInAnonymously();
+
+    await db.ref('registrationRequests/' + currentDetail.id).push({
       tournamentId:   currentDetail.id,
       tournamentName: currentDetail.name,
       teamName:       name,
       phone1:         '+91' + phone1,
       phone2:         phone2 ? '+91' + phone2 : '',
+      email:          regEmail,
       entryFee:       fee,
       status:         'pending',
       requestedAt:    timeStr,
+      userEmail:      currentUser.email  || '',
+      username:       currentUser.username || '',
       ts:             firebase.database.ServerValue.TIMESTAMP
-    };
-    // Also store user profile info so admin and system can identify this user
-    if (currentUser.email)    requestData.userEmail    = currentUser.email;
-    if (currentUser.username) requestData.username     = currentUser.username;
-
-    // Ensure we have some auth before writing
-    const currentAuthUser = firebase.auth().currentUser;
-    if (!currentAuthUser) {
-      // Sign in anonymously if needed
-      await firebase.auth().signInAnonymously();
-    }
-
-    const ref = await db.ref('registrationRequests/' + currentDetail.id).push(requestData);
-    console.log('[BZ] Request saved to Firebase:', ref.key);
-
-    // ── Mark this tournament as PENDING locally so button changes immediately ──
-    pendingTournamentIds.add(currentDetail.id);
-    persistPendingIds();
-    renderTournaments();
+    });
 
     showToast('✅ Request sent! Awaiting admin approval.');
   } catch(e) {
     console.error('[BZ] Request save error:', e.code, e.message);
-    // Try alternate path if permission denied
-    try {
-      await db.ref('pendingRequests/' + currentDetail.id).push({
-        tournamentId:   currentDetail.id,
-        tournamentName: currentDetail.name,
-        teamName:       name,
-        phone1:         '+91' + phone1,
-        phone2:         phone2 ? '+91' + phone2 : '',
-        entryFee:       fee,
-        status:         'pending',
-        requestedAt:    timeStr,
-        ts:             firebase.database.ServerValue.TIMESTAMP
-      });
-      console.log('[BZ] Request saved to alternate path pendingRequests/');
-      pendingTournamentIds.add(currentDetail.id);
-      persistPendingIds();
-      renderTournaments();
-    } catch(e2) {
-      console.error('[BZ] Alternate save also failed:', e2.message);
-    }
-    showToast('WhatsApp opened! Admin will confirm your slot.');
+    showToast('⚠️ WhatsApp opened — admin will confirm your slot.');
   }
 
-  // Show pending state to user — chat will unlock once admin accepts
+  // ── Show pending UI immediately (Firebase listener will keep it in sync) ──
   document.getElementById('detail-reg-form-section').style.display = 'none';
   document.getElementById('detail-registered-state').style.display = 'block';
   const stateBox = document.getElementById('detail-registered-state').querySelector('div');
@@ -4084,8 +4048,8 @@ async function payAndRequestRegistration() {
     stateBox.innerHTML = `
       <div style="font-size:36px;margin-bottom:10px">⏳</div>
       <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#ffd700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Request Pending!</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your registration request has been sent to the admin via WhatsApp.<br>Your slot and chat access will be confirmed after admin approval.</div>
-      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em">💬 Tournament chat unlocks after admin accepts</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your request has been sent to the admin via WhatsApp.<br>Your slot and chat access will be confirmed after approval.</div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em">💬 Chat unlocks after admin accepts</div>
     `;
   }
 }

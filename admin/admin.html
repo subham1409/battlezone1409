@@ -2335,13 +2335,12 @@ async function acceptRequest(tournamentId, reqKey) {
       teamName:       reqData.teamName       || '',
       phone1:         reqData.phone1         || '',
       phone2:         reqData.phone2         || '',
+      email:          reqData.email          || reqData.email1 || reqData.userEmail || '',
       entryFee:       reqData.entryFee       || '',
+      username:       reqData.username       || '',
       registeredAt:   timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
     };
-    // Only include email fields if they exist (avoids undefined → Firebase error)
-    if (reqData.email1) regPayload.email1 = reqData.email1;
-    if (reqData.email2) regPayload.email2 = reqData.email2;
     // Carry over any players array if present
     if (Array.isArray(reqData.players)) regPayload.players = reqData.players;
 
