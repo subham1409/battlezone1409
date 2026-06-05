@@ -939,7 +939,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 0;
+  min-height: 300px;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y pinch-zoom;
@@ -1017,8 +1017,8 @@ body::after {
 }
 .report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
-  position: relative;
-  bottom: auto;
+  position: sticky;
+  bottom: 0;
   background: rgba(8,10,14,0.95);
   backdrop-filter: blur(12px);
   padding: 12px 14px;
@@ -1026,7 +1026,7 @@ body::after {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 0;
+  margin-top: 12px;
 }
 .chat-input {
   flex: 1;
@@ -1779,7 +1779,7 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE ===== */
+/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
 #chat-page.active {
   position: fixed;
   top: 0;
@@ -1794,53 +1794,33 @@ body::after {
   background: var(--bg-primary);
   overflow: hidden;
 }
+/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
+#chat-page.active .chat-header {
+  flex-shrink: 0;
+  position: relative;
+  top: auto;
+}
 #chat-page.active .chat-messages {
   flex: 1;
   overflow-y: auto;
-  min-height: 0;
-  padding-bottom: 120px;
+  padding-bottom: 12px;
+  min-height: unset;
 }
-#chat-input-bar {
-  position: fixed !important;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  bottom: 68px !important;
-  z-index: 200;
-  background: rgba(8,10,14,0.97);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border);
-}
-#chat-input-bar .chat-input-area {
-  border-top: none;
+#chat-page.active .chat-input-area {
+  position: relative;
+  flex-shrink: 0;
   margin-top: 0;
-  padding: 10px 14px;
-}
-#chat-locked-msg {
-  position: fixed !important;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  bottom: 68px !important;
-  z-index: 200;
-  background: rgba(8,10,14,0.97);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255,120,0,0.15);
+  bottom: auto;
 }
 #chat-page.active .emoji-row {
   display: none;
 }
-body.keyboard-open #bottom-nav {
-  display: none;
+/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
+body.keyboard-open.on-chat-page #bottom-nav {
+  display: none !important;
 }
-body.keyboard-open #chat-page.active {
+body.keyboard-open.on-chat-page #chat-page.active {
   bottom: 0;
-}
-body.keyboard-open #chat-input-bar,
-body.keyboard-open #chat-locked-msg {
-  bottom: 0 !important;
 }
 
 /* ===== NEWS PAGE ===== */
@@ -2494,30 +2474,17 @@ body.keyboard-open #chat-locked-msg {
                 <input type="tel" class="form-input" placeholder="9876543210" id="phone2-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone2-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone2-wrap').style.borderColor='rgba(255,255,255,0.07)'">
               </div>
             </div>
-
+            <div class="field-group" style="margin-bottom:10px">
+              <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span></div>
+              <input type="email" class="form-input" placeholder="captain@example.com" id="email1-input">
+            </div>
+            <div class="field-group">
+              <div class="form-label">Email 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
+              <input type="email" class="form-input" placeholder="player2@example.com" id="email2-input">
+            </div>
           </div>
 
-          <!-- Email for registration -->
-          <div class="field-group" style="margin-top:4px">
-            <div class="form-label">Email Address <span style="color:var(--accent-red);font-size:11px">*</span></div>
-            <input type="email" class="form-input" placeholder="yourname@gmail.com" id="reg-email-input"
-              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-family:var(--font-body);font-size:14px;width:100%;outline:none"
-              onfocus="this.style.borderColor='rgba(255,120,0,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'">
-          </div>
-
-          <!-- Step 1: Form submit → show pay now panel -->
-          <button class="submit-btn" id="reg-submit-btn" onclick="validateAndShowPayment()">⚡ Continue to Payment</button>
-
-          <!-- Step 2: Pay Now panel (hidden until form validated) -->
-          <div id="pay-now-panel" style="display:none;margin-top:14px;background:linear-gradient(135deg,rgba(255,120,0,0.1),rgba(255,60,0,0.05));border:1px solid rgba(255,120,0,0.35);border-radius:14px;padding:18px 16px">
-            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:10px">⚡ Payment &amp; Confirmation</div>
-            <div id="pay-summary" style="font-size:13px;color:var(--text-secondary);line-height:1.8;margin-bottom:14px;font-family:var(--font-mono);background:rgba(0,0,0,0.3);border-radius:10px;padding:12px 14px;border:1px solid rgba(255,255,255,0.05)"></div>
-            <button class="submit-btn" id="pay-now-btn" onclick="payAndRequestRegistration()" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px">
-              <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.533 5.858L.057 23.57a.75.75 0 00.916.916l5.712-1.476A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.525-5.388-1.437l-.386-.228-4.003 1.034 1.053-3.885-.25-.4A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-              PAY NOW — WhatsApp
-            </button>
-            <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;font-family:var(--font-mono)">You'll be redirected to WhatsApp to complete payment &amp; send your details. Your slot will be confirmed by admin.</div>
-          </div>
+          <button class="submit-btn" id="reg-submit-btn" onclick="proceedToPayment()">⚡ Register & Pay</button>
         </div>
       </div>
       <div style="height:20px"></div>
@@ -2563,10 +2530,10 @@ body.keyboard-open #chat-locked-msg {
           <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in a tournament to unlock</div>
         </div>
       </div>
-      <!-- Input bar — always in DOM, shown/hidden via updateChatAccessUI -->
+      <!-- Input bar — shown only to registered users -->
       <div id="chat-input-bar" style="display:none">
       <div class="chat-input-area">
-        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)"></textarea>
+        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
         <button class="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
             <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2930,8 +2897,7 @@ function applyLoggedInUser(userData, skipToast) {
     chatName: chatName,
     bgmiId: userData.bgmiId || null,
     email: userData.email || null,
-    googleUid: userData.googleUid || null,
-    phone: userData.phone || null
+    googleUid: userData.googleUid || null
   };
   const authScr = document.getElementById('auth-screen');
   if (authScr) { authScr.style.display = 'none'; authScr.classList.add('hidden'); }
@@ -2945,68 +2911,37 @@ function applyLoggedInUser(userData, skipToast) {
   checkRegisteredChatAccess();
 }
 
-let _registrationsListener = null;
-let _requestsListener = null;
-
 function checkRegisteredChatAccess() {
-  // Detach any old listeners
-  if (_registrationsListener) {
-    db.ref('registrations').off('value', _registrationsListener);
-    _registrationsListener = null;
-  }
-  if (_requestsListener) {
-    db.ref('registrationRequests').off('value', _requestsListener);
-    _requestsListener = null;
-  }
-
-  if (currentUser.isGuest || !currentUser.phone) {
+  // Guests are blocked; any logged-in user can chat
+  if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
-    pendingTournamentIds    = new Set();
+    clearPersistedRegisteredIds();
     updateChatAccessUI(false);
-    if (tournaments.length) renderTournaments();
+    if (tournaments.length) renderTournaments(); // only re-render if data is already loaded
     return;
   }
-
+  // Logged-in user always gets chat access immediately
   updateChatAccessUI(true);
-  const userPh = currentUser.phone.replace(/\D/g, '').slice(-10);
-
-  // ── Listener 1: /registrations/ → ACCEPTED ──
-  // When admin accepts a request it lands here.
-  _registrationsListener = db.ref('registrations').on('value', snap => {
+  // Still fetch registration IDs so tournament-specific chat works
+  const emailLower = currentUser.email.toLowerCase();
+  db.ref('registrations').once('value', snap => {
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
         const r = reg.val();
-        const rph1 = (r.phone1 || '').replace(/\D/g, '');
-        const rph2 = (r.phone2 || '').replace(/\D/g, '');
-        if (rph1.endsWith(userPh) || rph2.endsWith(userPh)) {
+        const e1 = (r.email1 || '').toLowerCase();
+        const e2 = (r.email2 || '').toLowerCase();
+        if (e1 === emailLower || (e2 && e2 === emailLower)) {
           newIds.add(tourneyNode.key);
         }
       });
     });
     registeredTournamentIds = newIds;
-    // Remove accepted ones from pending — accepted wins
-    newIds.forEach(id => pendingTournamentIds.delete(id));
+    persistRegisteredIds();
+    if (tournaments.length) renderTournaments(); // only re-render if tournament data is ready
+  }).catch(() => {
     if (tournaments.length) renderTournaments();
-  }, () => { if (tournaments.length) renderTournaments(); });
-
-  // ── Listener 2: /registrationRequests/ → PENDING ──
-  // Shows pending only for tournaments NOT already accepted.
-  _requestsListener = db.ref('registrationRequests').on('value', snap => {
-    const newPending = new Set();
-    snap.forEach(tourneyNode => {
-      tourneyNode.forEach(req => {
-        const r = req.val();
-        const rph1 = (r.phone1 || '').replace(/\D/g, '');
-        if (rph1.endsWith(userPh)) {
-          newPending.add(tourneyNode.key);
-        }
-      });
-    });
-    // Only mark pending if NOT already in accepted registrations
-    pendingTournamentIds = new Set([...newPending].filter(id => !registeredTournamentIds.has(id)));
-    if (tournaments.length) renderTournaments();
-  }, () => { if (tournaments.length) renderTournaments(); });
+  });
 }
 
 function showAuthScreen() {
@@ -3037,11 +2972,7 @@ function updateChatAccessUI(hasAccess) {
 
 function doLogout() {
   clearSession();
-  // Detach real-time registrations listener on logout
-  if (typeof _registrationsListener !== 'undefined' && _registrationsListener) {
-    db.ref('registrations').off('value', _registrationsListener);
-    _registrationsListener = null;
-  }
+  clearPersistedRegisteredIds();
   currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
   firebase.auth().signOut().catch(() => {});
   const authScr = document.getElementById('auth-screen');
@@ -3171,8 +3102,7 @@ async function authLogin() {
       chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
       email: email,
-      googleUid: userData.googleUid || null,
-      phone: userData.phone || null
+      googleUid: userData.googleUid || null
     };
     persistSession(mergedUser);
     applyLoggedInUser(mergedUser);
@@ -3310,10 +3240,22 @@ let messages = [];
 let msgId = 100;
 let tournaments = []; // Now loaded from API
 let results = [];     // Now loaded from API
-let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered (accepted) for
-let pendingTournamentIds   = new Set(); // tracks which tournaments current user has a pending request for
+let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered for
 
-
+// ── Persist registered tournament IDs so page reload doesn't reset them ──
+function persistRegisteredIds() {
+  try { localStorage.setItem('bz_reg_ids', JSON.stringify([...registeredTournamentIds])); } catch(e) {}
+}
+function loadPersistedRegisteredIds() {
+  try {
+    const raw = localStorage.getItem('bz_reg_ids');
+    if (raw) return new Set(JSON.parse(raw));
+  } catch(e) {}
+  return new Set();
+}
+function clearPersistedRegisteredIds() {
+  try { localStorage.removeItem('bz_reg_ids'); } catch(e) {}
+}
 
 // ========= API HELPERS =========
 async function apiFetch(path) {
@@ -3354,6 +3296,9 @@ window.onload = async function() {
   // ── Show skeleton FIRST — before any awaits — so Firebase listener can't overwrite it prematurely ──
   showTournamentSkeleton();
 
+  // ── RESTORE REGISTERED IDS IMMEDIATELY so renders show correct CHAT buttons ──
+  registeredTournamentIds = loadPersistedRegisteredIds();
+
   // ── RESTORE SESSION FROM localStorage (prevents redirect on refresh) ──
   const savedSession = loadPersistedSession();
   if (savedSession) {
@@ -3369,8 +3314,7 @@ window.onload = async function() {
           chatName: userData.chatName || savedSession.chatName,
           bgmiId: userData.bgmiId || null,
           email: savedSession.email,
-          googleUid: userData.googleUid || null,
-          phone: userData.phone || savedSession.phone || null
+          googleUid: userData.googleUid || null
         }, true); // skip toast on silent restore
       } else {
         clearSession(); // account removed, fall through to auth screen
@@ -3456,61 +3400,49 @@ window.onload = async function() {
   // NOTE: Tournament listener is now started immediately at page load (below window.onload)
   // so it cannot be blocked by auth errors or any other async failures above.
 
-  // ---- Load results from Firebase (live listener) ----
-  db.ref('results').on('value', rSnap => {
-    try {
-      const rArr = [];
-      rSnap.forEach(c => rArr.push({ _key: c.key, ...c.val() }));
-      rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // ---- Load results from Firebase ----
+  try {
+    const rSnap = await db.ref('results').once('value');
+    const rArr = [];
+    rSnap.forEach(c => rArr.push({ _key: c.key, ...c.val() }));
+    rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-      if (rArr.length > 0) {
-        results = rArr.map(r => {
-          // Firebase stores arrays as objects with numeric keys — convert back to array
-          let lb = [];
-          if (r.lb && typeof r.lb === 'object') {
-            const lbArr = Array.isArray(r.lb) ? r.lb : Object.values(r.lb);
-            lb = lbArr.filter(Boolean).map(row => ({
-              r:       row.r       || 0,
-              team:    row.team    || '',
-              players: row.players || '',
-              matches: row.matches || 0,
-              wwcd:    row.wwcd    || 0,
-              place:   row.place   || 0,
-              kills:   row.kills   || 0,
-              total:   row.total   || 0
-            }));
-          } else {
-            if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
-            if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
-            if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
-          }
-          return {
-            id:     r._key,
-            name:   r.name   || '',
-            date:   r.date   || '',
-            map:    r.map    || '',
-            winner: r.place1 || r.winner || '',
-            kills:  r.totalKills || r.kills || 0,
-            teams:  r.totalTeams || r.teams || 0,
-            prize:  r.prize  || '',
-            lb
-          };
-        });
-      } else {
-        results = [];
-      }
-    } catch(e) {
-      console.warn('Firebase results load failed:', e);
-      results = [];
+    if (rArr.length > 0) {
+      results = rArr.map(r => {
+        // Build leaderboard from place fields + optional lb array
+        let lb = [];
+        if (r.lb && Array.isArray(r.lb)) {
+          lb = r.lb.map(row => ({ r: row.r, team: row.team||'', players: row.players||'', matches: row.matches||0, wwcd: row.wwcd||0, place: row.place||0, kills: row.kills||0, total: row.total||0 }));
+        } else {
+          if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
+          if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
+          if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
+        }
+        return {
+          id: r._key,
+          name: r.name || '',
+          date: r.date || '',
+          map: r.map || '',
+          winner: r.place1 || r.winner || '',
+          kills: r.totalKills || r.kills || 0,
+          teams: r.totalTeams || r.teams || 0,
+          prize: r.prize || '',
+          lb
+        };
+      });
+    } else {
+      results = []; // No results yet — admin will add them
     }
-    renderResults();
-  });
+  } catch(e) {
+    console.warn('Firebase results load failed:', e);
+    results = [];
+  }
 
   // Chat — Firebase listener
   initFirebaseChat();
 
   // NOTE: renderTournaments() is called by the db.ref('tournaments').on('value') listener above.
-  // Results are rendered inside the live db.ref('results').on('value') listener above.
+  renderResults();
 
   // ── RESTORE LAST SECTION (section persistence on reload) ──
   const lastPage = sessionStorage.getItem('bz_page');
@@ -3611,7 +3543,7 @@ function switchPage(page) {
   // Always clear keyboard-open state on page switch
   document.body.classList.remove('keyboard-open');
   // on-chat-page gates the nav-hiding CSS — only true when chat tab is active
-  // on-chat-page class no longer used (keyboard detection handles nav hiding)
+  document.body.classList.toggle('on-chat-page', page === 'chat');
   const _cp = document.getElementById('chat-page');
   if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
 
@@ -3625,7 +3557,12 @@ function switchPage(page) {
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
 
-
+  // Track if user is on chat page (used to hide bottom nav when keyboard opens)
+  if (page === 'chat') {
+    document.body.classList.add('on-chat-page');
+  } else {
+    document.body.classList.remove('on-chat-page');
+  }
 
   // Persist current section so reload returns to same tab
   try { sessionStorage.setItem('bz_page', page); } catch(e) {}
@@ -3723,11 +3660,9 @@ function buildTournamentCardHTML(t) {
   const safeName = (t.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const joinBtn = registeredTournamentIds.has(t.id)
     ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT</button>`
-    : pendingTournamentIds.has(t.id)
-      ? `<button class="join-btn" style="background:rgba(255,180,0,0.15);color:#ffd700;border:1.5px solid rgba(255,200,0,0.35);cursor:default" onclick="event.stopPropagation(); showToast('⏳ Awaiting admin approval...')" disabled>⏳ PENDING</button>`
-      : full
-        ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
-        : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
+    : full
+      ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
+      : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
 
   // Map-based gradient colors for placeholder
   const mapColors = {
@@ -3777,10 +3712,7 @@ function buildTournamentCardHTML(t) {
           ${schedHTML}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;padding-left:10px">
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase">Entry Fee</div>
-        <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent-orange);letter-spacing:0.04em">${t.fee || 'FREE'}</div>
-        <div style="width:100%;height:1px;background:rgba(255,255,255,0.07);margin:3px 0"></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;padding-left:10px">
         <div class="prize-amount">${t.prize || ''}</div>
         <div class="prize-sub">Prize Pool</div>
       </div>
@@ -3850,33 +3782,15 @@ function openDetail(id) {
   document.getElementById('team-name-input').value = '';
   document.getElementById('phone1-input').value = '';
   document.getElementById('phone2-input').value = '';
-  const emailInputEl = document.getElementById('reg-email-input');
-  if (emailInputEl) emailInputEl.value = '';
+  document.getElementById('email1-input').value = '';
+  document.getElementById('email2-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
-  // Reset pay-now panel
-  const payPanel = document.getElementById('pay-now-panel');
-  const regBtn = document.getElementById('reg-submit-btn');
-  if (payPanel) payPanel.style.display = 'none';
-  if (regBtn) { regBtn.style.display = ''; regBtn.disabled = false; regBtn.textContent = '⚡ Continue to Payment'; }
 
-  // Show "already registered" panel or pending panel or the reg form depending on user's status
+  // Show "already registered" panel or the reg form depending on user's status
   const alreadyReg = registeredTournamentIds.has(id);
-  const isPending  = !alreadyReg && pendingTournamentIds.has(id);
-  document.getElementById('detail-registered-state').style.display = (alreadyReg || isPending) ? 'block' : 'none';
-  document.getElementById('detail-reg-form-section').style.display = (alreadyReg || isPending) ? 'none' : 'block';
-
-  // If pending, show the pending state box
-  if (isPending) {
-    const stateBox = document.getElementById('detail-registered-state').querySelector('div');
-    if (stateBox) {
-      stateBox.innerHTML = `
-        <div style="font-size:36px;margin-bottom:10px">⏳</div>
-        <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#ffd700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Request Pending</div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your registration is awaiting admin approval.<br>You'll be able to chat once accepted.</div>
-      `;
-    }
-  }
+  document.getElementById('detail-registered-state').style.display = alreadyReg ? 'block' : 'none';
+  document.getElementById('detail-reg-form-section').style.display = alreadyReg ? 'none' : 'block';
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('detail-page').classList.add('active');
@@ -3900,8 +3814,11 @@ function toggleRules() {
   arrow.textContent = open ? '▲' : '▼';
 }
 
-// ── STEP 1: Validate form → show Pay Now panel ──────────────────────────
-async function validateAndShowPayment() {
+// ─── PENDING REGISTRATION STATE ──────────────────────────────────────────────
+let _pendingRegData = null; // holds validated form data before payment
+
+async function proceedToPayment() {
+  // Block guests
   if (currentUser.isGuest) {
     showToast('🔒 Sign up to register in tournaments');
     setTimeout(() => showAuthScreen(), 600);
@@ -3910,155 +3827,210 @@ async function validateAndShowPayment() {
   const name   = document.getElementById('team-name-input').value.trim();
   const phone1 = document.getElementById('phone1-input').value.trim();
   const phone2 = document.getElementById('phone2-input').value.trim();
-  const regEmail = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
+  const email1 = document.getElementById('email1-input').value.trim();
+  const email2 = document.getElementById('email2-input').value.trim();
 
   if (!name)   { showToast('⚠️ Enter your team name'); return; }
   if (!phone1 || phone1.length !== 10) { showToast('⚠️ Enter a valid 10-digit phone number'); return; }
-  if (!regEmail || !regEmail.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
+  if (!email1 || !email1.includes('@')) { showToast('⚠️ Enter a valid email address'); return; }
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
-  // ── SLOT FULL GUARD ──
+  // Slot full guard
   const liveCountSnap = await db.ref('registrationCounts/' + currentDetail.id).once('value');
   const liveCount = liveCountSnap.val() || 0;
   if (liveCount >= currentDetail.total) {
     showToast('🔒 Tournament is full — no more slots available');
     const tFull = tournaments.find(x => x.id === currentDetail.id);
     if (tFull) { tFull.slots = tFull.total; tFull.status = 'full'; }
-    renderTournaments();
-    goBack();
-    return;
+    renderTournaments(); goBack(); return;
   }
 
-  // ── DUPLICATE CHECK ──
   const btn = document.getElementById('reg-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
-  try {
-    const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
-    // Also check pending requests
-    const pendingSnap  = await db.ref('registrationRequests/' + currentDetail.id).once('value');
-    const submittedPhone = '+91' + phone1;
-    let dupReason = null;
 
-    [existingSnap, pendingSnap].forEach(snap => {
-      if (!snap.exists()) return;
-      snap.forEach(node => {
+  try {
+    // Duplicate check in confirmed registrations
+    const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
+    if (existingSnap.exists()) {
+      const submittedPhone = '+91' + phone1;
+      const submittedEmail = email1.toLowerCase();
+      let dupReason = null;
+      existingSnap.forEach(regNode => {
         if (dupReason) return;
-        const r = node.val();
+        const r = regNode.val();
+        if ((r.email1 || '').toLowerCase() === submittedEmail || (r.email2 || '').toLowerCase() === submittedEmail) { dupReason = 'email address'; return; }
         if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) { dupReason = 'phone number'; return; }
       });
-    });
-
-    if (dupReason) {
-      showToast('⚠️ Already registered! Duplicate ' + dupReason + ' found.');
-      if (btn) { btn.disabled = false; btn.textContent = '⚡ Continue to Payment'; }
-      document.getElementById('detail-reg-form-section').style.display = 'none';
-      const alreadyEl = document.getElementById('detail-registered-state');
-      alreadyEl.style.display = 'block';
-      alreadyEl.querySelector('div > div:nth-child(3)').textContent =
-        'A squad with the same ' + dupReason + ' is already registered for this tournament.';
-      registeredTournamentIds.add(currentDetail.id);
-      renderTournaments();
-      return;
+      if (dupReason) {
+        showToast('⚠️ Already registered! Duplicate ' + dupReason + ' found.');
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Register & Pay'; }
+        document.getElementById('detail-reg-form-section').style.display = 'none';
+        const alreadyEl = document.getElementById('detail-registered-state');
+        alreadyEl.style.display = 'block';
+        alreadyEl.querySelector('div > div:nth-child(3)').textContent = 'A squad with the same ' + dupReason + ' is already registered for this tournament.';
+        registeredTournamentIds.add(currentDetail.id);
+        renderTournaments(); return;
+      }
     }
-  } catch(e) { /* non-fatal — proceed */ }
-  if (btn) { btn.disabled = false; btn.textContent = '⚡ Continue to Payment'; }
 
-  // ── Show payment panel ──
-  const fee = currentDetail.fee || 'FREE';
-  const summaryEl = document.getElementById('pay-summary');
-  const regEmailForSummary = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
-  summaryEl.innerHTML =
-    '🏆 Tournament : ' + escapeHTML(currentDetail.name) + '<br>' +
-    '👥 Team Name  : ' + escapeHTML(name) + '<br>' +
-    '📞 Phone 1    : +91' + escapeHTML(phone1) + (phone2 ? '<br>📞 Phone 2    : +91' + escapeHTML(phone2) : '') + '<br>' +
-    '📧 Email      : ' + escapeHTML(regEmailForSummary) + '<br>' +
-    '💰 Entry Fee  : ' + escapeHTML(fee);
+    // Also check pending requests
+    const pendingSnap = await db.ref('pendingRegistrations/' + currentDetail.id).once('value');
+    if (pendingSnap.exists()) {
+      const submittedPhone = '+91' + phone1;
+      const submittedEmail = email1.toLowerCase();
+      let dupReason = null;
+      pendingSnap.forEach(regNode => {
+        if (dupReason) return;
+        const r = regNode.val();
+        if ((r.email1 || '').toLowerCase() === submittedEmail || (r.email2 || '').toLowerCase() === submittedEmail) { dupReason = 'email address'; return; }
+        if (r.phone1 === submittedPhone || r.phone2 === submittedPhone) { dupReason = 'phone number'; return; }
+      });
+      if (dupReason) {
+        showToast('⏳ Registration request already pending for this ' + dupReason);
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Register & Pay'; }
+        return;
+      }
+    }
+  } catch(e) { console.warn('Duplicate check error:', e); }
 
-  document.getElementById('pay-now-panel').style.display = 'block';
-  document.getElementById('reg-submit-btn').style.display = 'none';
-  document.getElementById('pay-now-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Register & Pay'; }
+
+  // Store pending data and show payment modal
+  _pendingRegData = { name, phone1, phone2, email1, email2 };
+  showPaymentModal();
 }
 
-// ── STEP 2: WhatsApp redirect + save pending request ─────────────────────
-async function payAndRequestRegistration() {
-  if (!currentDetail) return;
-  const name   = document.getElementById('team-name-input').value.trim();
-  const phone1 = document.getElementById('phone1-input').value.trim();
-  const phone2 = document.getElementById('phone2-input').value.trim();
-  const regEmail = document.getElementById('reg-email-input') ? document.getElementById('reg-email-input').value.trim() : '';
-  const fee    = currentDetail.fee || 'FREE';
+function showPaymentModal() {
+  const t = currentDetail;
+  const d = _pendingRegData;
+  if (!t || !d) return;
+  const fee = t.entry || t.fee || 'FREE';
 
+  // Build modal HTML
+  let html = `
+  <div id="payment-modal-overlay" style="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.88);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closePaymentModal()">
+    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-top-left-radius:22px;border-top-right-radius:22px;width:100%;max-width:480px;padding:28px 22px 40px;animation:slideUp 0.3s ease">
+      <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 22px"></div>
+      <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--accent-orange);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:18px;text-align:center">💳 Complete Registration</div>
+
+      <!-- Summary -->
+      <div style="background:rgba(255,120,0,0.07);border:1px solid rgba(255,120,0,0.2);border-radius:14px;padding:16px 18px;margin-bottom:18px">
+        <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px">Registration Summary</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">Tournament</span>
+          <span style="font-size:12px;font-weight:700;color:var(--text-primary);max-width:180px;text-align:right">${escapeHTML(t.name)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">Team Name</span>
+          <span style="font-size:12px;font-weight:700;color:var(--text-primary)">${escapeHTML(d.name)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">Phone</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent-green)">+91${escapeHTML(d.phone1)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-secondary)">Email</span>
+          <span style="font-size:12px;font-weight:700;color:var(--text-primary)">${escapeHTML(d.email1)}</span>
+        </div>
+        <div style="height:1px;background:var(--border);margin:10px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:var(--text-primary)">Entry Fee</span>
+          <span style="font-family:var(--font-display);font-size:18px;font-weight:900;color:var(--accent-orange)">${escapeHTML(fee)}</span>
+        </div>
+      </div>
+
+      <!-- Pay Now button -->
+      <button onclick="confirmPayNow()" style="width:100%;padding:16px;background:linear-gradient(135deg,#25d366,#128c7e);border:none;border-radius:14px;color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:20px">💬</span> PAY NOW via WhatsApp
+      </button>
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.6;font-family:var(--font-mono)">You'll be redirected to WhatsApp to complete payment.<br>Your registration request will be submitted to the admin.</div>
+      <button onclick="closePaymentModal()" style="width:100%;margin-top:14px;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text-secondary);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+  <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>`;
+
+  const el = document.createElement('div');
+  el.id = 'payment-modal-wrapper';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+}
+
+function closePaymentModal() {
+  const el = document.getElementById('payment-modal-wrapper');
+  if (el) el.remove();
+}
+
+async function confirmPayNow() {
+  const t = currentDetail;
+  const d = _pendingRegData;
+  if (!t || !d) return;
+
+  const fee = t.entry || t.fee || 'FREE';
   const now = new Date();
-  const timeStr = now.toLocaleString('en-IN', {
-    timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short',
-    year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
+  const timeStr = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  // ── Build WhatsApp message ──
-  const waMsg = [
-    '🎮 *BATTLEZONE — Tournament Registration*',
-    '',
-    '🏆 Tournament : ' + currentDetail.name,
-    '👥 Team Name  : ' + name,
-    '📞 Phone 1    : +91' + phone1,
-    phone2 ? '📞 Phone 2    : +91' + phone2 : '',
-    '📧 Email      : ' + regEmail,
-    '',
-    '💰 Entry Fee  : ' + fee,
-    '',
-    '⚡ Please confirm registration after payment. Thank you!'
-  ].filter(l => l !== '').join('\n');
-
-  window.open('https://wa.me/918849110467?text=' + encodeURIComponent(waMsg), '_blank');
-
-  // ── Save request to Firebase → registrationRequests/{tournamentId} ──
-  // The real-time listener in checkRegisteredChatAccess() will auto-detect
-  // this and set button to PENDING. When admin accepts, it moves to
-  // /registrations/ and listener switches button to CHAT automatically.
+  // 1: Save to pendingRegistrations
   try {
-    const currentAuthUser = firebase.auth().currentUser;
-    if (!currentAuthUser) await firebase.auth().signInAnonymously();
-
-    await db.ref('registrationRequests/' + currentDetail.id).push({
-      tournamentId:   currentDetail.id,
-      tournamentName: currentDetail.name,
-      teamName:       name,
-      phone1:         '+91' + phone1,
-      phone2:         phone2 ? '+91' + phone2 : '',
-      email:          regEmail,
+    await db.ref('pendingRegistrations/' + t.id).push({
+      tournamentId:   t.id,
+      tournamentName: t.name,
+      teamName:       d.name,
+      phone1:         '+91' + d.phone1,
+      phone2:         d.phone2 ? '+91' + d.phone2 : '',
+      email1:         d.email1,
+      email2:         d.email2 || '',
       entryFee:       fee,
       status:         'pending',
-      requestedAt:    timeStr,
-      userEmail:      currentUser.email  || '',
-      username:       currentUser.username || '',
+      submittedAt:    timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
     });
-
-    showToast('✅ Request sent! Awaiting admin approval.');
   } catch(e) {
-    console.error('[BZ] Request save error:', e.code, e.message);
-    showToast('⚠️ WhatsApp opened — admin will confirm your slot.');
+    showToast('⚠️ Could not save request: ' + (e.message || 'Check connection'));
   }
 
-  // ── Show pending UI immediately (Firebase listener will keep it in sync) ──
-  document.getElementById('detail-reg-form-section').style.display = 'none';
-  document.getElementById('detail-registered-state').style.display = 'block';
-  const stateBox = document.getElementById('detail-registered-state').querySelector('div');
-  if (stateBox) {
-    stateBox.innerHTML = `
-      <div style="font-size:36px;margin-bottom:10px">⏳</div>
-      <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#ffd700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Request Pending!</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px">Your request has been sent to the admin via WhatsApp.<br>Your slot and chat access will be confirmed after approval.</div>
-      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:0.06em">💬 Chat unlocks after admin accepts</div>
-    `;
+  // 2: Build WhatsApp message
+  const waNum = '919924878989'; // ← your WhatsApp number (country code + number, no +)
+  const msg = [
+    '🎮 *BATTLEZONE TOURNAMENT REGISTRATION*',
+    '',
+    '🏆 Tournament: ' + t.name,
+    '👥 Team Name: ' + d.name,
+    '📞 Phone: +91' + d.phone1 + (d.phone2 ? ' / +91' + d.phone2 : ''),
+    '📧 Email: ' + d.email1 + (d.email2 ? ' / ' + d.email2 : ''),
+    '💰 Entry Fee: ' + fee,
+    '',
+    '✅ Please confirm payment receipt and approve our registration!',
+    '📅 Submitted: ' + timeStr
+  ].join('\n');
+
+  const waUrl = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+
+  closePaymentModal();
+
+  // 3: Show success confirmation
+  const successEl = document.getElementById('success-modal');
+  if (successEl) {
+    const titleEl = successEl.querySelector('.modal-title');
+    const subEl   = successEl.querySelector('.modal-sub');
+    if (titleEl) titleEl.textContent = 'Request Submitted!';
+    if (subEl)   subEl.innerHTML = 'Your registration request has been sent.<br>Complete payment on WhatsApp to confirm your spot.<br><br><strong style="color:var(--accent-green)">Awaiting admin approval ✅</strong>';
+    successEl.classList.add('open');
   }
+
+  // 4: Open WhatsApp
+  setTimeout(() => { window.open(waUrl, '_blank'); }, 400);
+
+  _pendingRegData = null;
 }
 
-// Legacy alias kept for any stale references
-async function registerTeam() { await validateAndShowPayment(); }
-
 function closeModal() {
-  document.getElementById('success-modal').classList.remove('open');
+  const m = document.getElementById('success-modal');
+  m.classList.remove('open');
+  // Reset modal text back to default
+  const titleEl = m.querySelector('.modal-title');
+  const subEl   = m.querySelector('.modal-sub');
+  if (titleEl) titleEl.textContent = 'Request Submitted!';
+  if (subEl)   subEl.innerHTML = 'Your registration request has been sent to the admin.<br>Complete payment on WhatsApp to confirm your spot.';
   showHome();
 }
 
@@ -4333,8 +4305,8 @@ async function loadMyMatches() {
       const tName = tournaments.find(x => x.id === tourneyId);
       tourneyNode.forEach(reg => {
         const r = reg.val();
-        if ((currentUser.bgmiId && r.players && r.players.includes(currentUser.bgmiId)) ||
-            (currentUser.phone && r.phone1 && r.phone1.replace(/\D/g,'').endsWith(currentUser.phone.replace(/\D/g,'')))) {
+        if (r.email1 === currentUser.email || 
+           (currentUser.bgmiId && r.players && r.players.includes(currentUser.bgmiId))) {
           myRegs.push({
             tournamentId: tourneyId,
             tournamentName: r.tournamentName || (tName ? tName.name : tourneyId),
@@ -4348,37 +4320,7 @@ async function loadMyMatches() {
 
     myRegs.sort((a, b) => b.ts - a.ts);
 
-    // ── Also fetch pending requests for this user ──
-    let pendingRegs = [];
-    if (currentUser.phone) {
-      const userPhone = currentUser.phone.replace(/\D/g, '').slice(-10);
-      const reqSnap = await db.ref('registrationRequests').once('value');
-      reqSnap.forEach(tourneyNode => {
-        const tourneyId = tourneyNode.key;
-        // Skip if already in accepted registrations
-        if (registeredTournamentIds.has(tourneyId)) return;
-        const tName = tournaments.find(x => x.id === tourneyId);
-        tourneyNode.forEach(req => {
-          const r = req.val();
-          const rph = (r.phone1 || '').replace(/\D/g, '');
-          if (rph.endsWith(userPhone)) {
-            pendingRegs.push({
-              tournamentId: tourneyId,
-              tournamentName: r.tournamentName || (tName ? tName.name : tourneyId),
-              teamName: r.teamName,
-              requestedAt: r.requestedAt,
-              ts: r.ts || 0,
-              pending: true
-            });
-          }
-        });
-      });
-    }
-
-    const allRegs = [...myRegs, ...pendingRegs];
-    allRegs.sort((a, b) => b.ts - a.ts);
-
-    if (!allRegs.length) {
+    if (!myRegs.length) {
       list.innerHTML = `
         <div class="my-matches-empty">
           <div class="my-matches-empty-icon">🎮</div>
@@ -4387,26 +4329,13 @@ async function loadMyMatches() {
       return;
     }
 
-    list.innerHTML = allRegs.map(reg => {
-      if (reg.pending) {
-        return `
-        <div class="my-match-card" style="border-color:rgba(255,200,0,0.2)">
-          <div class="my-match-icon" style="background:rgba(255,200,0,0.12);color:#ffd700">⏳</div>
-          <div class="my-match-info">
-            <div class="my-match-name">${escapeHTML(reg.tournamentName)}</div>
-            <div class="my-match-meta">${reg.requestedAt || ''} • Squad: ${escapeHTML(reg.teamName || '')}</div>
-          </div>
-          <div class="status-pill" style="background:rgba(255,200,0,0.12);color:#ffd700;border:1px solid rgba(255,200,0,0.3)">Pending</div>
-        </div>`;
-      }
+    list.innerHTML = myRegs.map(reg => {
       const t = tournaments.find(x => x.id === reg.tournamentId);
       const status = t ? t.status : 'upcoming';
       const statusClass = status === 'full' ? 'status-completed' : 'status-upcoming';
-      const statusLabel = status === 'full' ? 'Done' : 'Registered';
+      const statusLabel = status === 'full' ? 'Done' : 'Soon';
       const icon = status === 'full' ? '✅' : '🎯';
       const iconClass = status === 'full' ? 'completed' : 'upcoming';
-      const safeId   = reg.tournamentId;
-      const safeName = (reg.tournamentName || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       return `
       <div class="my-match-card">
         <div class="my-match-icon ${iconClass}">${icon}</div>
@@ -4414,10 +4343,7 @@ async function loadMyMatches() {
           <div class="my-match-name">${escapeHTML(reg.tournamentName)}</div>
           <div class="my-match-meta">${reg.registeredAt || ''} • Squad: ${escapeHTML(reg.teamName || '')}</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          <div class="status-pill ${statusClass}">${statusLabel}</div>
-          ${status !== 'full' ? `<button onclick="openTournamentChat('${safeId}','${safeName}')" style="background:var(--accent-green);color:#000;border:none;border-radius:6px;padding:4px 10px;font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;cursor:pointer">💬 CHAT</button>` : ''}
-        </div>
+        <div class="status-pill ${statusClass}">${statusLabel}</div>
       </div>`;
     }).join('');
   } catch(e) {
@@ -4787,26 +4713,100 @@ function closeNewsDetail() {
   document.getElementById('news-overlay').classList.remove('open');
 }
 
-// ========= KEYBOARD DETECTION — hide bottom bar when typing =========
+// ========= KEYBOARD DETECTION — keep input above keyboard =========
 (function() {
-  if (!window.visualViewport) return;
-  const threshold = 150; // px shrink = keyboard open
-  const initialHeight = window.visualViewport.height;
+  let _kbOpen = false;
+  let _kbTimer = null;
 
-  function onViewportResize() {
-    const shrink = initialHeight - window.visualViewport.height;
-    if (shrink > threshold) {
+  function setKeyboardOpen(open) {
+    if (_kbOpen === open) return;
+    _kbOpen = open;
+
+    if (open) {
       document.body.classList.add('keyboard-open');
-      // Scroll chat to bottom when keyboard opens
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
     } else {
       document.body.classList.remove('keyboard-open');
+      const chatPage = document.getElementById('chat-page');
+      if (chatPage) {
+        chatPage.style.top = '';
+        chatPage.style.height = '';
+        chatPage.style.bottom = '';
+        chatPage.style.transform = '';
+      }
+      const overlay = document.getElementById('tchat-overlay');
+      if (overlay) {
+        overlay.style.top = '';
+        overlay.style.height = '';
+        overlay.style.bottom = '';
+      }
     }
   }
 
-  window.visualViewport.addEventListener('resize', onViewportResize);
-  window.visualViewport.addEventListener('scroll', onViewportResize);
+  // ── Helper: is a chat input currently focused? ─────────────────────────────
+  function chatInputFocused() {
+    const a = document.activeElement;
+    return a && (a.id === 'chat-input' || a.id === 'tchat-input');
+  }
+
+  // ── Layout adjustment when keyboard is open ────────────────────────────────
+  function adjustLayout() {
+    if (!window.visualViewport) return;
+    const vvHeight = window.visualViewport.height;
+    const vvTop    = window.visualViewport.offsetTop;
+
+    const onChatPage = document.body.classList.contains('on-chat-page');
+    const navHeight = onChatPage ? 0 : (document.getElementById('bottom-nav')?.offsetHeight || 68);
+    const chatPage = document.getElementById('chat-page');
+    if (chatPage && chatPage.classList.contains('active')) {
+      chatPage.style.top       = vvTop + 'px';
+      chatPage.style.height    = (vvHeight - navHeight) + 'px';
+      chatPage.style.bottom    = 'auto';
+      chatPage.style.transform = 'translateX(-50%)';
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+    }
+
+    const overlay = document.getElementById('tchat-overlay');
+    if (overlay && overlay.classList.contains('open')) {
+      overlay.style.top    = vvTop + 'px';
+      overlay.style.height = vvHeight + 'px';
+      overlay.style.bottom = 'auto';
+      const tmsgs = document.getElementById('tchat-messages');
+      if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
+    }
+  }
+
+  // ── visualViewport: only used for layout, NOT for keyboard-open state ──────
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+      // Only adjust layout while a chat input actually has focus.
+      // Ignores all the stray resize events that fire while the iOS keyboard
+      // is animating closed (Done pressed) — at that point activeElement is
+      // already body, so we skip and let the blur handler clean up.
+      if (chatInputFocused()) adjustLayout();
+    });
+  }
+
+  // ── Focus on a chat input → show keyboard state ────────────────────────────
+  document.addEventListener('focusin', function(e) {
+    if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
+      clearTimeout(_kbTimer);
+      setKeyboardOpen(true);
+      adjustLayout();
+    }
+  }, true);
+
+  // ── Blur on a chat input → hide keyboard state (Done / navigate away) ──────
+  document.addEventListener('focusout', function(e) {
+    if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
+      clearTimeout(_kbTimer);
+      // Small delay: lets iOS re-focus the same input (e.g. emoji tap) without
+      // flickering, but fast enough that nav snaps back when Done is pressed.
+      _kbTimer = setTimeout(() => {
+        if (!chatInputFocused()) setKeyboardOpen(false);
+      }, 50);
+    }
+  }, true);
 })();
 </script>
 </body>
