@@ -2915,6 +2915,7 @@ function checkRegisteredChatAccess() {
   // Guests are blocked; any logged-in user can chat
   if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
+    pendingTournamentIds = new Set();
     clearPersistedRegisteredIds();
     updateChatAccessUI(false);
     if (tournaments.length) renderTournaments(); // only re-render if data is already loaded
@@ -2922,9 +2923,9 @@ function checkRegisteredChatAccess() {
   }
   // Logged-in user always gets chat access immediately
   updateChatAccessUI(true);
-  // Still fetch registration IDs so tournament-specific chat works
+  // Real-time listener for confirmed registrations (so "CHAT NOW" appears instantly after admin accepts)
   const emailLower = currentUser.email.toLowerCase();
-  db.ref('registrations').once('value', snap => {
+  db.ref('registrations').on('value', snap => {
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
@@ -2939,7 +2940,21 @@ function checkRegisteredChatAccess() {
     registeredTournamentIds = newIds;
     persistRegisteredIds();
     if (tournaments.length) renderTournaments(); // only re-render if tournament data is ready
-  }).catch(() => {
+  });
+  // Real-time listener for pending registrations (so "Waiting" button stays accurate)
+  db.ref('pendingRegistrations').on('value', snap => {
+    const newPending = new Set();
+    snap.forEach(tourneyNode => {
+      tourneyNode.forEach(reg => {
+        const r = reg.val();
+        const e1 = (r.email1 || '').toLowerCase();
+        const ue = (r.userEmail || '').toLowerCase();
+        if (e1 === emailLower || ue === emailLower) {
+          newPending.add(tourneyNode.key);
+        }
+      });
+    });
+    pendingTournamentIds = newPending;
     if (tournaments.length) renderTournaments();
   });
 }
@@ -3240,7 +3255,8 @@ let messages = [];
 let msgId = 100;
 let tournaments = []; // Now loaded from API
 let results = [];     // Now loaded from API
-let registeredTournamentIds = new Set(); // tracks which tournaments current user is registered for
+let registeredTournamentIds = new Set(); // tracks which tournaments current user is confirmed for
+let pendingTournamentIds = new Set();   // tracks which tournaments current user has a pending request
 
 // ── Persist registered tournament IDs so page reload doesn't reset them ──
 function persistRegisteredIds() {
@@ -3659,10 +3675,12 @@ function buildTournamentCardHTML(t) {
   const safeId = t.id;
   const safeName = (t.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const joinBtn = registeredTournamentIds.has(t.id)
-    ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT</button>`
-    : full
-      ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
-      : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
+    ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT NOW</button>`
+    : pendingTournamentIds.has(t.id)
+      ? `<button class="join-btn" style="background:rgba(255,180,0,0.18);color:#ffb800;border:1.5px solid rgba(255,180,0,0.4);cursor:default" disabled onclick="event.stopPropagation()">⏳ Waiting…</button>`
+      : full
+        ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
+        : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
 
   // Map-based gradient colors for placeholder
   const mapColors = {
@@ -3787,10 +3805,25 @@ function openDetail(id) {
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
 
-  // Show "already registered" panel or the reg form depending on user's status
+  // Show "already registered" panel or pending or the reg form depending on user's status
   const alreadyReg = registeredTournamentIds.has(id);
-  document.getElementById('detail-registered-state').style.display = alreadyReg ? 'block' : 'none';
-  document.getElementById('detail-reg-form-section').style.display = alreadyReg ? 'none' : 'block';
+  const isPending  = pendingTournamentIds.has(id);
+  document.getElementById('detail-registered-state').style.display = (alreadyReg || isPending) ? 'block' : 'none';
+  document.getElementById('detail-reg-form-section').style.display = (alreadyReg || isPending) ? 'none' : 'block';
+  // Update the registered-state message for pending vs confirmed
+  if (isPending && !alreadyReg) {
+    const el = document.getElementById('detail-registered-state');
+    const titleEl = el ? el.querySelector('div > div:nth-child(2)') : null;
+    const subEl   = el ? el.querySelector('div > div:nth-child(3)') : null;
+    if (titleEl) titleEl.textContent = '⏳ Registration Pending';
+    if (subEl)   subEl.textContent = 'Your request is awaiting admin approval. You\'ll get chat access once accepted.';
+  } else if (alreadyReg) {
+    const el = document.getElementById('detail-registered-state');
+    const titleEl = el ? el.querySelector('div > div:nth-child(2)') : null;
+    const subEl   = el ? el.querySelector('div > div:nth-child(3)') : null;
+    if (titleEl) titleEl.textContent = '✅ You\'re Registered!';
+    if (subEl)   subEl.textContent = 'Your registration is confirmed. You can access the tournament chat.';
+  }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('detail-page').classList.add('active');
@@ -3981,6 +4014,7 @@ async function confirmPayNow() {
       email2:         d.email2 || '',
       entryFee:       fee,
       status:         'pending',
+      userEmail:      currentUser.email || '',
       submittedAt:    timeStr,
       ts:             firebase.database.ServerValue.TIMESTAMP
     });
@@ -4006,6 +4040,10 @@ async function confirmPayNow() {
   const waUrl = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
 
   closePaymentModal();
+
+  // Mark as pending immediately so button changes to "Waiting"
+  pendingTournamentIds.add(t.id);
+  renderTournaments();
 
   // 3: Show success confirmation
   const successEl = document.getElementById('success-modal');

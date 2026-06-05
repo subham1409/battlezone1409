@@ -2174,6 +2174,33 @@ function startRequestsBadgeListener() {
     }
     const countEl = document.getElementById('req-pending-count');
     if (countEl) countEl.textContent = count;
+
+    // Auto-refresh the requests list if that tab is currently active
+    const reqPanel = document.getElementById('tab-requests');
+    if (reqPanel && reqPanel.classList.contains('active')) {
+      // Parse the snapshot directly instead of re-fetching
+      allRequestsData = [];
+      if (snap.exists()) {
+        snap.forEach(tourneyNode => {
+          const tId = tourneyNode.key;
+          // Try to find tournament name from already-loaded data
+          const tName = tId; // will be enriched below
+          tourneyNode.forEach(regNode => {
+            allRequestsData.push({ tournamentId: tId, tournamentName: tName, reqKey: regNode.key, ...regNode.val() });
+          });
+        });
+        allRequestsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        // Enrich tournament names if possible
+        db.ref('tournaments').once('value', tSnap => {
+          const names = {};
+          tSnap.forEach(c => { names[c.key] = c.val().name || c.key; });
+          allRequestsData.forEach(r => { if (names[r.tournamentId]) r.tournamentName = names[r.tournamentId]; });
+          renderRequestsAdmin();
+        }).catch(() => renderRequestsAdmin());
+      } else {
+        renderRequestsAdmin();
+      }
+    }
   });
 }
 
