@@ -2922,7 +2922,8 @@ function applyLoggedInUser(userData, skipToast) {
     chatName: chatName,
     bgmiId: userData.bgmiId || null,
     email: userData.email || null,
-    googleUid: userData.googleUid || null
+    googleUid: userData.googleUid || null,
+    phone: userData.phone || null
   };
   const authScr = document.getElementById('auth-screen');
   if (authScr) { authScr.style.display = 'none'; authScr.classList.add('hidden'); }
@@ -3179,7 +3180,8 @@ async function authLogin() {
       chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
       email: email,
-      googleUid: userData.googleUid || null
+      googleUid: userData.googleUid || null,
+      phone: userData.phone || null
     };
     persistSession(mergedUser);
     applyLoggedInUser(mergedUser);
@@ -3408,7 +3410,8 @@ window.onload = async function() {
           chatName: userData.chatName || savedSession.chatName,
           bgmiId: userData.bgmiId || null,
           email: savedSession.email,
-          googleUid: userData.googleUid || null
+          googleUid: userData.googleUid || null,
+          phone: userData.phone || savedSession.phone || null
         }, true); // skip toast on silent restore
       } else {
         clearSession(); // account removed, fall through to auth screen
