@@ -1800,7 +1800,6 @@ body::after {
   min-height: 0;
   padding-bottom: 120px;
 }
-/* Input bar: fixed exactly above bottom nav */
 #chat-input-bar {
   position: fixed !important;
   left: 50%;
@@ -1818,7 +1817,6 @@ body::after {
   margin-top: 0;
   padding: 10px 14px;
 }
-/* Locked bar: same fixed position */
 #chat-locked-msg {
   position: fixed !important;
   left: 50%;
@@ -1834,7 +1832,6 @@ body::after {
 #chat-page.active .emoji-row {
   display: none;
 }
-/* Keyboard open: nav hides, bars move to bottom: 0 */
 body.keyboard-open #bottom-nav {
   display: none;
 }
@@ -3456,49 +3453,61 @@ window.onload = async function() {
   // NOTE: Tournament listener is now started immediately at page load (below window.onload)
   // so it cannot be blocked by auth errors or any other async failures above.
 
-  // ---- Load results from Firebase ----
-  try {
-    const rSnap = await db.ref('results').once('value');
-    const rArr = [];
-    rSnap.forEach(c => rArr.push({ _key: c.key, ...c.val() }));
-    rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // ---- Load results from Firebase (live listener) ----
+  db.ref('results').on('value', rSnap => {
+    try {
+      const rArr = [];
+      rSnap.forEach(c => rArr.push({ _key: c.key, ...c.val() }));
+      rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-    if (rArr.length > 0) {
-      results = rArr.map(r => {
-        // Build leaderboard from place fields + optional lb array
-        let lb = [];
-        if (r.lb && Array.isArray(r.lb)) {
-          lb = r.lb.map(row => ({ r: row.r, team: row.team||'', players: row.players||'', matches: row.matches||0, wwcd: row.wwcd||0, place: row.place||0, kills: row.kills||0, total: row.total||0 }));
-        } else {
-          if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
-          if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
-          if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
-        }
-        return {
-          id: r._key,
-          name: r.name || '',
-          date: r.date || '',
-          map: r.map || '',
-          winner: r.place1 || r.winner || '',
-          kills: r.totalKills || r.kills || 0,
-          teams: r.totalTeams || r.teams || 0,
-          prize: r.prize || '',
-          lb
-        };
-      });
-    } else {
-      results = []; // No results yet — admin will add them
+      if (rArr.length > 0) {
+        results = rArr.map(r => {
+          // Firebase stores arrays as objects with numeric keys — convert back to array
+          let lb = [];
+          if (r.lb && typeof r.lb === 'object') {
+            const lbArr = Array.isArray(r.lb) ? r.lb : Object.values(r.lb);
+            lb = lbArr.filter(Boolean).map(row => ({
+              r:       row.r       || 0,
+              team:    row.team    || '',
+              players: row.players || '',
+              matches: row.matches || 0,
+              wwcd:    row.wwcd    || 0,
+              place:   row.place   || 0,
+              kills:   row.kills   || 0,
+              total:   row.total   || 0
+            }));
+          } else {
+            if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
+            if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
+            if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
+          }
+          return {
+            id:     r._key,
+            name:   r.name   || '',
+            date:   r.date   || '',
+            map:    r.map    || '',
+            winner: r.place1 || r.winner || '',
+            kills:  r.totalKills || r.kills || 0,
+            teams:  r.totalTeams || r.teams || 0,
+            prize:  r.prize  || '',
+            lb
+          };
+        });
+      } else {
+        results = [];
+      }
+    } catch(e) {
+      console.warn('Firebase results load failed:', e);
+      results = [];
     }
-  } catch(e) {
-    console.warn('Firebase results load failed:', e);
-    results = [];
-  }
+    renderResults();
+  });
 
   // Chat — Firebase listener
   initFirebaseChat();
 
   // NOTE: renderTournaments() is called by the db.ref('tournaments').on('value') listener above.
-  renderResults();
+  // Results are rendered inside the live db.ref('results').on('value') listener above.
 
   // ── RESTORE LAST SECTION (section persistence on reload) ──
   const lastPage = sessionStorage.getItem('bz_page');
