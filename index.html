@@ -1792,7 +1792,7 @@ body::after {
   flex-direction: column;
   z-index: 20;
   background: var(--bg-primary);
-  overflow: hidden;
+  overflow: visible;
   /* Ensure the page itself doesn't overflow under the nav */
   padding-bottom: 0;
 }
@@ -1805,14 +1805,17 @@ body::after {
 #chat-page.active .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 12px;
-  min-height: unset;
+  min-height: 0; /* critical: allows flex child to shrink below content size */
 }
 #chat-page.active #chat-input-bar {
   flex-shrink: 0;
   width: 100%;
   position: relative;
   z-index: 5;
+  /* Ensure input bar is fully visible above nav */
+  background: var(--bg-primary);
 }
 #chat-page.active #chat-locked-msg {
   flex-shrink: 0;
@@ -1825,7 +1828,6 @@ body::after {
   flex-shrink: 0;
   margin-top: 0;
   bottom: auto !important;
-  /* Ensure it never overlaps the bottom nav */
   z-index: 10;
 }
 #chat-page.active .emoji-row {
