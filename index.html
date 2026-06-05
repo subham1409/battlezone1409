@@ -495,7 +495,7 @@ body::after {
   transition: all 0.2s;
   position: relative;
 }
-.tournament-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+.tournament-card:hover { border-color: var(--border); transform: none; }
 .tournament-card-top {
   padding: 14px 16px 12px;
   display: flex;
@@ -583,9 +583,11 @@ body::after {
   margin-bottom: 6px;
   display: inline-block;
 }
-.badge-open { background: rgba(0,255,157,0.12); color: var(--accent-green); border: 1px solid rgba(0,255,157,0.2); }
-.badge-upcoming { background: rgba(255,120,0,0.12); color: var(--accent-orange); border: 1px solid rgba(255,120,0,0.2); }
-.badge-full { background: rgba(255,58,58,0.12); color: var(--accent-red); border: 1px solid rgba(255,58,58,0.2); }
+.badge-open      { background: rgba(0,255,157,0.12);  color: var(--accent-green);  border: 1px solid rgba(0,255,157,0.2);  }
+.badge-upcoming  { background: rgba(255,120,0,0.12);  color: var(--accent-orange); border: 1px solid rgba(255,120,0,0.2);  }
+.badge-full      { background: rgba(255,58,58,0.12);  color: var(--accent-red);    border: 1px solid rgba(255,58,58,0.2);  }
+.badge-completed { background: rgba(100,160,255,0.12);color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
+.badge-cancelled { background: rgba(255,58,58,0.10);  color: #ff6b6b;              border: 1px solid rgba(255,58,58,0.25); }
 .tournament-name {
   font-family: var(--font-display);
   font-size: 14px;
@@ -939,7 +941,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 300px;
+  min-height: 0;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y pinch-zoom;
@@ -1779,49 +1781,43 @@ body::after {
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
 
-/* ===== CHAT PAGE FIX — header always on top, input above keyboard ===== */
-#chat-page.active {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  bottom: 68px;
-  display: flex !important;
-  flex-direction: column;
-  z-index: 20;
-  background: var(--bg-primary);
-  overflow: hidden;
-}
-/* The chat-header inside chat-page is already sticky, but we force flex so it never scrolls away */
-#chat-page.active .chat-header {
-  flex-shrink: 0;
-  position: relative;
-  top: auto;
-}
-#chat-page.active .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 12px;
-  min-height: unset;
-}
-#chat-page.active .chat-input-area {
-  position: relative;
-  flex-shrink: 0;
-  margin-top: 0;
-  bottom: auto;
-}
-#chat-page.active .emoji-row {
+/* ===== CHAT PAGE — sits outside #content, fixed above bottom nav ===== */
+#chat-page {
   display: none;
 }
-/* When keyboard is open on chat page — hide bottom nav and expand chat to full height */
-body.keyboard-open.on-chat-page #bottom-nav {
-  display: none !important;
+#chat-page.active {
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  bottom: 68px !important;
+  z-index: 20 !important;
+  background: var(--bg-primary) !important;
+  overflow: hidden !important;
 }
-body.keyboard-open.on-chat-page #chat-page.active {
-  bottom: 0;
+#chat-page.active .chat-header {
+  flex: 0 0 auto;
 }
+#chat-page.active .chat-messages {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-bottom: 10px !important;
+  -webkit-overflow-scrolling: touch;
+}
+#chat-page.active #chat-input-bar {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+#chat-page.active .emoji-row { display: none; }
+body.keyboard-open.on-chat-page #bottom-nav { display: none !important; }
+body.keyboard-open.on-chat-page #chat-page.active { bottom: 0 !important; }
 
 /* ===== NEWS PAGE ===== */
 .news-card {
@@ -2376,9 +2372,25 @@ body.keyboard-open.on-chat-page #chat-page.active {
       </div>
 
       <!-- Tournaments -->
-      <div class="section-header">
+      <div class="section-header" style="padding-bottom:4px">
         <div class="section-title">Tournaments</div>
-        <span class="see-all">View All</span>
+      </div>
+      <!-- Status filter chips -->
+      <div id="tournament-filter-bar" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+        <style>#tournament-filter-bar::-webkit-scrollbar{display:none}
+        .t-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:1.5px solid var(--border);color:var(--text-muted);background:transparent;transition:all 0.18s}
+        .t-chip.active{color:#000;border-color:transparent}
+        .t-chip[data-f="all"].active{background:var(--accent-orange);color:#000}
+        .t-chip[data-f="live"].active{background:var(--accent-green);color:#000}
+        .t-chip[data-f="upcoming"].active{background:var(--accent-orange);color:#000}
+        .t-chip[data-f="completed"].active{background:#6495ed;color:#000}
+        .t-chip[data-f="cancelled"].active{background:#ff6b6b;color:#000}
+        </style>
+        <button class="t-chip active" data-f="all"       onclick="setTournamentFilter(this,'all')">⚡ All</button>
+        <button class="t-chip"        data-f="upcoming"  onclick="setTournamentFilter(this,'upcoming')">🟠 Upcoming</button>
+        <button class="t-chip"        data-f="live"      onclick="setTournamentFilter(this,'live')">🟢 Live</button>
+        <button class="t-chip"        data-f="completed" onclick="setTournamentFilter(this,'completed')">✅ Completed</button>
+        <button class="t-chip"        data-f="cancelled" onclick="setTournamentFilter(this,'cancelled')">🚫 Cancelled</button>
       </div>
       <div class="tournament-list" id="tournament-list"></div>
       <div style="height:10px"></div>
@@ -2490,58 +2502,7 @@ body.keyboard-open.on-chat-page #chat-page.active {
       <div style="height:20px"></div>
     </div>
 
-    <!-- ===== CHAT PAGE ===== -->
-    <div id="chat-page" class="page">
-      <div class="chat-header">
-        <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
-        <div class="chat-header-left">
-          <div class="chat-title">💬 Community Talk</div>
-          <div class="chat-title-sub">⚡ Live</div>
-        </div>
-        <div class="chat-header-right">
-          <div class="chat-you-name" id="chat-you-label">Anonymous</div>
-        </div>
-      </div>
-      <div class="emoji-row">
-        <span onclick="addEmoji('🔥')">🔥</span>
-        <span onclick="addEmoji('💀')">💀</span>
-        <span onclick="addEmoji('🎯')">🎯</span>
-        <span onclick="addEmoji('🏆')">🏆</span>
-        <span onclick="addEmoji('⚡')">⚡</span>
-        <span onclick="addEmoji('👊')">👊</span>
-        <span onclick="addEmoji('😤')">😤</span>
-        <span onclick="addEmoji('🤝')">🤝</span>
-        <span onclick="addEmoji('💣')">💣</span>
-        <span onclick="addEmoji('🐔')">🐔</span>
-      </div>
-      <!-- Pinned animated message from admin -->
-      <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
-        <div class="pinned-banner-inner">
-          <div class="pinned-badge">📌 ROOM INFO</div>
-          <div class="pinned-msg-text" id="pinned-msg-text"></div>
-        </div>
-      </div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <!-- Locked state for non-registered users -->
-      <div id="chat-locked-msg" style="display:none;align-items:center;justify-content:center;padding:16px 18px;gap:12px;background:rgba(255,120,0,0.06);border-top:1px solid rgba(255,120,0,0.15)">
-        <div style="font-size:22px">🔒</div>
-        <div>
-          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Register in a tournament to unlock</div>
-        </div>
-      </div>
-      <!-- Input bar — shown only to registered users -->
-      <div id="chat-input-bar" style="display:none">
-      <div class="chat-input-area">
-        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
-        <button class="send-btn" onclick="sendMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
-      </div>
-      </div>
-    </div>
+
 
     <!-- ===== NEWS PAGE ===== -->
     <div id="news-page" class="page">
@@ -2629,6 +2590,52 @@ body.keyboard-open.on-chat-page #chat-page.active {
     </div>
 
   </div><!-- end #content -->
+
+<!-- ===== CHAT PAGE ===== -->
+    <div id="chat-page" class="page">
+      <div class="chat-header">
+        <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
+        <div class="chat-header-left">
+          <div class="chat-title">💬 Community Talk</div>
+          <div class="chat-title-sub">⚡ Live</div>
+        </div>
+        <div class="chat-header-right">
+          <div class="chat-you-name" id="chat-you-label">Anonymous</div>
+        </div>
+      </div>
+      <div class="emoji-row">
+        <span onclick="addEmoji('🔥')">🔥</span>
+        <span onclick="addEmoji('💀')">💀</span>
+        <span onclick="addEmoji('🎯')">🎯</span>
+        <span onclick="addEmoji('🏆')">🏆</span>
+        <span onclick="addEmoji('⚡')">⚡</span>
+        <span onclick="addEmoji('👊')">👊</span>
+        <span onclick="addEmoji('😤')">😤</span>
+        <span onclick="addEmoji('🤝')">🤝</span>
+        <span onclick="addEmoji('💣')">💣</span>
+        <span onclick="addEmoji('🐔')">🐔</span>
+      </div>
+      <!-- Pinned animated message from admin -->
+      <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
+        <div class="pinned-banner-inner">
+          <div class="pinned-badge">📌 ROOM INFO</div>
+          <div class="pinned-msg-text" id="pinned-msg-text"></div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <!-- Input bar -->
+      <div id="chat-input-bar">
+      <div class="chat-input-area">
+        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      </div>
+    </div>
+
 
   <!-- BOTTOM NAV -->
   <nav id="bottom-nav">
@@ -2911,19 +2918,26 @@ function applyLoggedInUser(userData, skipToast) {
   checkRegisteredChatAccess();
 }
 
+let _regListenerEmail = null; // guard: only attach listeners once per email
+
 function checkRegisteredChatAccess() {
-  // Guests are blocked; any logged-in user can chat
+  // Always show/hide input bar immediately based on login state
   if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
     pendingTournamentIds = new Set();
     clearPersistedRegisteredIds();
     updateChatAccessUI(false);
-    if (tournaments.length) renderTournaments(); // only re-render if data is already loaded
+    if (tournaments.length) renderTournaments();
+    _regListenerEmail = null;
     return;
   }
-  // Logged-in user always gets chat access immediately
+  // Logged-in: show input bar immediately, every time
   updateChatAccessUI(true);
-  // Real-time listener for confirmed registrations (so "CHAT NOW" appears instantly after admin accepts)
+
+  // Only attach Firebase listeners once per logged-in email
+  if (_regListenerEmail === currentUser.email) return;
+  _regListenerEmail = currentUser.email;
+
   const emailLower = currentUser.email.toLowerCase();
   db.ref('registrations').on('value', snap => {
     const newIds = new Set();
@@ -2943,17 +2957,21 @@ function checkRegisteredChatAccess() {
   });
   // Real-time listener for pending registrations (so "Waiting" button stays accurate)
   db.ref('pendingRegistrations').on('value', snap => {
+    // Always read email fresh so it works even if session restored after listener attached
+    const myEmail = (currentUser.email || '').toLowerCase();
     const newPending = new Set();
-    snap.forEach(tourneyNode => {
-      tourneyNode.forEach(reg => {
-        const r = reg.val();
-        const e1 = (r.email1 || '').toLowerCase();
-        const ue = (r.userEmail || '').toLowerCase();
-        if (e1 === emailLower || ue === emailLower) {
-          newPending.add(tourneyNode.key);
-        }
+    if (myEmail) {
+      snap.forEach(tourneyNode => {
+        tourneyNode.forEach(reg => {
+          const r = reg.val();
+          const e1 = (r.email1 || '').toLowerCase();
+          const ue = (r.userEmail || '').toLowerCase();
+          if (e1 === myEmail || ue === myEmail) {
+            newPending.add(tourneyNode.key);
+          }
+        });
       });
-    });
+    }
     pendingTournamentIds = newPending;
     if (tournaments.length) renderTournaments();
   });
@@ -3299,12 +3317,13 @@ function showTournamentSkeleton() {
 
 // ========= STATUS MAPPER =========
 function mapTournamentStatus(s) {
-  if (!s) return 'open';
+  if (!s) return 'live';
   s = s.toUpperCase();
-  if (s === 'LIVE') return 'open';
-  if (s === 'UPCOMING') return 'upcoming';
-  if (s === 'COMPLETED' || s === 'CANCELLED') return 'full';
-  return 'open';
+  if (s === 'LIVE')      return 'live';
+  if (s === 'UPCOMING')  return 'upcoming';
+  if (s === 'COMPLETED') return 'completed';
+  if (s === 'CANCELLED') return 'cancelled';
+  return 'live';
 }
 
 // ========= INIT — Load from Firebase =========
@@ -3518,7 +3537,13 @@ window.onload = async function() {
   db.ref('tournaments').on('value', snap => {
     const raw = [];
     snap.forEach(c => { raw.push({ _key: c.key, ...c.val() }); });
-    raw.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const statusOrder = { upcoming: 0, live: 1, completed: 2, cancelled: 3 };
+    raw.sort((a, b) => {
+      const sa = statusOrder[((a.status||'live').toLowerCase())] ?? 1;
+      const sb = statusOrder[((b.status||'live').toLowerCase())] ?? 1;
+      if (sa !== sb) return sa - sb;
+      return (b.ts || 0) - (a.ts || 0);
+    });
     tournaments = raw.map((t, i) => {
       const parsed = parseTournament(t, i);
       if (registrationCountsCache[parsed.id] !== undefined) {
@@ -3586,8 +3611,15 @@ function switchPage(page) {
   if (page === 'chat') {
     const chatLabel = document.getElementById('chat-you-label');
     if (chatLabel) chatLabel.textContent = currentUser.chatName || currentUser.username;
+    // Force input bar visible immediately for logged-in users — don't wait for listeners
+    if (!currentUser.isGuest && currentUser.email) {
+      const inputBar = document.getElementById('chat-input-bar');
+      const lockMsg  = document.getElementById('chat-locked-msg');
+      if (inputBar) inputBar.style.display = 'block';
+      if (lockMsg)  lockMsg.style.display  = 'none';
+    }
     checkRegisteredChatAccess();
-  const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
+    const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
     if (!chatListenerAttached) initFirebaseChat();
     setTimeout(() => {
       const msgs = document.getElementById('chat-messages');
@@ -3607,12 +3639,26 @@ function showHome() {
 }
 
 // ========= TOURNAMENTS =========
+let _tournamentFilter = 'all'; // all | live | upcoming | completed | cancelled
+
+function setTournamentFilter(el, filter) {
+  _tournamentFilter = filter;
+  document.querySelectorAll('.t-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderTournaments();
+}
+
 function buildTournamentCardHTML(t) {
   const pct = (t.slots / t.total) * 100;
   const almostFull = pct >= 80;
-  const full = t.status === 'full' || (t.slots >= t.total && t.total > 0);
-  const badgeClass = full ? 'badge-full' : t.status === 'upcoming' ? 'badge-upcoming' : 'badge-open';
-  const badgeLabel = full ? '🔴 FULL' : t.status === 'upcoming' ? '🟠 UPCOMING' : '🟢 OPEN';
+  const full = (t.slots >= t.total && t.total > 0);
+  const _st = t.status; // live | upcoming | completed | cancelled
+  const badgeClass = _st === 'upcoming'  ? 'badge-upcoming'  :
+                     _st === 'completed' ? 'badge-completed' :
+                     _st === 'cancelled' ? 'badge-cancelled' : 'badge-open';
+  const badgeLabel = _st === 'upcoming'  ? '🟠 UPCOMING'  :
+                     _st === 'completed' ? '✅ COMPLETED' :
+                     _st === 'cancelled' ? '🚫 CANCELLED' : '🟢 LIVE';
 
   // Prize distribution list — collapsible
   let prizeListHTML = '';
@@ -3674,13 +3720,16 @@ function buildTournamentCardHTML(t) {
 
   const safeId = t.id;
   const safeName = (t.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const isClosed = _st === 'completed' || _st === 'cancelled';
   const joinBtn = registeredTournamentIds.has(t.id)
-    ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="event.stopPropagation(); openTournamentChat('${safeId}', '${safeName}')">💬 CHAT NOW</button>`
+    ? `<button class="join-btn" style="background:var(--accent-green);color:#000" onclick="openTournamentChat('${safeId}', '${safeName}')">💬 CHAT NOW</button>`
     : pendingTournamentIds.has(t.id)
-      ? `<button class="join-btn" style="background:rgba(255,180,0,0.18);color:#ffb800;border:1.5px solid rgba(255,180,0,0.4);cursor:default" disabled onclick="event.stopPropagation()">⏳ Waiting…</button>`
-      : full
-        ? `<button class="join-btn slot-filled" disabled onclick="event.stopPropagation()">🔒 Slots Filled</button>`
-        : `<button class="join-btn" onclick="event.stopPropagation(); openDetail('${safeId}')">JOIN NOW</button>`;
+      ? `<button class="join-btn" style="background:rgba(255,180,0,0.18);color:#ffb800;border:1.5px solid rgba(255,180,0,0.4);cursor:default" disabled>⏳ Waiting…</button>`
+      : isClosed
+        ? `<button class="join-btn slot-filled" disabled>${_st === 'cancelled' ? '🚫 Cancelled' : '✅ Ended'}</button>`
+        : full
+          ? `<button class="join-btn slot-filled" disabled>🔒 Slots Filled</button>`
+          : `<button class="join-btn" onclick="openDetail('${safeId}')">JOIN NOW</button>`;
 
   // Map-based gradient colors for placeholder
   const mapColors = {
@@ -3721,7 +3770,7 @@ function buildTournamentCardHTML(t) {
       </div>`;
 
   return `
-  <div class="tournament-card" ${full ? 'style="cursor:default;opacity:0.78"' : `onclick="openDetail('${safeId}')"`}>
+  <div class="tournament-card" style="cursor:default${full ? ';opacity:0.78' : ''}">
     ${cardImgBanner}
     <div class="tournament-card-top" style="position:relative;padding-bottom:8px">
       <div style="flex:1;min-width:0">
@@ -3758,8 +3807,15 @@ function renderTournaments() {
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em">No tournaments yet — check back soon!</div>';
     return;
   }
-  // Build all HTML as one string, then set once — avoids innerHTML += DOM corruption bug
-  container.innerHTML = tournaments.map(t => buildTournamentCardHTML(t)).join('');
+  const filtered = _tournamentFilter === 'all'
+    ? tournaments
+    : tournaments.filter(t => t.status === _tournamentFilter);
+  if (!filtered.length) {
+    const labels = { live:'Live', upcoming:'Upcoming', completed:'Completed', cancelled:'Cancelled' };
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em">No ' + (labels[_tournamentFilter]||'') + ' tournaments right now</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(t => buildTournamentCardHTML(t)).join('');
 }
 
 function openDetail(id) {
@@ -4751,98 +4807,104 @@ function closeNewsDetail() {
   document.getElementById('news-overlay').classList.remove('open');
 }
 
-// ========= KEYBOARD DETECTION — keep input above keyboard =========
+// ========= KEYBOARD DETECTION — input bar always above keyboard =========
 (function() {
   let _kbOpen = false;
   let _kbTimer = null;
 
-  function setKeyboardOpen(open) {
-    if (_kbOpen === open) return;
-    _kbOpen = open;
-
-    if (open) {
-      document.body.classList.add('keyboard-open');
-    } else {
-      document.body.classList.remove('keyboard-open');
-      const chatPage = document.getElementById('chat-page');
-      if (chatPage) {
-        chatPage.style.top = '';
-        chatPage.style.height = '';
-        chatPage.style.bottom = '';
-        chatPage.style.transform = '';
-      }
-      const overlay = document.getElementById('tchat-overlay');
-      if (overlay) {
-        overlay.style.top = '';
-        overlay.style.height = '';
-        overlay.style.bottom = '';
-      }
-    }
-  }
-
-  // ── Helper: is a chat input currently focused? ─────────────────────────────
   function chatInputFocused() {
     const a = document.activeElement;
     return a && (a.id === 'chat-input' || a.id === 'tchat-input');
   }
 
-  // ── Layout adjustment when keyboard is open ────────────────────────────────
+  function scrollMsgsToBottom(delay) {
+    setTimeout(() => {
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      const tmsgs = document.getElementById('tchat-messages');
+      if (tmsgs) tmsgs.scrollTop = tmsgs.scrollHeight;
+    }, delay || 80);
+  }
+
   function adjustLayout() {
     if (!window.visualViewport) return;
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    const onChatPage = document.body.classList.contains('on-chat-page');
-    const navHeight = onChatPage ? 0 : (document.getElementById('bottom-nav')?.offsetHeight || 68);
+    // Main chat page
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
+      chatPage.style.position  = 'fixed';
       chatPage.style.top       = vvTop + 'px';
-      chatPage.style.height    = (vvHeight - navHeight) + 'px';
+      chatPage.style.height    = vvHeight + 'px';
       chatPage.style.bottom    = 'auto';
+      chatPage.style.left      = '50%';
       chatPage.style.transform = 'translateX(-50%)';
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 100);
+      scrollMsgsToBottom(80);
     }
 
+    // Tournament chat overlay
     const overlay = document.getElementById('tchat-overlay');
     if (overlay && overlay.classList.contains('open')) {
       overlay.style.top    = vvTop + 'px';
       overlay.style.height = vvHeight + 'px';
       overlay.style.bottom = 'auto';
-      const tmsgs = document.getElementById('tchat-messages');
-      if (tmsgs) setTimeout(() => tmsgs.scrollTop = tmsgs.scrollHeight, 100);
+      scrollMsgsToBottom(80);
     }
   }
 
-  // ── visualViewport: only used for layout, NOT for keyboard-open state ──────
+  function resetLayout() {
+    const chatPage = document.getElementById('chat-page');
+    if (chatPage) {
+      chatPage.style.top       = '';
+      chatPage.style.height    = '';
+      chatPage.style.bottom    = '';
+      chatPage.style.transform = '';
+    }
+    const overlay = document.getElementById('tchat-overlay');
+    if (overlay) {
+      overlay.style.top    = '';
+      overlay.style.height = '';
+      overlay.style.bottom = '';
+    }
+  }
+
+  function setKeyboardOpen(open) {
+    if (_kbOpen === open) return;
+    _kbOpen = open;
+    if (open) {
+      document.body.classList.add('keyboard-open');
+      adjustLayout();
+    } else {
+      document.body.classList.remove('keyboard-open');
+      resetLayout();
+    }
+  }
+
+  // visualViewport resize fires continuously as keyboard animates in/out
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', function() {
-      // Only adjust layout while a chat input actually has focus.
-      // Ignores all the stray resize events that fire while the iOS keyboard
-      // is animating closed (Done pressed) — at that point activeElement is
-      // already body, so we skip and let the blur handler clean up.
-      if (chatInputFocused()) adjustLayout();
+      if (_kbOpen) adjustLayout();
     });
   }
 
-  // ── Focus on a chat input → show keyboard state ────────────────────────────
+  // Focus → keyboard opens
   document.addEventListener('focusin', function(e) {
     if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
       clearTimeout(_kbTimer);
       setKeyboardOpen(true);
-      adjustLayout();
+      // Extra scroll after a short delay to ensure layout has settled
+      scrollMsgsToBottom(150);
     }
   }, true);
 
-  // ── Blur on a chat input → hide keyboard state (Done / navigate away) ──────
+  // Blur → keyboard closes (small delay so emoji taps don't flicker)
   document.addEventListener('focusout', function(e) {
     if (e.target && (e.target.id === 'chat-input' || e.target.id === 'tchat-input')) {
       clearTimeout(_kbTimer);
-      // Small delay: lets iOS re-focus the same input (e.g. emoji tap) without
-      // flickering, but fast enough that nav snaps back when Done is pressed.
       _kbTimer = setTimeout(() => {
         if (!chatInputFocused()) setKeyboardOpen(false);
-      }, 50);
+      }, 100);
     }
   }, true);
 })();

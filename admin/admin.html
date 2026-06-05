@@ -970,6 +970,21 @@ body::after {
         Once you confirm their payment on WhatsApp, click <strong style="color:var(--accent-green)">Accept</strong> to save their registration.
         Click <strong style="color:var(--accent-red)">Decline</strong> to reject and remove the request.
       </div>
+      <!-- Firebase Rules Warning -->
+      <div id="firebase-rules-warning" style="display:none;margin:14px 20px;padding:14px 16px;background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.4);border-radius:10px">
+        <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-red);letter-spacing:0.1em;margin-bottom:8px">⚠️ FIREBASE PERMISSION DENIED</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:10px">
+          Your Firebase rules are blocking reads. Go to <strong style="color:var(--text-primary)">Firebase Console → Realtime Database → Rules</strong> and set:
+        </div>
+        <code style="display:block;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent-green);line-height:1.8;white-space:pre">{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}</code>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">After saving rules, click 🔄 Refresh above.</div>
+      </div>
+      <div id="req-debug-info" style="display:none;padding:10px 20px;font-family:var(--font-mono);font-size:11px;color:var(--accent-orange);border-bottom:1px solid var(--border)"></div>
       <div id="requests-admin-list">
         <div class="empty-state"><div class="empty-state-icon">📥</div><div class="empty-state-text">Loading requests…</div></div>
       </div>
@@ -2210,6 +2225,11 @@ async function loadRequestsAdmin() {
   if (!list) return;
   list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>';
 
+  const rulesWarning = document.getElementById('firebase-rules-warning');
+  const debugInfo = document.getElementById('req-debug-info');
+  if (rulesWarning) rulesWarning.style.display = 'none';
+  if (debugInfo) debugInfo.style.display = 'none';
+
   try {
     const tSnap = await db.ref('tournaments').once('value');
     const tournamentNames = {};
@@ -2217,6 +2237,12 @@ async function loadRequestsAdmin() {
 
     const snap = await db.ref('pendingRegistrations').once('value');
     allRequestsData = [];
+
+    if (debugInfo) {
+      debugInfo.style.display = 'block';
+      debugInfo.textContent = 'pendingRegistrations node exists: ' + snap.exists() + ' | children: ' + (snap.exists() ? snap.numChildren() : 0);
+    }
+
     snap.forEach(tourneyNode => {
       const tId = tourneyNode.key;
       const tName = tournamentNames[tId] || tId;
@@ -2228,7 +2254,11 @@ async function loadRequestsAdmin() {
     allRequestsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     renderRequestsAdmin();
   } catch(e) {
+    if (rulesWarning && (e.code === 'PERMISSION_DENIED' || (e.message || '').toLowerCase().includes('permission'))) {
+      rulesWarning.style.display = 'block';
+    }
     list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">' + escHTML(e.message) + '</div></div>';
+    if (debugInfo) { debugInfo.style.display = 'block'; debugInfo.textContent = 'Error: ' + e.code + ' — ' + e.message; }
   }
 }
 
