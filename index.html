@@ -2923,20 +2923,27 @@ function applyLoggedInUser(userData, skipToast) {
   checkRegisteredChatAccess();
 }
 
+let _registrationsListener = null;
+
 function checkRegisteredChatAccess() {
-  // Guests are blocked; any logged-in user can chat
   if (currentUser.isGuest || !currentUser.email) {
     registeredTournamentIds = new Set();
     clearPersistedRegisteredIds();
     updateChatAccessUI(false);
-    if (tournaments.length) renderTournaments(); // only re-render if data is already loaded
+    if (_registrationsListener) {
+      db.ref('registrations').off('value', _registrationsListener);
+      _registrationsListener = null;
+    }
+    if (tournaments.length) renderTournaments();
     return;
   }
-  // Logged-in user always gets chat access immediately
   updateChatAccessUI(true);
-  // Still fetch registration IDs so tournament-specific chat works
+  if (_registrationsListener) {
+    db.ref('registrations').off('value', _registrationsListener);
+    _registrationsListener = null;
+  }
   const emailLower = currentUser.email.toLowerCase();
-  db.ref('registrations').once('value', snap => {
+  _registrationsListener = db.ref('registrations').on('value', snap => {
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
@@ -2945,13 +2952,22 @@ function checkRegisteredChatAccess() {
         const e2 = (r.email2 || '').toLowerCase();
         if (e1 === emailLower || (e2 && e2 === emailLower)) {
           newIds.add(tourneyNode.key);
+          return;
+        }
+        if (currentUser.phone) {
+          const ph = currentUser.phone.replace(/\D/g, '');
+          const rph1 = (r.phone1 || '').replace(/\D/g, '');
+          const rph2 = (r.phone2 || '').replace(/\D/g, '');
+          if (ph && (rph1.endsWith(ph) || rph2.endsWith(ph))) {
+            newIds.add(tourneyNode.key);
+          }
         }
       });
     });
     registeredTournamentIds = newIds;
     persistRegisteredIds();
-    if (tournaments.length) renderTournaments(); // only re-render if tournament data is ready
-  }).catch(() => {
+    if (tournaments.length) renderTournaments();
+  }, () => {
     if (tournaments.length) renderTournaments();
   });
 }
@@ -2985,6 +3001,11 @@ function updateChatAccessUI(hasAccess) {
 function doLogout() {
   clearSession();
   clearPersistedRegisteredIds();
+  // Detach real-time registrations listener on logout
+  if (typeof _registrationsListener !== 'undefined' && _registrationsListener) {
+    db.ref('registrations').off('value', _registrationsListener);
+    _registrationsListener = null;
+  }
   currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
   firebase.auth().signOut().catch(() => {});
   const authScr = document.getElementById('auth-screen');
