@@ -1026,7 +1026,7 @@ body::after {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 0;
 }
 .chat-input {
   flex: 1;
@@ -1787,6 +1787,7 @@ body::after {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
+  /* stop at bottom nav top edge */
   bottom: 68px;
   display: flex !important;
   flex-direction: column;
@@ -1797,24 +1798,57 @@ body::after {
 #chat-page.active .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 12px;
-  min-height: unset;
+  min-height: 0;
+  /* pad enough so last message is never hidden under the fixed input bar (~70px tall) */
+  padding-bottom: 75px;
 }
-#chat-page.active .chat-input-area {
-  position: relative;
-  flex-shrink: 0;
+/* ---- Input bar: fixed, sits exactly above bottom nav ---- */
+#chat-input-bar {
+  position: fixed !important;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  bottom: 68px !important;
+  z-index: 200;
+  background: rgba(8,10,14,0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+}
+#chat-input-bar .chat-input-area {
+  border-top: none;
   margin-top: 0;
-  bottom: auto;
+  padding: 10px 14px;
+}
+/* ---- Locked bar: same fixed position ---- */
+#chat-locked-msg {
+  position: fixed !important;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  bottom: 68px !important;
+  z-index: 200;
+  background: rgba(8,10,14,0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,120,0,0.15);
 }
 #chat-page.active .emoji-row {
   display: none;
 }
-/* When keyboard is open, chat page expands to fill viewport and nav hides */
+/* When keyboard opens: nav hides, both bars slide to bottom: 0 */
 body.keyboard-open #bottom-nav {
   display: none;
 }
 body.keyboard-open #chat-page.active {
   bottom: 0;
+}
+body.keyboard-open #chat-input-bar,
+body.keyboard-open #chat-locked-msg {
+  bottom: 0 !important;
+}
+body.keyboard-open #chat-page.active .chat-messages {
+  padding-bottom: 75px;
 }
 
 /* ===== NEWS PAGE ===== */
