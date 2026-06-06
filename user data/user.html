@@ -3,298 +3,547 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BATTLEZONE — User Export</title>
+  <title>BATTLEZONE — Admin Export</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    const firebaseConfig = {
+  <!-- Firebase compat (same as admin.html — avoids module scope issues) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    firebase.initializeApp({
       apiKey: "AIzaSyAGHy9nE9asRkyy6ZZjE9q2Sj0tgF7V8_8",
       authDomain: "esportnetwork-833c2.firebaseapp.com",
       databaseURL: "https://esportnetwork-833c2-default-rtdb.firebaseio.com",
       projectId: "esportnetwork-833c2",
       storageBucket: "esportnetwork-833c2.firebasestorage.app",
       messagingSenderId: "1083526135565",
-      appId: "1:1083526135565:web:69d8a8205665534514fa44",
-      measurementId: "G-RRKPCPNBMP"
-    };
+      appId: "1:1083526135565:web:69d8a8205665534514fa44"
+    });
+    const db = firebase.database();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // ─── STATE ─────────────────────────────────────────────────────────────
+    let usersData         = [];
+    let regData           = [];
+    let selectedTournament = null;
+    let tournamentsLoaded = false;
 
-    let usersData = [];
+    // ─── UTILS ─────────────────────────────────────────────────────────────
+    function esc(str) {
+      return String(str ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function $id(id) { return document.getElementById(id); }
 
-    async function fetchUsers() {
-      const btn = document.getElementById("fetchBtn");
-      const status = document.getElementById("status");
-      const tableBody = document.getElementById("tableBody");
-      const tableWrap = document.getElementById("tableWrap");
-      const exportBtn = document.getElementById("exportBtn");
-      const countEl = document.getElementById("count");
-
-      btn.disabled = true;
-      btn.textContent = "Fetching...";
-      status.textContent = "";
-      tableBody.innerHTML = "";
-      usersData = [];
-
-      try {
-        const snapshot = await get(ref(db, "users"));
-        if (!snapshot.exists()) {
-          status.textContent = "⚠️ No users found in /users node.";
-          btn.disabled = false;
-          btn.textContent = "Fetch Users";
-          return;
-        }
-
-        const raw = snapshot.val();
-        const rows = [];
-
-        Object.entries(raw).forEach(([uid, user]) => {
-          const name  = user.name  || user.displayName || user.username || "—";
-          const phone = user.phone || user.phoneNumber  || user.mobile   || "—";
-          const email = user.email || "—";
-          rows.push({ uid, name, phone, email });
-        });
-
-        usersData = rows;
-        countEl.textContent = `${rows.length} user${rows.length !== 1 ? "s" : ""} found`;
-
-        rows.forEach((u, i) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${esc(u.name)}</td>
-            <td>${esc(u.phone)}</td>
-            <td>${esc(u.email)}</td>
-          `;
-          tableBody.appendChild(tr);
-        });
-
-        tableWrap.style.display = "block";
-        exportBtn.style.display = "inline-flex";
-        status.textContent = "";
-      } catch (err) {
-        status.textContent = "❌ Error: " + err.message;
-      }
-
-      btn.disabled = false;
-      btn.textContent = "Fetch Users";
+    // ─── TAB SWITCHING ─────────────────────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll('.tab-panel').forEach(p =>
+        p.style.display = p.id === 'panel-' + tab ? 'block' : 'none');
+      if (tab === 'tournament' && !tournamentsLoaded) loadTournaments();
     }
 
-    function esc(str) {
-      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    // ═══════════════════════════════════════════════════════════════════════
+    // TAB 1 — ALL USERS
+    // ═══════════════════════════════════════════════════════════════════════
+    async function fetchUsers() {
+      const btn = $id('fetchBtn'), status = $id('status');
+      const tableBody = $id('tableBody'), tableWrap = $id('tableWrap');
+      const exportBtn = $id('exportBtn'), countEl = $id('count');
+
+      btn.disabled = true; btn.textContent = 'Fetching...';
+      status.textContent = ''; tableBody.innerHTML = ''; usersData = [];
+
+      try {
+        const snap = await db.ref('users').once('value');
+        if (!snap.exists()) {
+          status.textContent = '⚠️ No users found in /users node.';
+          btn.disabled = false; btn.textContent = 'Fetch Users'; return;
+        }
+        const rows = [];
+        snap.forEach(c => {
+          const u = c.val();
+          rows.push({
+            uid:   c.key,
+            name:  u.name  || u.displayName || u.username   || '—',
+            phone: u.phone || u.phoneNumber  || u.mobile     || '—',
+            email: u.email || '—'
+          });
+        });
+        usersData = rows;
+        countEl.textContent = `${rows.length} user${rows.length !== 1 ? 's' : ''} found`;
+        rows.forEach((u, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${i+1}</td><td>${esc(u.name)}</td><td>${esc(u.phone)}</td><td>${esc(u.email)}</td>`;
+          tableBody.appendChild(tr);
+        });
+        tableWrap.style.display = 'block';
+        exportBtn.style.display = 'inline-flex';
+      } catch (err) {
+        status.textContent = '❌ Error: ' + err.message;
+      }
+      btn.disabled = false; btn.textContent = 'Fetch Users';
     }
 
     function exportPDF() {
       if (!usersData.length) return;
-
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // Header bar
-      doc.setFillColor(15, 15, 20);
-      doc.rect(0, 0, 210, 30, "F");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(255, 60, 60);
-      doc.text("BATTLEZONE", 14, 14);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(180, 180, 180);
-      doc.text("Esports Platform — User Directory", 14, 21);
-
+      doc.setFillColor(15,15,20); doc.rect(0,0,210,30,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(255,60,60);
+      doc.text('BATTLEZONE', 14, 14);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(180,180,180);
+      doc.text('Esports Platform — User Directory', 14, 21);
       const now = new Date();
-      const dateStr = now.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
-      const timeStr = now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
-      doc.text(`Generated: ${dateStr}, ${timeStr}`, 210 - 14, 21, { align: "right" });
-      doc.text(`Total Users: ${usersData.length}`, 210 - 14, 14, { align: "right" });
+      doc.text(`Generated: ${now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}, ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`, 196, 21, {align:'right'});
+      doc.text(`Total Users: ${usersData.length}`, 196, 14, {align:'right'});
 
-      // Table
       doc.autoTable({
         startY: 36,
-        head: [["#", "Name", "Phone Number", "Email"]],
-        body: usersData.map((u, i) => [i + 1, u.name, u.phone, u.email]),
-        styles: {
-          font: "helvetica",
-          fontSize: 9,
-          cellPadding: 4,
-          textColor: [30, 30, 30],
-          lineColor: [220, 220, 220],
-          lineWidth: 0.3,
-        },
-        headStyles: {
-          fillColor: [255, 60, 60],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 10,
-        },
-        alternateRowStyles: {
-          fillColor: [248, 248, 248],
-        },
-        columnStyles: {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 45 },
-          3: { cellWidth: "auto" },
-        },
-        margin: { left: 14, right: 14 },
-        theme: "grid",
+        head: [['#','Name','Phone Number','Email']],
+        body: usersData.map((u,i) => [i+1, u.name, u.phone, u.email]),
+        styles: { font:'helvetica', fontSize:9, cellPadding:4, textColor:[30,30,30], lineColor:[220,220,220], lineWidth:0.3 },
+        headStyles: { fillColor:[255,60,60], textColor:[255,255,255], fontStyle:'bold', fontSize:10 },
+        alternateRowStyles: { fillColor:[248,248,248] },
+        columnStyles: { 0:{cellWidth:10,halign:'center'}, 1:{cellWidth:50}, 2:{cellWidth:45}, 3:{cellWidth:'auto'} },
+        margin: {left:14,right:14}, theme:'grid',
       });
-
-      // Footer on each page
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
+      const pc = doc.internal.getNumberOfPages();
+      for (let i=1; i<=pc; i++) {
         doc.setPage(i);
-        doc.setFillColor(240, 240, 240);
-        doc.rect(0, 285, 210, 12, "F");
-        doc.setFontSize(8);
-        doc.setTextColor(120, 120, 120);
-        doc.text("BATTLEZONE Esports Platform — Confidential", 14, 292);
-        doc.text(`Page ${i} of ${pageCount}`, 210 - 14, 292, { align: "right" });
+        doc.setFillColor(240,240,240); doc.rect(0,285,210,12,'F');
+        doc.setFontSize(8); doc.setTextColor(120,120,120);
+        doc.text('BATTLEZONE Esports Platform — Confidential', 14, 292);
+        doc.text(`Page ${i} of ${pc}`, 196, 292, {align:'right'});
       }
-
       doc.save(`battlezone_users_${now.toISOString().slice(0,10)}.pdf`);
     }
 
-    window.fetchUsers  = fetchUsers;
-    window.exportPDF   = exportPDF;
+    // ═══════════════════════════════════════════════════════════════════════
+    // TAB 2 — TOURNAMENT REGISTRATIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function loadTournaments() {
+      const sel = $id('tournamentSelect');
+      sel.innerHTML = '<option value="">Loading...</option>';
+      sel.disabled = true;
+      $id('tStatus').textContent = '';
+
+      db.ref('tournaments').once('value', snap => {
+        if (!snap.exists()) {
+          sel.innerHTML = '<option value="">No tournaments found</option>';
+          return;
+        }
+        const list = [];
+        snap.forEach(c => {
+          const val = c.val();
+          list.push({ id: c.key, name: val.name || c.key });
+        });
+        // Sort newest first (by ts) or alphabetically as fallback
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        console.log('[BZ-EXPORT] Loaded tournaments:', list.length, list.map(t=>t.name));
+
+        sel.innerHTML = '<option value="">— Select a Tournament —</option>';
+        list.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = t.name;
+          sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        tournamentsLoaded = true;
+        $id('tStatus').textContent = `${list.length} tournament${list.length !== 1 ? 's' : ''} loaded`;
+        setTimeout(() => { $id('tStatus').textContent = ''; }, 2500);
+      }, err => {
+        sel.innerHTML = '<option value="">Error — check Firebase rules</option>';
+        $id('tStatus').textContent = '❌ ' + err.message;
+      });
+    }
+
+    async function fetchTournamentRegs() {
+      const sel       = $id('tournamentSelect');
+      const tId       = sel.value;
+      const tName     = sel.options[sel.selectedIndex]?.text || '';
+      const btn       = $id('fetchRegBtn');
+      const status    = $id('tStatus');
+      const wrap      = $id('regTableWrap');
+      const chartWrap = $id('chartSection');
+      const exportBtn = $id('exportRegBtn');
+
+      if (!tId) { status.textContent = '⚠️ Please select a tournament first.'; return; }
+
+      selectedTournament = { id: tId, name: tName };
+      btn.disabled = true; btn.textContent = 'Fetching...';
+      status.textContent = '';
+      wrap.style.display = 'none';
+      chartWrap.style.display = 'none';
+      exportBtn.style.display = 'none';
+      regData = [];
+      $id('regCount').textContent = '';
+
+      try {
+        const snap = await db.ref('registrations/' + tId).once('value');
+        if (!snap.exists()) {
+          status.textContent = '⚠️ No confirmed registrations for this tournament yet.';
+          btn.disabled = false; btn.textContent = '⚡ Fetch Registrations'; return;
+        }
+
+        const rows = [];
+        let slot = 4;
+        snap.forEach(c => {
+          const r = c.val();
+          rows.push({
+            slotNo:       slot++,
+            teamName:     r.teamName     || '—',
+            phone1:       r.phone1       || '—',
+            phone2:       r.phone2       || '',
+            email1:       r.email1       || '—',
+            email2:       r.email2       || '',
+            registeredAt: r.registeredAt || r.acceptedAt || '—',
+          });
+        });
+        regData = rows;
+
+        $id('regCount').textContent =
+          `${rows.length} team${rows.length !== 1 ? 's' : ''} registered`;
+
+        const tbody = $id('regTableBody');
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+          const phone = r.phone2 ? `${esc(r.phone1)} / ${esc(r.phone2)}` : esc(r.phone1);
+          const email = r.email2 ? `${esc(r.email1)} / ${esc(r.email2)}` : esc(r.email1);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="slot-cell">Slot ${r.slotNo}</td>
+            <td class="team-cell">${esc(r.teamName)}</td>
+            <td>${phone}</td>
+            <td>${email}</td>
+            <td class="date-cell">${esc(r.registeredAt)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        wrap.style.display = 'block';
+        exportBtn.style.display = 'inline-flex';
+        renderChart(rows);
+        chartWrap.style.display = 'block';
+        status.textContent = '';
+      } catch (err) {
+        status.textContent = '❌ Error: ' + err.message;
+      }
+      btn.disabled = false; btn.textContent = '⚡ Fetch Registrations';
+    }
+
+    // ─── Canvas Slot Chart ──────────────────────────────────────────────────
+    function renderChart(rows) {
+      const canvas = $id('regChart');
+      const ctx    = canvas.getContext('2d');
+
+      const SLOT_H  = 44;
+      const PAD_TOP = 64;
+      const PAD_BOT = 30;
+      const PAD_L   = 120;
+      const PAD_R   = 56;
+      const W       = Math.max(canvas.parentElement.clientWidth - 8, 480);
+      const H       = PAD_TOP + rows.length * SLOT_H + PAD_BOT;
+
+      canvas.width  = W;
+      canvas.height = H;
+
+      ctx.fillStyle = '#0d0d14';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${selectedTournament?.name || 'Tournament'} — Team Slots`, PAD_L, 28);
+      ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#555';
+      ctx.fillText(`${rows.length} teams  •  Slots start at 4`, PAD_L, 48);
+
+      const CHART_W = W - PAD_L - PAD_R;
+
+      rows.forEach((r, i) => {
+        const y    = PAD_TOP + i * SLOT_H;
+        const barH = 24;
+        const barY = y + (SLOT_H - barH) / 2;
+
+        if (i % 2 === 0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.022)';
+          ctx.fillRect(0, y, W, SLOT_H);
+        }
+
+        // Slot label
+        ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
+        ctx.fillStyle = '#ff3c3c';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Slot ${r.slotNo}`, PAD_L - 10, barY + barH / 2 + 4);
+
+        // Track
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.beginPath();
+        roundRect(ctx, PAD_L, barY, CHART_W, barH, 5);
+        ctx.fill();
+
+        // Fill bar
+        const ratio   = i / Math.max(rows.length - 1, 1);
+        const green   = Math.round(160 - ratio * 110);
+        const grad    = ctx.createLinearGradient(PAD_L, 0, PAD_L + CHART_W * 0.78, 0);
+        grad.addColorStop(0, `rgba(255,${green},0,0.95)`);
+        grad.addColorStop(1, `rgba(255,${green},0,0.25)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        roundRect(ctx, PAD_L, barY, CHART_W * 0.78, barH, 5);
+        ctx.fill();
+
+        // Team name on bar
+        ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'left';
+        ctx.fillText(r.teamName, PAD_L + 10, barY + barH / 2 + 4);
+
+        // Slot badge right of bar
+        ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'left';
+        ctx.fillText(`#${r.slotNo}`, PAD_L + CHART_W * 0.78 + 8, barY + barH / 2 + 4);
+      });
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // ─── Export Registration PDF ───────────────────────────────────────────
+    function exportRegPDF() {
+      if (!regData.length || !selectedTournament) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      doc.setFillColor(15,15,20); doc.rect(0,0,210,30,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(255,60,60);
+      doc.text('BATTLEZONE', 14, 14);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(180,180,180);
+      doc.text(`Tournament: ${selectedTournament.name}`, 14, 21);
+      const now = new Date();
+      doc.text(`Generated: ${now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}, ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`, 196, 14, {align:'right'});
+      doc.text(`Teams: ${regData.length}`, 196, 21, {align:'right'});
+
+      doc.setFillColor(30,30,40); doc.rect(0,30,210,8,'F');
+      doc.setFontSize(8); doc.setTextColor(200,200,200);
+      doc.text('Confirmed Registrations  •  Slots start at 4', 14, 35.5);
+
+      doc.autoTable({
+        startY: 42,
+        head: [['Slot','Team Name','Phone(s)','Email(s)','Registered At']],
+        body: regData.map(r => [
+          `Slot ${r.slotNo}`, r.teamName,
+          r.phone2 ? `${r.phone1} / ${r.phone2}` : r.phone1,
+          r.email2 ? `${r.email1} / ${r.email2}` : r.email1,
+          r.registeredAt,
+        ]),
+        styles: { font:'helvetica', fontSize:8, cellPadding:3.5, textColor:[30,30,30], lineColor:[220,220,220], lineWidth:0.3 },
+        headStyles: { fillColor:[255,60,60], textColor:[255,255,255], fontStyle:'bold', fontSize:9 },
+        alternateRowStyles: { fillColor:[248,248,248] },
+        columnStyles: {
+          0: { cellWidth:18, halign:'center', fontStyle:'bold' },
+          1: { cellWidth:40 },
+          2: { cellWidth:42 },
+          3: { cellWidth:'auto' },
+          4: { cellWidth:34 },
+        },
+        margin: {left:14,right:14}, theme:'grid',
+      });
+      const pc = doc.internal.getNumberOfPages();
+      for (let i=1; i<=pc; i++) {
+        doc.setPage(i);
+        doc.setFillColor(240,240,240); doc.rect(0,285,210,12,'F');
+        doc.setFontSize(8); doc.setTextColor(120,120,120);
+        doc.text(`BATTLEZONE — ${selectedTournament.name} — Confidential`, 14, 292);
+        doc.text(`Page ${i} of ${pc}`, 196, 292, {align:'right'});
+      }
+      const safe = selectedTournament.name.replace(/[^a-z0-9]/gi,'_').toLowerCase();
+      doc.save(`bz_${safe}_${now.toISOString().slice(0,10)}.pdf`);
+    }
   </script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
-      min-height: 100vh;
-      padding: 24px 16px;
+      background: #0a0a0f; color: #e0e0e0;
+      min-height: 100vh; padding: 24px 16px;
     }
+    .container { max-width: 960px; margin: 0 auto; }
 
-    .container { max-width: 900px; margin: 0 auto; }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 32px;
-    }
+    .header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
     .logo-box {
-      width: 48px; height: 48px;
-      background: #ff3c3c;
-      border-radius: 10px;
+      width: 48px; height: 48px; background: #ff3c3c; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 20px; color: #fff;
-      letter-spacing: -1px;
+      font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -1px;
+      flex-shrink: 0;
     }
     .header h1 { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; }
     .header p  { font-size: 13px; color: #888; margin-top: 2px; }
 
-    /* Card */
-    .card {
-      background: #13131a;
-      border: 1px solid #222;
-      border-radius: 14px;
-      padding: 28px;
-      margin-bottom: 24px;
+    .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid #222; }
+    .tab-btn {
+      padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer;
+      background: transparent; border: none; color: #555;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
     }
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 16px;
-    }
+    .tab-btn:hover  { color: #bbb; }
+    .tab-btn.active { color: #ff3c3c; border-bottom-color: #ff3c3c; }
 
-    /* Buttons */
+    .card { background: #13131a; border: 1px solid #222; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 22px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.15s, transform 0.1s;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
     }
     .btn:active { transform: scale(0.97); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary  { background: #ff3c3c; color: #fff; }
-    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
-    .btn-export   { background: #1a8a4a; color: #fff; display: none; margin-left: 10px; }
-    .btn-export:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: #ff3c3c; color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+    .btn-export  { background: #1a8a4a; color: #fff; display: none; }
+    .btn-export:hover { opacity: 0.85; }
 
-    #status { margin-top: 14px; font-size: 13px; color: #f59e0b; min-height: 20px; }
-    #count  { font-size: 13px; color: #4ade80; font-weight: 600; margin-left: 14px; }
-
-    /* Table */
-    #tableWrap { display: none; margin-top: 24px; overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    .t-select-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    select#tournamentSelect {
+      flex: 1; min-width: 200px; max-width: 400px;
+      padding: 10px 14px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      background: #1a1a26; color: #e0e0e0; border: 1px solid #2e2e40;
+      outline: none; cursor: pointer;
     }
+    select#tournamentSelect:focus   { border-color: #ff3c3c; }
+    select#tournamentSelect:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .status-line { margin-top: 12px; font-size: 13px; min-height: 20px; color: #f59e0b; }
+    #count, #regCount { font-size: 13px; color: #4ade80; font-weight: 600; margin-left: 6px; }
+
+    .table-wrap { display: none; margin-top: 20px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead tr { background: #ff3c3c; }
-    thead th { padding: 10px 12px; text-align: left; color: #fff; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    thead th { padding: 10px 12px; text-align: left; color: #fff; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
     tbody tr { border-bottom: 1px solid #1e1e28; transition: background 0.1s; }
     tbody tr:hover { background: #1a1a26; }
     tbody td { padding: 10px 12px; color: #ccc; }
     tbody td:first-child { color: #555; text-align: center; }
 
-    .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .slot-cell  { font-weight: 700 !important; color: #ff3c3c !important; text-align: left !important; white-space: nowrap; font-size: 12px; }
+    .team-cell  { font-weight: 700; color: #fff !important; }
+    .date-cell  { font-size: 11px; color: #555 !important; white-space: nowrap; }
+
+    #chartSection {
+      display: none; margin-top: 6px; margin-bottom: 20px;
+      background: #0d0d14; border: 1px solid #1e1e28; border-radius: 12px;
+      padding: 20px 16px; overflow-x: auto;
+    }
+    #chartSection h3 {
+      font-size: 11px; font-weight: 600; color: #444;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+    }
+    #regChart { display: block; border-radius: 8px; }
   </style>
 </head>
 <body>
-  <div class="container">
+<div class="container">
 
-    <div class="header">
-      <div class="logo-box">BZ</div>
-      <div>
-        <h1>BATTLEZONE</h1>
-        <p>User Directory Export Tool</p>
-      </div>
+  <div class="header">
+    <div class="logo-box">BZ</div>
+    <div>
+      <h1>BATTLEZONE</h1>
+      <p>Admin Export &amp; Analytics Tool</p>
     </div>
+  </div>
 
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="users"      onclick="switchTab('users')">👥 All Users</button>
+    <button class="tab-btn"        data-tab="tournament" onclick="switchTab('tournament')">🏆 Tournament Registrations</button>
+  </div>
+
+  <!-- TAB: ALL USERS -->
+  <div id="panel-users" class="tab-panel">
     <div class="card">
-      <div class="card-title">Export Users</div>
+      <div class="card-title">Export All Users</div>
       <p style="font-size:13px;color:#888;margin-bottom:18px;">
-        Fetches all registered users from Firebase and exports their <strong style="color:#ccc">Name</strong>, <strong style="color:#ccc">Phone</strong>, and <strong style="color:#ccc">Email</strong> as a PDF.
+        Fetches all registered users and exports
+        <strong style="color:#ccc">Name</strong>,
+        <strong style="color:#ccc">Phone</strong> and
+        <strong style="color:#ccc">Email</strong> as a PDF.
       </p>
       <div class="actions">
-        <button class="btn btn-primary" id="fetchBtn" onclick="fetchUsers()">
-          ⚡ Fetch Users
-        </button>
-        <button class="btn btn-export" id="exportBtn" onclick="exportPDF()">
-          ↓ Download PDF
-        </button>
+        <button class="btn btn-primary" id="fetchBtn"  onclick="fetchUsers()">⚡ Fetch Users</button>
+        <button class="btn btn-export"  id="exportBtn" onclick="exportPDF()">↓ Download PDF</button>
         <span id="count"></span>
       </div>
-      <div id="status"></div>
-
-      <div id="tableWrap">
+      <div class="status-line" id="status"></div>
+      <div id="tableWrap" class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Phone Number</th>
-              <th>Email</th>
-            </tr>
-          </thead>
+          <thead><tr><th>#</th><th>Name</th><th>Phone Number</th><th>Email</th></tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
     </div>
-
   </div>
+
+  <!-- TAB: TOURNAMENT REGISTRATIONS -->
+  <div id="panel-tournament" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="card-title">Tournament Registrations</div>
+      <p style="font-size:13px;color:#888;margin-bottom:18px;">
+        Select a tournament to view all confirmed teams, their contact info,
+        and a visual slot chart. Slot numbers start from <strong style="color:#ccc">4</strong>.
+      </p>
+      <div class="t-select-row">
+        <select id="tournamentSelect" disabled>
+          <option value="">Loading tournaments...</option>
+        </select>
+        <button class="btn btn-primary" id="fetchRegBtn" onclick="fetchTournamentRegs()">⚡ Fetch Registrations</button>
+        <button class="btn btn-export"  id="exportRegBtn" onclick="exportRegPDF()">↓ Download PDF</button>
+        <span id="regCount"></span>
+      </div>
+      <div class="status-line" id="tStatus"></div>
+
+      <div id="regTableWrap" class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Slot</th><th>Team Name</th>
+              <th>Phone(s)</th><th>Email(s)</th><th>Registered At</th>
+            </tr>
+          </thead>
+          <tbody id="regTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="chartSection">
+      <h3>🎯 Team Slot Chart</h3>
+      <canvas id="regChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Load tournaments immediately on page load so dropdown is ready
+  loadTournaments();
+</script>
 </body>
 </html>
