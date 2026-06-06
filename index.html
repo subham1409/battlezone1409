@@ -417,6 +417,136 @@ body::after {
   z-index: 1;
 }
 
+/* === LOGO HERO BANNER === */
+.logo-hero-wrap {
+  position: relative;
+  margin: 8px 16px 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0 14px;
+  min-height: 120px;
+  /* no overflow:hidden — lets nothing get clipped */
+}
+/* Dark card bg with border */
+.logo-hero-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0d0f18 0%, #12141f 50%, #0a0c15 100%);
+  border: 1px solid rgba(255,120,0,0.2);
+  box-shadow: inset 0 0 30px rgba(255,120,0,0.04);
+  z-index: 0;
+}
+/* Sweep light streak across card */
+.logo-hero-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,120,0,0.06) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: logoSweep 4s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+@keyframes logoSweep {
+  0%   { background-position: -100% 0; }
+  50%  { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+/* Corner accent brackets */
+.logo-corner {
+  position: absolute;
+  width: 14px; height: 14px;
+  z-index: 2;
+  pointer-events: none;
+}
+.logo-corner::before,
+.logo-corner::after {
+  content: '';
+  position: absolute;
+  background: #ff7800;
+  border-radius: 1px;
+}
+.logo-corner::before { width: 100%; height: 1.5px; top:0; left:0; }
+.logo-corner::after  { width: 1.5px; height: 100%; top:0; left:0; }
+.logo-corner-tl { top: 8px;  left: 8px; }
+.logo-corner-tr { top: 8px;  right: 8px;  transform: scaleX(-1); }
+.logo-corner-bl { bottom: 8px; left: 8px;  transform: scaleY(-1); }
+.logo-corner-br { bottom: 8px; right: 8px; transform: scale(-1,-1); }
+/* Bottom glow bar */
+.logo-hero-glow {
+  position: absolute;
+  bottom: 0; left: 10%; right: 10%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,120,0,0.7) 30%, rgba(255,120,0,0.9) 50%, rgba(255,120,0,0.7) 70%, transparent);
+  border-radius: 0 0 16px 16px;
+  z-index: 2;
+  animation: logoBarPulse 2.5s ease-in-out infinite alternate;
+  filter: blur(1px);
+}
+@keyframes logoBarPulse {
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+/* The logo image — smaller, no float animation to stay sharp */
+.logo-hero-img {
+  position: relative;
+  z-index: 3;
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,120,0,0.5);
+  box-shadow:
+    0 0 0 4px rgba(255,120,0,0.06),
+    0 0 20px rgba(255,120,0,0.3),
+    0 0 40px rgba(255,120,0,0.1);
+  animation: logoGlowPulse 2.8s ease-in-out infinite alternate;
+  -webkit-user-drag: none;
+}
+@keyframes logoGlowPulse {
+  from {
+    box-shadow:
+      0 0 0 4px rgba(255,120,0,0.05),
+      0 0 14px rgba(255,120,0,0.22),
+      0 0 30px rgba(255,120,0,0.07);
+  }
+  to {
+    box-shadow:
+      0 0 0 5px rgba(255,120,0,0.1),
+      0 0 28px rgba(255,120,0,0.5),
+      0 0 55px rgba(255,120,0,0.18);
+  }
+}
+/* Scanline overlay — inside card only, clipped via inner div */
+.logo-hero-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+.logo-hero-scanline {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.035) 3px,
+    rgba(0,0,0,0.035) 4px
+  );
+}
+
 /* === TOURNAMENT CARD === */
 .tournament-list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
 .tournament-card {
@@ -2296,6 +2426,21 @@ body.keyboard-open.on-chat-page #chat-page.active { bottom: 0 !important; }
           <div class="banner-date" id="ann-date">SAT, 12 APR 2026 • 8:00 PM IST</div>
         </div>
         <div class="banner-icon" id="ann-icon">🏆</div>
+      </div>
+
+      <!-- ===== LOGO HERO BANNER ===== -->
+      <div class="logo-hero-wrap">
+        <!-- scanline clipped inside card -->
+        <div class="logo-hero-inner"><div class="logo-hero-scanline"></div></div>
+        <!-- corner brackets -->
+        <div class="logo-corner logo-corner-tl"></div>
+        <div class="logo-corner logo-corner-tr"></div>
+        <div class="logo-corner logo-corner-bl"></div>
+        <div class="logo-corner logo-corner-br"></div>
+        <!-- bottom glow bar -->
+        <div class="logo-hero-glow"></div>
+        <!-- logo -->
+        <img src="https://i.ibb.co/HsRRJjY/logo.jpg" class="logo-hero-img" alt="BATTLEZONE Logo" draggable="false" />
       </div>
 
       <!-- Tournaments -->
