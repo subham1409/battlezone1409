@@ -376,6 +376,252 @@
       const safe = selectedTournament.name.replace(/[^a-z0-9]/gi,'_').toLowerCase();
       doc.save(`bz_${safe}_${now.toISOString().slice(0,10)}.pdf`);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TAB 3 — WHATSAPP BLAST
+    // ═══════════════════════════════════════════════════════════════════════
+    let waUsers   = [];   // loaded user list [{name, phone}]
+    let waQueue   = [];   // same list, used for iteration
+    let waIdx     = 0;
+    let waRunning = false;
+    let waDelay   = 4500; // ms between opens
+    let waTimer   = null;
+
+    // Populate tournament select in WA tab from existing tournaments
+    function waPopulateTournaments() {
+      const sel = document.getElementById('waTournamentSelect');
+      sel.innerHTML = '<option value="">Select tournament...</option>';
+      // Re-use tournamentsLoaded data from regData context
+      db.ref('tournaments').once('value').then(snap => {
+        snap.forEach(c => {
+          const t = c.val();
+          const opt = document.createElement('option');
+          opt.value = c.key;
+          opt.textContent = t.name || c.key;
+          sel.appendChild(opt);
+        });
+      });
+    }
+
+    // Show/hide tournament select based on radio
+    document.addEventListener('change', function(e) {
+      if (e.target.name === 'waTarget') {
+        const isTournament = e.target.value === 'tournament';
+        document.getElementById('waTournamentSelect').style.display = isTournament ? 'block' : 'none';
+        if (isTournament) waPopulateTournaments();
+        waReset();
+      }
+    });
+
+    // Load users based on selected source
+    async function waLoadUsers() {
+      const btn = document.getElementById('waLoadBtn');
+      const status = document.getElementById('waLoadStatus');
+      const target = document.querySelector('input[name="waTarget"]:checked').value;
+
+      btn.disabled = true; btn.textContent = 'Loading...';
+      status.textContent = ''; waUsers = [];
+
+      try {
+        if (target === 'all') {
+          // All registered users
+          const snap = await db.ref('users').once('value');
+          snap.forEach(c => {
+            const u = c.val();
+            const phone = (u.phone || u.phoneNumber || u.mobile || '').toString().replace(/\D/g,'');
+            if (phone.length >= 10) {
+              waUsers.push({ name: u.name || u.displayName || 'Player', phone });
+            }
+          });
+        } else {
+          // Registrations for selected tournament
+          const tid = document.getElementById('waTournamentSelect').value;
+          if (!tid) { status.textContent = '⚠️ Select a tournament first.'; btn.disabled=false; btn.textContent='⚡ Load Users'; return; }
+          const snap = await db.ref('registrations/' + tid).once('value');
+          snap.forEach(c => {
+            const r = c.val();
+            const p1 = (r.phone1 || '').toString().replace(/\D/g,'');
+            const p2 = (r.phone2 || '').toString().replace(/\D/g,'');
+            const name = r.teamName || r.name || 'Team';
+            if (p1.length >= 10) waUsers.push({ name, phone: p1 });
+            if (p2.length >= 10 && p2 !== p1) waUsers.push({ name, phone: p2 });
+          });
+        }
+
+        if (!waUsers.length) {
+          status.textContent = '⚠️ No users with valid phone numbers found.';
+        } else {
+          status.textContent = `✅ ${waUsers.length} user${waUsers.length > 1 ? 's' : ''} loaded`;
+          document.getElementById('waStartBtn').disabled = false;
+          document.getElementById('waStartBtn').style.opacity = '1';
+          updateWaPreview();
+          buildWaQueue();
+        }
+      } catch(err) {
+        status.textContent = '❌ Error: ' + err.message;
+      }
+      btn.disabled = false; btn.textContent = '⚡ Load Users';
+    }
+
+    // Update message char count & preview
+    function updateWaPreview() {
+      const msg = document.getElementById('waMsg').value;
+      document.getElementById('waMsgLen').textContent = msg.length + ' chars';
+      const previewWrap = document.getElementById('waPreviewWrap');
+      const previewEl   = document.getElementById('waPreview');
+      if (msg.trim() && waUsers.length) {
+        const sample = waUsers[0];
+        previewEl.textContent = msg.replace(/\{name\}/gi, sample.name);
+        previewWrap.style.display = 'block';
+      } else {
+        previewWrap.style.display = 'none';
+      }
+    }
+
+    // Build the visual queue list
+    function buildWaQueue() {
+      const qEl = document.getElementById('waQueue');
+      qEl.innerHTML = '';
+      waQueue = [...waUsers];
+      waIdx   = 0;
+      waQueue.forEach((u, i) => {
+        const div = document.createElement('div');
+        div.className = 'wa-queue-item wq-pending';
+        div.id = 'wq-' + i;
+        div.innerHTML = `
+          <span class="wq-icon">📱</span>
+          <span class="wq-name">${esc(u.name)}</span>
+          <span class="wq-phone">${formatPhone(u.phone)}</span>
+          <span class="wq-badge pending" id="wqb-${i}">Pending</span>`;
+        qEl.appendChild(div);
+      });
+      document.getElementById('waProgressCard').style.display = 'block';
+      updateWaProgress();
+    }
+
+    function formatPhone(p) {
+      // ensure country code — assume India (+91) if 10 digits
+      if (p.length === 10) return '+91 ' + p.slice(0,5) + ' ' + p.slice(5);
+      if (p.length === 12 && p.startsWith('91')) return '+' + p.slice(0,2) + ' ' + p.slice(2,7) + ' ' + p.slice(7);
+      return '+' + p;
+    }
+
+    function waPhoneForLink(p) {
+      if (p.length === 10) return '91' + p;
+      if (p.startsWith('+')) return p.slice(1);
+      return p;
+    }
+
+    function updateWaProgress() {
+      const done = waIdx;
+      const total = waQueue.length;
+      const pct = total ? Math.round((done/total)*100) : 0;
+      document.getElementById('waProgressBar').style.width = pct + '%';
+      document.getElementById('waProgressTxt').textContent = `${done} / ${total} sent`;
+      document.getElementById('waProgressPct').textContent = pct + '%';
+    }
+
+    function waMarkItem(i, state, label) {
+      const item = document.getElementById('wq-' + i);
+      const badge = document.getElementById('wqb-' + i);
+      if (!item || !badge) return;
+      item.className = 'wa-queue-item wq-' + state;
+      badge.className = 'wq-badge ' + state;
+      badge.textContent = label;
+      // Scroll into view
+      item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function waStartBlast() {
+      const msg = document.getElementById('waMsg').value.trim();
+      if (!msg) { alert('Please type your message first!'); return; }
+      if (!waQueue.length) { await waLoadUsers(); if (!waQueue.length) return; }
+
+      waRunning = true;
+      document.getElementById('waStartBtn').style.display = 'none';
+      document.getElementById('waPauseBtn').style.display = 'inline-flex';
+      document.getElementById('waPauseBtn').disabled = false;
+      document.getElementById('waResetBtn').disabled = false;
+      document.getElementById('waLoadBtn').disabled = true;
+
+      waSendNext(msg);
+    }
+
+    function waSendNext(msg) {
+      if (!waRunning) return;
+      if (waIdx >= waQueue.length) {
+        // All done
+        waRunning = false;
+        document.getElementById('waLoadStatus').textContent = '🎉 All messages sent!';
+        document.getElementById('waPauseBtn').style.display = 'none';
+        document.getElementById('waStartBtn').style.display = 'inline-flex';
+        document.getElementById('waStartBtn').textContent = '✅ Done';
+        document.getElementById('waStartBtn').disabled = true;
+        return;
+      }
+
+      const u = waQueue[waIdx];
+      const personalised = msg.replace(/\{name\}/gi, u.name);
+      const phoneNum = waPhoneForLink(u.phone);
+      const waUrl = 'https://wa.me/' + phoneNum + '?text=' + encodeURIComponent(personalised);
+
+      waMarkItem(waIdx, 'sending', 'Opening...');
+
+      // Open WhatsApp
+      window.open(waUrl, '_blank');
+
+      // After delay, mark done and move to next
+      waTimer = setTimeout(() => {
+        waMarkItem(waIdx, 'done', '✓ Sent');
+        waIdx++;
+        updateWaProgress();
+        waTimer = setTimeout(() => waSendNext(msg), 800);
+      }, waDelay);
+    }
+
+    function waPause() {
+      if (waRunning) {
+        waRunning = false;
+        clearTimeout(waTimer);
+        document.getElementById('waPauseBtn').textContent = '▶ Resume';
+        document.getElementById('waPauseBtn').onclick = waResume;
+        if (waIdx < waQueue.length) waMarkItem(waIdx, 'pending', 'Paused');
+      }
+    }
+
+    function waResume() {
+      const msg = document.getElementById('waMsg').value.trim();
+      if (!msg) return;
+      waRunning = true;
+      document.getElementById('waPauseBtn').textContent = '⏸ Pause';
+      document.getElementById('waPauseBtn').onclick = waPause;
+      waSendNext(msg);
+    }
+
+    function waReset() {
+      waRunning = false;
+      clearTimeout(waTimer);
+      waUsers = []; waQueue = []; waIdx = 0;
+
+      document.getElementById('waQueue').innerHTML = '';
+      document.getElementById('waProgressCard').style.display = 'none';
+      document.getElementById('waProgressBar').style.width = '0%';
+      document.getElementById('waProgressTxt').textContent = '0 / 0 sent';
+      document.getElementById('waProgressPct').textContent = '0%';
+      document.getElementById('waLoadStatus').textContent = '';
+      document.getElementById('waPreviewWrap').style.display = 'none';
+
+      const startBtn = document.getElementById('waStartBtn');
+      startBtn.disabled = true; startBtn.style.opacity = '0.4';
+      startBtn.style.display = 'inline-flex'; startBtn.textContent = '▶ Start Sending';
+
+      const pauseBtn = document.getElementById('waPauseBtn');
+      pauseBtn.style.display = 'none'; pauseBtn.disabled = true;
+      pauseBtn.textContent = '⏸ Pause'; pauseBtn.onclick = waPause;
+
+      document.getElementById('waResetBtn').disabled = true;
+      document.getElementById('waLoadBtn').disabled = false;
+    }
   </script>
 
   <style>
@@ -459,6 +705,29 @@
       text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
     }
     #regChart { display: block; border-radius: 8px; }
+
+    /* WhatsApp Blast */
+    .wa-queue-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      background: #0d0d14; border: 1px solid #1e1e28;
+      font-size: 13px; transition: all 0.2s;
+    }
+    .wa-queue-item.wq-pending  { border-color: #1e1e28; }
+    .wa-queue-item.wq-sending  { border-color: #25d366; background: #0b1f14; }
+    .wa-queue-item.wq-done     { border-color: #1a4a2a; opacity: 0.55; }
+    .wa-queue-item.wq-skipped  { border-color: #3a2a10; opacity: 0.45; }
+    .wq-icon { font-size: 16px; flex-shrink:0; }
+    .wq-name { font-weight: 600; color: #e0e0e0; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wq-phone { font-size: 12px; color: #555; }
+    .wq-badge {
+      flex-shrink:0; font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .wq-badge.pending  { background:#1e1e28; color:#444; }
+    .wq-badge.sending  { background:#0b3a1e; color:#25d366; }
+    .wq-badge.done     { background:#0b3a1e; color:#4ade80; }
+    .wq-badge.skipped  { background:#2a1a05; color:#f59e0b; }
   </style>
 </head>
 <body>
@@ -475,6 +744,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="users"      onclick="switchTab('users')">👥 All Users</button>
     <button class="tab-btn"        data-tab="tournament" onclick="switchTab('tournament')">🏆 Tournament Registrations</button>
+    <button class="tab-btn"        data-tab="whatsapp"   onclick="switchTab('whatsapp')">📲 WhatsApp Blast</button>
   </div>
 
   <!-- TAB: ALL USERS -->
@@ -537,6 +807,92 @@
       <h3>🎯 Team Slot Chart</h3>
       <canvas id="regChart"></canvas>
     </div>
+  </div>
+
+  <!-- TAB: WHATSAPP BLAST -->
+  <div id="panel-whatsapp" class="tab-panel" style="display:none">
+
+    <div class="card">
+      <div class="card-title">📲 WhatsApp Bulk Sender</div>
+      <p style="font-size:13px;color:#888;margin-bottom:18px;">
+        Compose a message and send it to all registered users from your WhatsApp.
+        Use <code style="background:#1e1e30;padding:2px 6px;border-radius:4px;color:#4ade80">{name}</code> to personalise each message.
+        WhatsApp will open one by one — just hit <strong style="color:#ccc">Send</strong> each time.
+      </p>
+
+      <!-- Source selector -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+        <label style="font-size:13px;color:#888">Send to:</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;cursor:pointer">
+          <input type="radio" name="waTarget" value="all" checked onchange="updateWaPreview()" style="accent-color:#25d366"> All users
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;cursor:pointer">
+          <input type="radio" name="waTarget" value="tournament" onchange="updateWaPreview()" style="accent-color:#25d366"> Tournament registrants
+        </label>
+        <select id="waTournamentSelect" style="display:none;flex:1;min-width:180px;max-width:360px;padding:8px 12px;border-radius:8px;font-size:13px;background:#1a1a26;color:#e0e0e0;border:1px solid #2e2e40;outline:none">
+          <option value="">Select tournament...</option>
+        </select>
+      </div>
+
+      <!-- Message box -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Message</div>
+        <textarea id="waMsg" rows="5" placeholder="Hey {name}! 🎮 BATTLEZONE tournament starts tomorrow. Room ID will be shared 30 mins before match. Stay ready! 🔥"
+          oninput="updateWaPreview()"
+          style="width:100%;padding:14px;background:#0d0d14;border:1px solid #2e2e40;border-radius:10px;color:#e0e0e0;font-size:14px;line-height:1.6;resize:vertical;font-family:inherit;outline:none;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='#25d366'" onblur="this.style.borderColor='#2e2e40'"></textarea>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span style="font-size:11px;color:#555">Tip: <code style="color:#4ade80">{name}</code> gets replaced with each user's name</span>
+          <span id="waMsgLen" style="font-size:11px;color:#555">0 chars</span>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="waPreviewWrap" style="display:none;margin-bottom:18px">
+        <div style="font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Preview (first user)</div>
+        <div id="waPreview" style="background:#0b1f14;border:1px solid #1a4a2a;border-radius:10px;padding:14px 16px;font-size:13px;color:#c8f7da;line-height:1.6;white-space:pre-wrap;word-break:break-word"></div>
+      </div>
+
+      <!-- Action row -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn" id="waLoadBtn" onclick="waLoadUsers()"
+          style="background:#1a3a50;color:#7dd3fc;border:1px solid #234a66">
+          ⚡ Load Users
+        </button>
+        <button class="btn" id="waStartBtn" onclick="waStartBlast()" disabled
+          style="background:#25d366;color:#000;font-weight:700;opacity:0.4">
+          ▶ Start Sending
+        </button>
+        <button class="btn" id="waPauseBtn" onclick="waPause()" disabled
+          style="background:#f59e0b;color:#000;display:none">
+          ⏸ Pause
+        </button>
+        <button class="btn" id="waResetBtn" onclick="waReset()" disabled
+          style="background:#333;color:#aaa;border:1px solid #444">
+          ✕ Reset
+        </button>
+        <span id="waLoadStatus" style="font-size:13px;color:#f59e0b"></span>
+      </div>
+    </div>
+
+    <!-- Progress card — shown after start -->
+    <div class="card" id="waProgressCard" style="display:none">
+      <div class="card-title">Sending Progress</div>
+
+      <!-- Progress bar -->
+      <div style="background:#1a1a26;border-radius:8px;height:10px;overflow:hidden;margin-bottom:12px">
+        <div id="waProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#25d366,#128c4a);border-radius:8px;transition:width 0.4s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:18px">
+        <span id="waProgressTxt">0 / 0 sent</span>
+        <span id="waProgressPct">0%</span>
+      </div>
+
+      <!-- Queue list -->
+      <div style="font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Queue</div>
+      <div id="waQueue" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px"></div>
+    </div>
+
   </div>
 
 </div>
