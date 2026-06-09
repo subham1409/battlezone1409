@@ -1089,16 +1089,15 @@ body::after {
 }
 .report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
-  position: sticky;
-  bottom: 0;
+  position: relative;
+  bottom: auto;
   background: rgba(8,10,14,0.95);
   backdrop-filter: blur(12px);
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-top: 1px solid var(--border);
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 12px;
 }
 .chat-input {
   flex: 1;
@@ -1852,42 +1851,64 @@ body::after {
 .auth-dot.done { background: var(--accent-green); }
 
 /* ===== CHAT PAGE — sits outside #content, fixed above bottom nav ===== */
+/* ===== COMMUNITY CHAT PAGE — mirrors tchat-overlay approach exactly ===== */
 #chat-page {
   display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--bg-primary);
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 #chat-page.active {
-  display: flex !important;
-  flex-direction: column !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 100% !important;
-  max-width: 480px !important;
-  bottom: 68px !important;
-  z-index: 20 !important;
-  background: var(--bg-primary) !important;
-  overflow: hidden !important;
+  display: flex;
 }
-#chat-page.active .chat-header {
-  flex: 0 0 auto;
+#chat-page .chat-header {
+  flex-shrink: 0;
 }
-#chat-page.active .chat-messages {
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding-bottom: 10px !important;
+#chat-page .chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-}
-#chat-page.active #chat-input-bar {
-  flex: 0 0 auto;
-  border-top: 1px solid var(--border);
+  touch-action: pan-y pinch-zoom;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   background: var(--bg-primary);
 }
-#chat-page.active .emoji-row { display: none; }
-body.keyboard-open.on-chat-page #bottom-nav { display: none !important; }
-body.keyboard-open.on-chat-page #chat-page.active { bottom: 0 !important; }
+#chat-page #chat-input-bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: rgba(8,10,14,0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#chat-page .chat-input-area {
+  position: relative;
+  bottom: auto;
+  margin-top: 0;
+}
+#chat-page #chat-locked-msg {
+  flex-shrink: 0;
+}
+#chat-page .emoji-row { display: none; }
+/* Hide bottom nav entirely when chat is open — back arrow handles navigation */
+body.on-chat-page #bottom-nav { display: none !important; }
 
 /* ===== NEWS PAGE ===== */
 .news-card {
@@ -2687,52 +2708,6 @@ body.keyboard-open.on-chat-page #chat-page.active { bottom: 0 !important; }
 
   </div><!-- end #content -->
 
-<!-- ===== CHAT PAGE ===== -->
-    <div id="chat-page" class="page">
-      <div class="chat-header">
-        <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
-        <div class="chat-header-left">
-          <div class="chat-title">💬 Community Talk</div>
-          <div class="chat-title-sub">⚡ Live</div>
-        </div>
-        <div class="chat-header-right">
-          <div class="chat-you-name" id="chat-you-label">Anonymous</div>
-        </div>
-      </div>
-      <div class="emoji-row">
-        <span onclick="addEmoji('🔥')">🔥</span>
-        <span onclick="addEmoji('💀')">💀</span>
-        <span onclick="addEmoji('🎯')">🎯</span>
-        <span onclick="addEmoji('🏆')">🏆</span>
-        <span onclick="addEmoji('⚡')">⚡</span>
-        <span onclick="addEmoji('👊')">👊</span>
-        <span onclick="addEmoji('😤')">😤</span>
-        <span onclick="addEmoji('🤝')">🤝</span>
-        <span onclick="addEmoji('💣')">💣</span>
-        <span onclick="addEmoji('🐔')">🐔</span>
-      </div>
-      <!-- Pinned animated message from admin -->
-      <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
-        <div class="pinned-banner-inner">
-          <div class="pinned-badge">📌 ROOM INFO</div>
-          <div class="pinned-msg-text" id="pinned-msg-text"></div>
-        </div>
-      </div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <!-- Input bar -->
-      <div id="chat-input-bar">
-      <div class="chat-input-area">
-        <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
-        <button class="send-btn" onclick="sendMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
-      </div>
-      </div>
-    </div>
-
-
   <!-- BOTTOM NAV -->
   <nav id="bottom-nav">
     <div class="nav-item active" id="nav-home" onclick="switchPage('home')">
@@ -2777,6 +2752,60 @@ body.keyboard-open.on-chat-page #chat-page.active { bottom: 0 !important; }
     </div>
   </nav>
 </div>
+
+<!-- ===== CHAT PAGE ===== -->
+<div id="chat-page">
+  <div class="chat-header">
+    <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
+    <div class="chat-header-left">
+      <div class="chat-title">💬 Community Talk</div>
+      <div class="chat-title-sub">⚡ Live</div>
+    </div>
+    <div class="chat-header-right">
+      <div class="chat-you-name" id="chat-you-label">Anonymous</div>
+    </div>
+  </div>
+  <div class="emoji-row">
+    <span onclick="addEmoji('🔥')">🔥</span>
+    <span onclick="addEmoji('💀')">💀</span>
+    <span onclick="addEmoji('🎯')">🎯</span>
+    <span onclick="addEmoji('🏆')">🏆</span>
+    <span onclick="addEmoji('⚡')">⚡</span>
+    <span onclick="addEmoji('👊')">👊</span>
+    <span onclick="addEmoji('😤')">😤</span>
+    <span onclick="addEmoji('🤝')">🤝</span>
+    <span onclick="addEmoji('💣')">💣</span>
+    <span onclick="addEmoji('🐔')">🐔</span>
+  </div>
+  <!-- Pinned animated message from admin -->
+  <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
+    <div class="pinned-banner-inner">
+      <div class="pinned-badge">📌 ROOM INFO</div>
+      <div class="pinned-msg-text" id="pinned-msg-text"></div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <!-- Input bar -->
+  <div id="chat-input-bar">
+    <div class="chat-input-area">
+      <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <!-- Locked msg -->
+  <div id="chat-locked-msg" style="display:none;align-items:center;justify-content:center;padding:16px 18px;gap:12px">
+    <div style="font-size:22px">🔒</div>
+    <div>
+      <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Create an account to join the chat</div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Edit Profile Modal -->
 <div class="edit-profile-overlay" id="edit-profile-overlay">
@@ -3685,8 +3714,11 @@ function switchPage(page) {
   if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // #chat-page has no class="page" so toggle it explicitly
+  const _chatPageEl = document.getElementById('chat-page');
+  if (_chatPageEl) _chatPageEl.classList.remove('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  
+
   document.getElementById(page + '-page').classList.add('active');
   const navEl = document.getElementById('nav-' + page);
   if (navEl) navEl.classList.add('active');
