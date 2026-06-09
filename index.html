@@ -3710,9 +3710,6 @@ function switchPage(page) {
   document.body.classList.remove('keyboard-open');
   // on-chat-page gates the nav-hiding CSS — only true when chat tab is active
   document.body.classList.toggle('on-chat-page', page === 'chat');
-  const _cp = document.getElementById('chat-page');
-  if (_cp) { _cp.style.top = ''; _cp.style.height = ''; _cp.style.bottom = ''; _cp.style.transform = ''; }
-
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   // #chat-page has no class="page" so toggle it explicitly
   const _chatPageEl = document.getElementById('chat-page');
@@ -4961,15 +4958,9 @@ function closeNewsDetail() {
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
 
-    // Main chat page
+    // #chat-page is position:fixed inset:0 — no manual resize needed, just scroll to bottom
     const chatPage = document.getElementById('chat-page');
     if (chatPage && chatPage.classList.contains('active')) {
-      chatPage.style.position  = 'fixed';
-      chatPage.style.top       = vvTop + 'px';
-      chatPage.style.height    = vvHeight + 'px';
-      chatPage.style.bottom    = 'auto';
-      chatPage.style.left      = '50%';
-      chatPage.style.transform = 'translateX(-50%)';
       scrollMsgsToBottom(80);
     }
 
@@ -4984,13 +4975,7 @@ function closeNewsDetail() {
   }
 
   function resetLayout() {
-    const chatPage = document.getElementById('chat-page');
-    if (chatPage) {
-      chatPage.style.top       = '';
-      chatPage.style.height    = '';
-      chatPage.style.bottom    = '';
-      chatPage.style.transform = '';
-    }
+    // #chat-page CSS handles itself — no inline style reset needed
     const overlay = document.getElementById('tchat-overlay');
     if (overlay) {
       overlay.style.top    = '';
