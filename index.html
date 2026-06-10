@@ -3071,7 +3071,8 @@ function checkRegisteredChatAccess() {
         const r = reg.val();
         const e1 = (r.email1 || '').toLowerCase();
         const e2 = (r.email2 || '').toLowerCase();
-        if (e1 === emailLower || (e2 && e2 === emailLower)) {
+        const ue = (r.userEmail || '').toLowerCase();
+        if (e1 === emailLower || (e2 && e2 === emailLower) || (ue && ue === emailLower)) {
           newIds.add(tourneyNode.key);
         }
       });

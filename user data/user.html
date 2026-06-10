@@ -212,15 +212,10 @@
         const tbody = $id('regTableBody');
         tbody.innerHTML = '';
         rows.forEach(r => {
-          const phone = r.phone2 ? `${esc(r.phone1)} / ${esc(r.phone2)}` : esc(r.phone1);
-          const email = r.email2 ? `${esc(r.email1)} / ${esc(r.email2)}` : esc(r.email1);
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td class="slot-cell">Slot ${r.slotNo}</td>
             <td class="team-cell">${esc(r.teamName)}</td>
-            <td>${phone}</td>
-            <td>${email}</td>
-            <td class="date-cell">${esc(r.registeredAt)}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -346,22 +341,16 @@
 
       doc.autoTable({
         startY: 42,
-        head: [['Slot','Team Name','Phone(s)','Email(s)','Registered At']],
+        head: [['Slot','Team Name']],
         body: regData.map(r => [
           `Slot ${r.slotNo}`, r.teamName,
-          r.phone2 ? `${r.phone1} / ${r.phone2}` : r.phone1,
-          r.email2 ? `${r.email1} / ${r.email2}` : r.email1,
-          r.registeredAt,
         ]),
         styles: { font:'helvetica', fontSize:8, cellPadding:3.5, textColor:[30,30,30], lineColor:[220,220,220], lineWidth:0.3 },
         headStyles: { fillColor:[255,60,60], textColor:[255,255,255], fontStyle:'bold', fontSize:9 },
         alternateRowStyles: { fillColor:[248,248,248] },
         columnStyles: {
-          0: { cellWidth:18, halign:'center', fontStyle:'bold' },
-          1: { cellWidth:40 },
-          2: { cellWidth:42 },
-          3: { cellWidth:'auto' },
-          4: { cellWidth:34 },
+          0: { cellWidth:28, halign:'center', fontStyle:'bold' },
+          1: { cellWidth:'auto' },
         },
         margin: {left:14,right:14}, theme:'grid',
       });
@@ -795,7 +784,6 @@
           <thead>
             <tr>
               <th>Slot</th><th>Team Name</th>
-              <th>Phone(s)</th><th>Email(s)</th><th>Registered At</th>
             </tr>
           </thead>
           <tbody id="regTableBody"></tbody>
