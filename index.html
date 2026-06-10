@@ -2604,8 +2604,8 @@ body.on-chat-page #bottom-nav { display: none !important; }
               </div>
             </div>
             <div class="field-group" style="margin-bottom:10px">
-              <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span></div>
-              <input type="email" class="form-input" placeholder="captain@example.com" id="email1-input">
+              <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span> <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(auto-filled from your account)</span></div>
+              <input type="email" class="form-input" id="email1-input" readonly style="opacity:0.7;cursor:not-allowed">
             </div>
             <div class="field-group">
               <div class="form-label">Email 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
@@ -3071,8 +3071,7 @@ function checkRegisteredChatAccess() {
         const r = reg.val();
         const e1 = (r.email1 || '').toLowerCase();
         const e2 = (r.email2 || '').toLowerCase();
-        const ue = (r.userEmail || '').toLowerCase();
-        if (e1 === emailLower || (e2 && e2 === emailLower) || (ue && ue === emailLower)) {
+        if (e1 === emailLower || (e2 && e2 === emailLower)) {
           newIds.add(tourneyNode.key);
         }
       });
@@ -3984,7 +3983,7 @@ function openDetail(id) {
   document.getElementById('team-name-input').value = '';
   document.getElementById('phone1-input').value = '';
   document.getElementById('phone2-input').value = '';
-  document.getElementById('email1-input').value = '';
+  document.getElementById('email1-input').value = currentUser.email || '';
   document.getElementById('email2-input').value = '';
   document.getElementById('rules-body').classList.remove('open');
   document.getElementById('rules-arrow').textContent = '▼';
