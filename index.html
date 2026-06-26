@@ -2203,6 +2203,7 @@ body.on-chat-page #bottom-nav { display: none !important; }
 .fs-cancel-link {
   text-align: center;
   margin-top: 14px;
+  margin-bottom: 10px;
   color: var(--text-muted);
   font-size: 12px;
   font-family: var(--font-mono);
@@ -2789,39 +2790,21 @@ body.on-chat-page #bottom-nav { display: none !important; }
           <input type="text" class="fs-input" id="fs-teamname" placeholder="e.g. Shadow Wolves" maxlength="30">
         </div>
 
-        <!-- Player Name -->
+        <!-- BGMI ID -->
         <div class="fs-field">
-          <div class="fs-field-label" id="fs-label-name">Your Name / IGN <span class="fs-req">*</span></div>
-          <input type="text" class="fs-input" id="fs-name" placeholder="e.g. KillZone99" maxlength="25">
+          <div class="fs-field-label" id="fs-label-name">BGMI ID <span class="fs-req">*</span></div>
+          <input type="text" class="fs-input" id="fs-name" placeholder="e.g. 5123456789" maxlength="25" inputmode="text">
         </div>
 
         <!-- Role -->
         <div class="fs-field">
-          <div class="fs-field-label" id="fs-label-role">Role / Position <span class="fs-req">*</span></div>
+          <div class="fs-field-label" id="fs-label-role">Role Needed <span class="fs-req">*</span></div>
           <select class="fs-input fs-select" id="fs-role">
             <option value="">Select role...</option>
             <option>IGL (In-Game Leader)</option>
             <option>Fragger</option>
             <option>Support</option>
-            <option>Sniper</option>
-            <option>Scout</option>
-            <option>All-Rounder</option>
-          </select>
-        </div>
-
-        <!-- Tier -->
-        <div class="fs-field">
-          <div class="fs-field-label">Tier / Level <span class="fs-req">*</span></div>
-          <select class="fs-input fs-select" id="fs-tier">
-            <option value="">Select tier...</option>
-            <option>Bronze</option>
-            <option>Silver</option>
-            <option>Gold</option>
-            <option>Platinum</option>
-            <option>Diamond</option>
-            <option>Crown</option>
-            <option>Ace</option>
-            <option>Conqueror</option>
+            <option>Assaulter</option>
           </select>
         </div>
 
@@ -2835,6 +2818,12 @@ body.on-chat-page #bottom-nav { display: none !important; }
           </select>
         </div>
 
+        <!-- Timing -->
+        <div class="fs-field">
+          <div class="fs-field-label" id="fs-label-timing">Playing Time <span class="fs-req">*</span></div>
+          <input type="text" class="fs-input" id="fs-timing" placeholder="e.g. 8 PM – 11 PM daily" maxlength="50">
+        </div>
+
         <!-- Contact -->
         <div class="fs-field">
           <div class="fs-field-label">WhatsApp / Contact <span class="fs-req">*</span></div>
@@ -2844,11 +2833,12 @@ body.on-chat-page #bottom-nav { display: none !important; }
         <!-- About -->
         <div class="fs-field">
           <div class="fs-field-label" id="fs-label-about">About <span class="fs-opt">(optional)</span></div>
-          <textarea class="fs-input fs-textarea" id="fs-about" placeholder="Tell players what you're looking for..." maxlength="120" rows="3"></textarea>
+          <textarea class="fs-input fs-textarea" id="fs-about" placeholder="Tell players what you're looking for..." maxlength="150" rows="3"></textarea>
         </div>
 
         <button class="fs-submit-btn" id="fs-submit-btn" onclick="submitSquadEntry()">⚡ POST ENTRY</button>
         <div class="fs-cancel-link" onclick="closeSquadForm()">← Cancel</div>
+        <div style="height:48px"></div>
       </div>
     </div>
 
@@ -5112,7 +5102,7 @@ function renderSquadEntries() {
           <div class="fs-card-name">${escapeHTML(displayName || '—')}</div>
           <div class="fs-card-sub">${escapeHTML(e.role || '')}${slotsHtml}</div>
         </div>
-        <div class="fs-card-tier">${escapeHTML(e.tier || '—')}</div>
+        <div class="fs-card-tier" style="font-size:9px;max-width:90px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">⏱ ${escapeHTML(e.timing || '—')}</div>
       </div>
       ${aboutHtml}
       <div class="fs-card-footer">
@@ -5140,22 +5130,24 @@ function openSquadForm(type) {
   document.getElementById('fs-form-sub').textContent = isTeam ? 'Fill in details so players can find your team' : 'Fill in details so teams can find you';
   document.getElementById('fs-field-teamname').style.display = isTeam ? '' : 'none';
   document.getElementById('fs-field-slots').style.display = isTeam ? '' : 'none';
-  document.getElementById('fs-label-name').innerHTML = isTeam ? 'Contact Person IGN <span class="fs-req">*</span>' : 'Your Name / IGN <span class="fs-req">*</span>';
+  document.getElementById('fs-label-name').innerHTML = 'BGMI ID <span class="fs-req">*</span>';
   document.getElementById('fs-label-role').innerHTML = isTeam ? 'Role Needed <span class="fs-req">*</span>' : 'Your Role <span class="fs-req">*</span>';
-  document.getElementById('fs-label-about').innerHTML = isTeam ? 'About Your Team <span class="fs-opt">(optional)</span>' : 'About You <span class="fs-opt">(optional)</span>';
+  document.getElementById('fs-label-timing').innerHTML = isTeam ? 'Required Playing Time <span class="fs-req">*</span>' : 'Your Playing Time <span class="fs-req">*</span>';
+  document.getElementById('fs-timing').placeholder = isTeam ? 'e.g. 8 PM – 11 PM daily' : 'e.g. 9 PM – 12 AM daily';
+  document.getElementById('fs-label-about').innerHTML = isTeam
+    ? 'About Your Team <span class="fs-opt">(optional)</span>'
+    : 'Achievements & Expectations <span class="fs-opt">(optional)</span>';
+  document.getElementById('fs-about').placeholder = isTeam
+    ? 'Tell players what you\'re looking for...'
+    : 'e.g. Ace in Season 25, looking for serious tourney team...';
 
   // Clear fields
-  ['fs-teamname','fs-name','fs-contact','fs-about'].forEach(id => {
+  ['fs-teamname','fs-name','fs-contact','fs-about','fs-timing'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   document.getElementById('fs-role').value = '';
-  document.getElementById('fs-tier').value = '';
   document.getElementById('fs-slots').value = '1';
-
-  // Pre-fill name from current user
-  const userEl = document.getElementById('fs-name');
-  if (currentUser && currentUser.name && userEl) userEl.value = currentUser.name;
 
   document.getElementById('fs-overlay').classList.add('open');
 }
@@ -5169,15 +5161,15 @@ function submitSquadEntry() {
   const teamname = (document.getElementById('fs-teamname').value || '').trim();
   const name = (document.getElementById('fs-name').value || '').trim();
   const role = document.getElementById('fs-role').value;
-  const tier = document.getElementById('fs-tier').value;
+  const timing = (document.getElementById('fs-timing').value || '').trim();
   const contact = (document.getElementById('fs-contact').value || '').trim();
   const about = (document.getElementById('fs-about').value || '').trim();
   const slots = document.getElementById('fs-slots').value;
 
   if (isTeam && !teamname) { showToast('Enter team name'); return; }
-  if (!name) { showToast('Enter your IGN / name'); return; }
+  if (!name) { showToast('Enter your BGMI ID'); return; }
   if (!role) { showToast('Select a role'); return; }
-  if (!tier) { showToast('Select your tier'); return; }
+  if (!timing) { showToast('Enter playing time'); return; }
   if (!contact || contact.length < 10) { showToast('Enter valid WhatsApp number'); return; }
 
   const btn = document.getElementById('fs-submit-btn');
@@ -5188,7 +5180,7 @@ function submitSquadEntry() {
     type: currentSquadType,
     name,
     role,
-    tier,
+    timing,
     contact,
     ts: Date.now()
   };
@@ -5200,7 +5192,6 @@ function submitSquadEntry() {
     btn.disabled = false;
     closeSquadForm();
     showToast('✅ Entry posted!');
-    // Switch filter to show their type
     const chip = document.querySelector(`.fs-chip[data-f="${currentSquadType}"]`);
     if (chip) setSquadFilter(chip, currentSquadType);
   }).catch(err => {
