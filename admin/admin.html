@@ -772,24 +772,34 @@ body::after {
           </div>
         </div>
 
-        <!-- Standings Builder -->
+        <!-- Standings Builder — per-match (M1/M2/M3) side-by-side, auto-summed & auto-sorted -->
         <div style="margin-bottom:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-orange);text-transform:uppercase">🏆 Team Standings</div>
+            <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-orange);text-transform:uppercase">🏆 Team Standings — enter M1 first, then M2, then M3</div>
             <button type="button" onclick="addResultTeamRow()" style="background:rgba(255,120,0,0.12);border:1px solid rgba(255,120,0,0.3);color:var(--accent-orange);border-radius:8px;padding:6px 14px;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">+ Add Team</button>
           </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:8px">Enter Placement (#rank in that match) &amp; Kills for each match. Points, Matches, WWCD and Total are calculated automatically, and rows re-sort live — highest Total on top, ties broken by Position Points, then by most #1 finishes.</div>
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <div style="min-width:820px">
           <!-- Table header -->
-          <div style="display:grid;grid-template-columns:44px 1fr 60px 60px 60px 60px 60px 32px;gap:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border:1px solid rgba(255,40,40,0.3);border-radius:8px 8px 0 0;margin-bottom:2px">
+          <div style="display:grid;grid-template-columns:40px 150px 56px 56px 56px 56px 56px 56px 60px 54px 66px 66px 32px;gap:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border:1px solid rgba(255,40,40,0.3);border-radius:8px 8px 0 0;margin-bottom:2px">
             <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">RANK</div>
             <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444">TEAM</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M1 PLC</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M1 KIL</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M2 PLC</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M2 KIL</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M3 PLC</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">M3 KIL</div>
             <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">MATCHES</div>
             <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">WWCD</div>
-            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">PLACE</div>
-            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">KILLS</div>
+            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">POS PTS</div>
             <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#ff4444;text-align:center">TOTAL</div>
             <div></div>
           </div>
           <div id="extra-teams-list" style="display:flex;flex-direction:column;gap:3px;background:var(--bg-secondary);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:6px"></div>
+          </div>
+          </div>
         </div>
 
         <!-- hidden compat fields -->
@@ -1700,52 +1710,46 @@ let teamRowCount = 0;
 
 const INPUT_BASE = 'background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.09);border-radius:6px;padding:7px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;width:100%;text-align:center';
 const INPUT_NAME = 'background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.09);border-radius:6px;padding:7px 10px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%';
+const DISP_BASE = 'font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--text-secondary);text-align:center';
+
+// Standard placement-points table (BGMI/PMCO style): rank -> points. 9th and below = 0.
+const PLACEMENT_POINTS = {1:10,2:6,3:5,4:4,5:3,6:2,7:1,8:1};
+function placePts(rank) { return PLACEMENT_POINTS[rank] || 0; }
 
 function addResultTeamRow(data) {
   teamRowCount++;
   const rowId = 'tr-' + teamRowCount;
-  const rankNum = data ? data.r : teamRowCount;
-  const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
-  const rankColor = rc==='gold'?'#ffd700':rc==='silver'?'#c0c0c0':rc==='bronze'?'#cd7f32':'#3d4a5c';
-  const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
   const container = document.getElementById('extra-teams-list');
   const row = document.createElement('div');
   row.id = rowId;
-  row.setAttribute('data-rank', rankNum);
-  row.style.cssText = 'display:grid;grid-template-columns:44px 1fr 60px 60px 60px 60px 60px 32px;gap:6px;align-items:center;padding:4px 2px';
+  row.style.cssText = 'display:grid;grid-template-columns:40px 150px 56px 56px 56px 56px 56px 56px 60px 54px 66px 66px 32px;gap:6px;align-items:center;padding:4px 2px';
+
+  const m = (data && data.matches) || {};
+  const m1 = m.m1 || {}, m2 = m.m2 || {}, m3 = m.m3 || {};
+
   row.innerHTML = `
-    <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:${rankColor};text-align:center;padding:6px 2px" data-role="rank-label">${rankLabel}</div>
-    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(data&&data.team||'')}" style="${INPUT_NAME}" data-role="et-team">
-    <input type="number" placeholder="0" min="0" value="${data&&data.matches||''}" style="${INPUT_BASE}" data-role="et-matches">
-    <input type="number" placeholder="0" min="0" value="${data&&data.wwcd||''}" style="${INPUT_BASE}" data-role="et-wwcd">
-    <input type="number" placeholder="0" min="0" value="${data&&data.place||''}" style="${INPUT_BASE}" data-role="et-place">
-    <input type="number" placeholder="0" min="0" value="${data&&data.kills||''}" style="${INPUT_BASE}" data-role="et-kills">
-    <input type="number" placeholder="0" min="0" value="${data&&data.total||''}" style="${INPUT_BASE};font-weight:700;color:${rankColor}" data-role="et-total">
+    <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:#3d4a5c;text-align:center;padding:6px 2px" data-role="rank-label">#—</div>
+    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(data&&data.team||'')}" style="${INPUT_NAME}" data-role="et-team" oninput="recalcAndSort()">
+    <input type="number" placeholder="#" min="0" value="${m1.place||''}" style="${INPUT_BASE}" data-role="et-m1-place" oninput="recalcAndSort()">
+    <input type="number" placeholder="0" min="0" value="${m1.kills||''}" style="${INPUT_BASE}" data-role="et-m1-kills" oninput="recalcAndSort()">
+    <input type="number" placeholder="#" min="0" value="${m2.place||''}" style="${INPUT_BASE}" data-role="et-m2-place" oninput="recalcAndSort()">
+    <input type="number" placeholder="0" min="0" value="${m2.kills||''}" style="${INPUT_BASE}" data-role="et-m2-kills" oninput="recalcAndSort()">
+    <input type="number" placeholder="#" min="0" value="${m3.place||''}" style="${INPUT_BASE}" data-role="et-m3-place" oninput="recalcAndSort()">
+    <input type="number" placeholder="0" min="0" value="${m3.kills||''}" style="${INPUT_BASE}" data-role="et-m3-kills" oninput="recalcAndSort()">
+    <div style="${DISP_BASE}" data-role="disp-matches">0</div>
+    <div style="${DISP_BASE}" data-role="disp-wwcd">0</div>
+    <div style="${DISP_BASE}" data-role="disp-place">0</div>
+    <div style="${DISP_BASE};color:var(--accent-orange)" data-role="disp-total">0</div>
     <button type="button" onclick="removeTeamRow('${rowId}')" style="background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.2);color:var(--accent-red);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
   `;
   container.appendChild(row);
-  renumberTeamRows();
+  recalcAndSort();
 }
 
 function removeTeamRow(rowId) {
   const el = document.getElementById(rowId);
   if (el) el.remove();
-  renumberTeamRows();
-}
-
-function renumberTeamRows() {
-  const rows = document.querySelectorAll('#extra-teams-list > div');
-  rows.forEach((row, i) => {
-    const rankNum = i + 1;
-    row.setAttribute('data-rank', rankNum);
-    const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
-    const rankColor = rc==='gold'?'#ffd700':rc==='silver'?'#c0c0c0':rc==='bronze'?'#cd7f32':'#3d4a5c';
-    const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
-    const labelEl = row.querySelector('[data-role="rank-label"]');
-    const totalEl = row.querySelector('[data-role="et-total"]');
-    if (labelEl) { labelEl.textContent = rankLabel; labelEl.style.color = rankColor; }
-    if (totalEl) totalEl.style.color = rankColor;
-  });
+  recalcAndSort();
 }
 
 function clearTeamRows() {
@@ -1753,24 +1757,77 @@ function clearTeamRows() {
   teamRowCount = 0;
 }
 
-function getAllTeams() {
-  const rows = document.querySelectorAll('#extra-teams-list > div');
-  const teams = [];
-  rows.forEach((row, i) => {
+// Reads one row's raw M1/M2/M3 inputs and computes matches played, WWCD count,
+// total position (placement) points, total kills, and grand total.
+function computeRowStats(row) {
+  const get = role => { const el = row.querySelector('[data-role="'+role+'"]'); return el ? el.value.trim() : ''; };
+  const team = get('et-team');
+  let matches = 0, wwcd = 0, placePoints = 0, kills = 0;
+  [1, 2, 3].forEach(mNum => {
+    const pStr = get('et-m'+mNum+'-place');
+    const kStr = get('et-m'+mNum+'-kills');
+    if (pStr !== '' || kStr !== '') {
+      const p = parseInt(pStr) || 0;
+      const k = parseInt(kStr) || 0;
+      matches++;
+      if (p === 1) wwcd++;
+      placePoints += placePts(p);
+      kills += k;
+    }
+  });
+  return { team, matches, wwcd, placePoints, kills, total: placePoints + kills };
+}
+
+// Recomputes every row's stats, re-sorts rows by Total (tie-break: Position Points, then WWCD),
+// and updates the rank badge + computed columns live.
+function recalcAndSort() {
+  const container = document.getElementById('extra-teams-list');
+  const rows = Array.from(container.children);
+  const stats = rows.map(row => ({ row, ...computeRowStats(row) }));
+  stats.sort((a, b) => b.total - a.total || b.placePoints - a.placePoints || b.wwcd - a.wwcd);
+  stats.forEach((s, i) => {
+    container.appendChild(s.row);
+    const rankNum = i + 1;
+    const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
+    const rankColor = rc==='gold'?'#ffd700':rc==='silver'?'#c0c0c0':rc==='bronze'?'#cd7f32':'#3d4a5c';
+    const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
+    const labelEl = s.row.querySelector('[data-role="rank-label"]');
+    if (labelEl) { labelEl.textContent = rankLabel; labelEl.style.color = rankColor; }
+    const dm = s.row.querySelector('[data-role="disp-matches"]'); if (dm) dm.textContent = s.matches;
+    const dw = s.row.querySelector('[data-role="disp-wwcd"]'); if (dw) dw.textContent = s.wwcd;
+    const dp = s.row.querySelector('[data-role="disp-place"]'); if (dp) dp.textContent = s.placePoints;
+    const dt = s.row.querySelector('[data-role="disp-total"]'); if (dt) { dt.textContent = s.total; dt.style.color = rankColor; }
+  });
+}
+
+// Builds the final payload pieces: raw per-match data (for the M1/M2/M3 tabs on the site)
+// and the computed, sorted overall standings (for the Overall tab — unchanged format).
+function collectResultData() {
+  const rows = Array.from(document.getElementById('extra-teams-list').children);
+  const matchData = { m1: [], m2: [], m3: [] };
+  const lb = [];
+
+  rows.forEach(row => {
     const get = role => { const el = row.querySelector('[data-role="'+role+'"]'); return el ? el.value.trim() : ''; };
     const team = get('et-team');
     if (!team) return;
-    teams.push({
-      r:       i + 1,
-      team:    team,
-      matches: parseInt(get('et-matches')) || 0,
-      wwcd:    parseInt(get('et-wwcd'))    || 0,
-      place:   parseInt(get('et-place'))   || 0,
-      kills:   parseInt(get('et-kills'))   || 0,
-      total:   parseInt(get('et-total'))   || 0
+
+    [1, 2, 3].forEach(mNum => {
+      const pStr = get('et-m'+mNum+'-place');
+      const kStr = get('et-m'+mNum+'-kills');
+      if (pStr !== '' || kStr !== '') {
+        matchData['m'+mNum].push({ team, placement: parseInt(pStr) || 0, kills: parseInt(kStr) || 0 });
+      }
     });
+
+    const s = computeRowStats(row);
+    lb.push({ team, matches: s.matches, wwcd: s.wwcd, place: s.placePoints, kills: s.kills, total: s.total });
   });
-  return teams;
+
+  lb.sort((a, b) => b.total - a.total || b.place - a.place || b.wwcd - a.wwcd);
+  lb.forEach((row, i) => { row.r = i + 1; });
+
+  return { matchData, lb };
 }
 
 async function submitResult() {
@@ -1778,8 +1835,9 @@ async function submitResult() {
   const name = document.getElementById('r-name').value.trim();
   if (!name) { showToast('⚠️ Match name required'); return; }
 
-  const lb = getAllTeams();
+  const { matchData, lb } = collectResultData();
   const winner = lb.length > 0 ? lb[0].team : '';
+  const totalKills = lb.reduce((sum, row) => sum + (row.kills || 0), 0);
 
   const payload = {
     name,
@@ -1790,7 +1848,9 @@ async function submitResult() {
     place3:     lb[2] ? lb[2].team : '',
     winner:     winner,
     lb:         lb,
+    matchData:  matchData,
     totalTeams: parseInt(document.getElementById('r-teams').value) || lb.length,
+    totalKills: totalKills,
     prize:      document.getElementById('r-prize').value.trim(),
     summary:    document.getElementById('r-summary').value.trim(),
     ts:         Date.now()
@@ -1834,9 +1894,27 @@ function editResult(id) {
   document.getElementById('r-cancel-btn').style.display = 'inline-block';
 
   clearTeamRows();
-  if (r.lb && Array.isArray(r.lb)) {
-    r.lb.forEach(row => addResultTeamRow(row));
+
+  // Rebuild team rows from per-match matchData (preferred). Falls back to just
+  // team names from the old aggregate 'lb' for results saved before this system existed.
+  const teamOrder = [];
+  const teamMatches = {}; // team -> { m1:{place,kills}, m2:{...}, m3:{...} }
+
+  if (r.matchData) {
+    [1, 2, 3].forEach(mNum => {
+      const arr = r.matchData['m'+mNum] || [];
+      arr.forEach(row => {
+        if (!teamMatches[row.team]) { teamMatches[row.team] = {}; teamOrder.push(row.team); }
+        teamMatches[row.team]['m'+mNum] = { place: row.placement || 0, kills: row.kills || 0 };
+      });
+    });
   }
+  if (teamOrder.length === 0 && r.lb && Array.isArray(r.lb)) {
+    r.lb.forEach(row => { teamMatches[row.team] = {}; teamOrder.push(row.team); });
+  }
+
+  teamOrder.forEach(team => addResultTeamRow({ team, matches: teamMatches[team] }));
+  recalcAndSort();
 
   document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
 }

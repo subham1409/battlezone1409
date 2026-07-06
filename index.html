@@ -1257,53 +1257,112 @@ body::after {
   margin-top: 2px;
 }
 
-/* Leaderboard */
+/* Leaderboard — full page */
 .leaderboard-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 200;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(4px);
+  z-index: 300;
+  background: var(--bg-primary);
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
 }
-.leaderboard-overlay.open { display: flex; align-items: flex-end; }
+.leaderboard-overlay.open { display: flex; }
 .leaderboard-panel {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding-bottom: 20px;
-}
-.lb-handle {
-  width: 40px; height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin: 12px auto 16px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 .lb-header {
-  padding: 0 18px 16px;
-  border-bottom: 1px solid var(--border);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,10,14,0.95);
+  backdrop-filter: blur(12px);
+  position: relative;
+  flex-shrink: 0;
+}
+.lb-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+}
+.lb-back {
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; flex-shrink: 0;
+  color: var(--accent-orange);
 }
 .lb-title {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.lb-close {
-  color: var(--text-muted);
+.lb-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.lb-tabs::-webkit-scrollbar { display: none; }
+.lb-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 18px;
-  font-weight: 300;
-  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.lb-tab.active {
+  background: var(--accent-orange-dim);
+  border-color: var(--border-accent);
+  color: var(--accent-orange);
+}
+.lb-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+  min-height: 0;
+}
+.lb-body::-webkit-scrollbar { width: 2px; }
+.lb-body::-webkit-scrollbar-thumb { background: var(--border-accent); }
+.lb-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 .lb-standings-table {
   width: 100%;
@@ -3277,15 +3336,20 @@ body.on-chat-page #bottom-nav { display: none !important; }
 
 <!-- Find Squad overlay is inside #content (declared in news-page section) -->
 
-<!-- Leaderboard Overlay -->
-<div class="leaderboard-overlay" id="lb-overlay" onclick="closeLB(event)">
+<!-- Leaderboard Overlay — full page -->
+<div class="leaderboard-overlay" id="lb-overlay">
   <div class="leaderboard-panel" id="lb-panel">
-    <div class="lb-handle"></div>
     <div class="lb-header">
+      <div class="lb-back" onclick="closeLBDirect()">←</div>
       <div class="lb-title" id="lb-title">Match Leaderboard</div>
-      <span class="lb-close" onclick="closeLBDirect()">✕</span>
     </div>
-    <div id="lb-rows"></div>
+    <div class="lb-tabs" id="lb-tabs">
+      <div class="lb-tab active" data-tab="overall" onclick="switchLBTab('overall')">🏆 Overall</div>
+      <div class="lb-tab" data-tab="m1" onclick="switchLBTab('m1')">M1</div>
+      <div class="lb-tab" data-tab="m2" onclick="switchLBTab('m2')">M2</div>
+      <div class="lb-tab" data-tab="m3" onclick="switchLBTab('m3')">M3</div>
+    </div>
+    <div class="lb-body" id="lb-rows"></div>
   </div>
 </div>
 
@@ -3975,7 +4039,8 @@ window.onload = async function() {
           kills: r.totalKills || r.kills || 0,
           teams: r.totalTeams || r.teams || 0,
           prize: r.prize || '',
-          lb
+          lb,
+          matchData: r.matchData || null
         };
       });
     } else {
@@ -5192,13 +5257,49 @@ function setFilter(el, val) {
   renderResults(val);
 }
 
+// Standard placement-points table used to score individual match tabs (M1/M2/M3).
+// Rank 1 = 10 pts, 2 = 6, 3 = 5, 4 = 4, 5 = 3, 6 = 2, 7-8 = 1, 9th+ = 0.
+const LB_PLACEMENT_POINTS = {1:10,2:6,3:5,4:4,5:3,6:2,7:1,8:1};
+function lbPlacePts(rank) { return LB_PLACEMENT_POINTS[rank] || 0; }
+
+let currentLBResult = null;
+
 function openLeaderboard(id) {
   const r = results.find(x => x.id === id);
   if (!r) return;
+  currentLBResult = r;
   document.getElementById('lb-title').textContent = r.name;
 
+  // Only show M1/M2/M3 tabs when per-match data actually exists for this result.
+  const hasMatchData = !!(r.matchData && (r.matchData.m1 || r.matchData.m2 || r.matchData.m3));
+  document.querySelectorAll('#lb-tabs .lb-tab').forEach(t => {
+    if (t.dataset.tab !== 'overall') t.style.display = hasMatchData ? '' : 'none';
+  });
+
+  document.querySelectorAll('#lb-tabs .lb-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'overall'));
+  renderLBTab('overall');
+  document.getElementById('lb-overlay').classList.add('open');
+}
+
+function switchLBTab(tab) {
+  document.querySelectorAll('#lb-tabs .lb-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderLBTab(tab);
+}
+
+function renderLBTab(tab) {
+  if (tab === 'overall') renderLBOverall();
+  else renderLBMatch(tab);
+}
+
+function renderLBOverall() {
   const container = document.getElementById('lb-rows');
-  const lb = r.lb || [];
+  const r = currentLBResult;
+  const lb = (r && r.lb) || [];
+
+  if (!lb.length) {
+    container.innerHTML = `<div class="lb-empty">📊 Standings not posted yet.</div>`;
+    return;
+  }
 
   let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
   <table class="lb-standings-table">
@@ -5233,14 +5334,58 @@ function openLeaderboard(id) {
 
   html += `</tbody></table></div>`;
   container.innerHTML = html;
-  document.getElementById('lb-overlay').classList.add('open');
 }
 
-function closeLB(e) {
-  if (e.target === document.getElementById('lb-overlay')) {
-    document.getElementById('lb-overlay').classList.remove('open');
+function renderLBMatch(tab) {
+  const container = document.getElementById('lb-rows');
+  const r = currentLBResult;
+  const arr = (r && r.matchData && r.matchData[tab]) || [];
+
+  if (!arr.length) {
+    container.innerHTML = `<div class="lb-empty">📊 ${tab.toUpperCase()} results not posted yet.</div>`;
+    return;
   }
+
+  // Score + sort this single match: points = placement points + kills, tie-break by placement (lower rank wins).
+  const rows = arr.map(row => {
+    const placement = row.placement || 0;
+    const kills = row.kills || 0;
+    const points = lbPlacePts(placement) + kills;
+    return { team: row.team || '', placement, kills, points };
+  });
+  rows.sort((a, b) => b.points - a.points || (a.placement||99) - (b.placement||99));
+
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <table class="lb-standings-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Team</th>
+        <th>Placement</th>
+        <th>Kills</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  rows.forEach((row, i) => {
+    const rankNum = i + 1;
+    const rc = rankNum===1?'gold':rankNum===2?'silver':rankNum===3?'bronze':'other';
+    const rankLabel = rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':'#'+rankNum;
+    const placeLabel = row.placement ? '#'+row.placement : '—';
+    html += `<tr class="row-${rc}">
+      <td class="td-rank ${rc}">${rankLabel}</td>
+      <td class="td-team">${row.team}</td>
+      <td>${placeLabel}</td>
+      <td>${row.kills}</td>
+      <td class="td-total ${rc}">${row.points}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
 }
+
 function closeLBDirect() {
   document.getElementById('lb-overlay').classList.remove('open');
 }
