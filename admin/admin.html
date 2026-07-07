@@ -1470,7 +1470,7 @@ function clearPrizeRows() {
 }
 // Initialise form with 2 match rows + 3 prize rows on load
 function initTournamentFormDefaults() {
-  clearMatchRows(); addMatchRow(); addMatchRow();
+  clearMatchRows(); addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP');
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
@@ -1574,7 +1574,7 @@ function resetTournamentForm() {
   document.getElementById('t-status').value = 'UPCOMING';
   const ci = document.getElementById('t-card-img'); if (ci) ci.value = '';
   const cp = document.getElementById('t-card-img-preview'); if (cp) { cp.src=''; cp.style.display='none'; }
-  clearMatchRows(); addMatchRow(); addMatchRow();
+  clearMatchRows(); addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP');
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
@@ -1603,7 +1603,7 @@ function editTournament(id) {
         { title: t.match1Title || '', time: t.match1Time || '' },
         { title: t.match2Title || '', time: t.match2Time || '' }
       ].filter(m => m.title || m.time);
-  if (sched.length === 0) { addMatchRow(); addMatchRow(); }
+  if (sched.length === 0) { addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP'); }
   else sched.forEach(m => addMatchRow(m.title || '', m.time || ''));
 
   // Fill prize distribution
