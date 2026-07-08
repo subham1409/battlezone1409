@@ -1683,6 +1683,42 @@ body::after {
 }
 .logout-profile-btn:hover { background: rgba(255,107,107,0.12); border-color: #ff6b6b; }
 
+/* === DASHBOARD FIXED FOOTER (Edit Profile / Logout / Socials) === */
+/* Truly pinned to sit flush against the top edge of the bottom nav —
+   not scroll-dependent. Only shown while the My Account page is active.
+   The matches list scrolls underneath and blurs/fades out behind it. */
+#dashboard-fixed-footer {
+  display: none;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 68px; /* = #bottom-nav height, so it sits line-to-line above it */
+  z-index: 40;
+  max-width: 480px;
+  margin: 0 auto;
+}
+body.on-dashboard-page #dashboard-fixed-footer { display: block; }
+.dsf-blur-fade {
+  position: absolute;
+  left: 0; right: 0;
+  top: -56px;
+  height: 56px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 100%);
+  pointer-events: none;
+}
+.dsf-panel {
+  position: relative;
+  background: linear-gradient(to bottom, rgba(8,10,14,0.75), rgba(8,10,14,0.96) 40%, rgba(8,10,14,0.97));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  padding-bottom: 4px;
+}
+#dashboard-fixed-footer .edit-profile-btn { margin-top: 0; }
+
 /* === TOAST === */
 .toast {
   position: fixed;
@@ -3116,15 +3152,24 @@ body.on-chat-page #bottom-nav { display: none !important; }
         <div class="section-title">My Matches</div>
       </div>
 
-      <div id="my-matches-list">
+      <div id="my-matches-list" style="padding-bottom:210px">
         <div class="my-matches-loading">⏳ Loading your matches...</div>
       </div>
+    </div><!-- end dashboard-page -->
+
+  </div><!-- end #content -->
+
+  <!-- Fixed footer: Edit Profile / Logout / Socials — pinned directly above bottom nav,
+       only visible on the My Account (dashboard) page. Lives outside #content so it
+       never scrolls; the matches list scrolls and blurs out underneath it. -->
+  <div id="dashboard-fixed-footer">
+    <div class="dsf-blur-fade"></div>
+    <div class="dsf-panel">
       <button class="edit-profile-btn" onclick="openEditProfile()">✏️ Edit Profile</button>
       <button class="logout-profile-btn" id="account-logout-btn" onclick="doLogout()">🚪 Logout</button>
-      <div style="height:20px"></div>
 
       <!-- Social Floating Buttons -->
-      <div id="social-floats" style="display:flex;justify-content:center;gap:18px;padding:18px 0 28px;">
+      <div id="social-floats" style="display:flex;justify-content:center;gap:18px;padding:14px 0 12px;">
         <!-- WhatsApp -->
         <a href="https://wa.me/918849110467" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
           <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,211,102,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(37,211,102,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(37,211,102,0.35)'">
@@ -3147,9 +3192,8 @@ body.on-chat-page #bottom-nav { display: none !important; }
           <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#FF0000;text-transform:uppercase">YouTube</span>
         </a>
       </div>
-    </div>
-
-  </div><!-- end #content -->
+    </div><!-- end dsf-panel -->
+  </div><!-- end dashboard-fixed-footer -->
 
   <!-- BOTTOM NAV -->
   <nav id="bottom-nav">
@@ -4222,6 +4266,7 @@ function switchPage(page) {
   document.body.classList.remove('keyboard-open');
   // on-chat-page gates the nav-hiding CSS — only true when chat tab is active
   document.body.classList.toggle('on-chat-page', page === 'chat');
+  document.body.classList.toggle('on-dashboard-page', page === 'dashboard');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   // #chat-page has no class="page" so toggle it explicitly
   const _chatPageEl = document.getElementById('chat-page');
