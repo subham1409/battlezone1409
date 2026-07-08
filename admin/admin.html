@@ -664,7 +664,7 @@ body::after {
         <div style="background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px;padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div style="font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--accent-green);text-transform:uppercase">⚔ Match Schedule</div>
-            <button type="button" onclick="addMatchRow()" style="background:rgba(0,255,157,0.12);border:1px solid rgba(0,255,157,0.3);color:var(--accent-green);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer">+ ADD MATCH</button>
+            <button type="button" onclick="addMatchRow('','','')" style="background:rgba(0,255,157,0.12);border:1px solid rgba(0,255,157,0.3);color:var(--accent-green);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer">+ ADD MATCH</button>
           </div>
           <div id="match-rows-container" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
@@ -1413,7 +1413,7 @@ let editingTourId = null;
 
 // ── MATCH ROW HELPERS ──────────────────────────────────────────────────────
 let matchRowCount = 0;
-function addMatchRow(titleVal = '', timeVal = '') {
+function addMatchRow(titleVal = '', idpVal = '', timeVal = '') {
   matchRowCount++;
   const n = matchRowCount;
   const icons = ['🎯','🔥','⚡','💥','🎮','🏆'];
@@ -1423,14 +1423,18 @@ function addMatchRow(titleVal = '', timeVal = '') {
   div.dataset.rowId = n;  // use data attribute — never rely on id for lookup
   div.style.cssText = 'display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:10px 12px';
   div.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+    <div style="display:grid;grid-template-columns:1fr 0.8fr 0.8fr auto;gap:8px;align-items:end">
       <div class="field" style="margin-bottom:0">
         <label style="font-size:9px">${icon} Match ${n} Title</label>
         <input type="text" id="t-match-title-${n}" placeholder="e.g. Qualifier Round" maxlength="40" value="${escHTML(titleVal)}">
       </div>
       <div class="field" style="margin-bottom:0">
-        <label style="font-size:9px">⏰ Time</label>
-        <input type="text" id="t-match-time-${n}" placeholder="e.g. 8:00 PM IST" maxlength="40" value="${escHTML(timeVal)}">
+        <label style="font-size:9px">🆔 IDP</label>
+        <input type="text" id="t-match-idp-${n}" placeholder="e.g. ID-1234" maxlength="40" value="${escHTML(idpVal)}">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label style="font-size:9px">⏰ Start</label>
+        <input type="text" id="t-match-time-${n}" placeholder="e.g. 8:30 PM" maxlength="40" value="${escHTML(timeVal)}">
       </div>
       <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:8px 11px;border-radius:7px;cursor:pointer;margin-bottom:0;height:38px">✕</button>
     </div>
@@ -1470,7 +1474,7 @@ function clearPrizeRows() {
 }
 // Initialise form with 2 match rows + 3 prize rows on load
 function initTournamentFormDefaults() {
-  clearMatchRows(); addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP');
+  clearMatchRows(); addMatchRow('', '', '8:30'); addMatchRow('', '', '9:00'); addMatchRow('', '', '9:30');
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
@@ -1491,8 +1495,9 @@ async function submitTournament() {
   document.querySelectorAll('#match-rows-container > div').forEach(row => {
     const n = row.dataset.rowId;
     const title = (document.getElementById('t-match-title-' + n) || {}).value?.trim() || '';
+    const idp   = (document.getElementById('t-match-idp-'   + n) || {}).value?.trim() || '';
     const time  = (document.getElementById('t-match-time-'  + n) || {}).value?.trim() || '';
-    if (title || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), time });
+    if (title || idp || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), idp, time });
   });
 
   // Collect prize list
@@ -1521,8 +1526,10 @@ async function submitTournament() {
   if (matchSchedule.length > 0) {
     payload.matchSchedule = matchSchedule;
     payload.match1Title = matchSchedule[0]?.title || '';
+    payload.match1Idp   = matchSchedule[0]?.idp   || '';
     payload.match1Time  = matchSchedule[0]?.time  || '';
     payload.match2Title = matchSchedule[1]?.title || '';
+    payload.match2Idp   = matchSchedule[1]?.idp   || '';
     payload.match2Time  = matchSchedule[1]?.time  || '';
   }
   if (prizeList.length > 0) payload.prizeList = prizeList;
@@ -1574,7 +1581,7 @@ function resetTournamentForm() {
   document.getElementById('t-status').value = 'UPCOMING';
   const ci = document.getElementById('t-card-img'); if (ci) ci.value = '';
   const cp = document.getElementById('t-card-img-preview'); if (cp) { cp.src=''; cp.style.display='none'; }
-  clearMatchRows(); addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP');
+  clearMatchRows(); addMatchRow('', '', '8:30'); addMatchRow('', '', '9:00'); addMatchRow('', '', '9:30');
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
@@ -1603,8 +1610,8 @@ function editTournament(id) {
         { title: t.match1Title || '', time: t.match1Time || '' },
         { title: t.match2Title || '', time: t.match2Time || '' }
       ].filter(m => m.title || m.time);
-  if (sched.length === 0) { addMatchRow('', '8:30 IDP'); addMatchRow('', '9:00 IDP'); addMatchRow('', '9:30 IDP'); }
-  else sched.forEach(m => addMatchRow(m.title || '', m.time || ''));
+  if (sched.length === 0) { addMatchRow('', '', '8:30'); addMatchRow('', '', '9:00'); addMatchRow('', '', '9:30'); }
+  else sched.forEach(m => addMatchRow(m.title || '', m.idp || '', m.time || ''));
 
   // Fill prize distribution
   clearPrizeRows();

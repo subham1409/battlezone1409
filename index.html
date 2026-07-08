@@ -2765,9 +2765,11 @@ body.on-chat-page #bottom-nav { display: none !important; }
             border-bottom:1px solid rgba(255,255,255,0.06);
           }
           .home-marquee-track{
-            display:inline-flex;
+            display:inline-block;
             white-space:nowrap;
+            padding-left:100%;
             animation:homeMarqueeScroll 16s linear infinite;
+            animation-timing-function:linear;
             will-change:transform;
           }
           .home-marquee-track span{
@@ -2777,7 +2779,6 @@ body.on-chat-page #bottom-nav { display: none !important; }
             letter-spacing:0.08em;
             text-transform:uppercase;
             color:var(--text-secondary);
-            padding-right:36px;
           }
           .home-marquee-track span b{
             color:var(--accent-orange);
@@ -2786,12 +2787,11 @@ body.on-chat-page #bottom-nav { display: none !important; }
           }
           @keyframes homeMarqueeScroll{
             0%{transform:translateX(0);}
-            100%{transform:translateX(-50%);}
+            100%{transform:translateX(-100%);}
           }
         </style>
         <div class="home-marquee-track">
           <span><b>·</b> All advance room <b>·</b> Payment in just 1 hour</span>
-          <span aria-hidden="true"><b>·</b> All advance room <b>·</b> Payment in just 1 hour</span>
         </div>
       </div>
 
@@ -4318,13 +4318,14 @@ function buildTournamentCardHTML(t) {
 
   // Match schedule — collapsible "tap to view" bar, same system as Prize Distribution
   const matchIcons = ['🎯','🔥','⚡','💥','🎮'];
-  const matchBarsList = (t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).filter(m => m.time || m.title);
+  const matchBarsList = (t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : []).filter(m => m.time || m.title || m.idp);
   let scheduleHTML = '';
   if (matchBarsList.length > 0) {
     const schedRowsHTML = matchBarsList.map((m, mi) => `
-      <div class="prize-list-row" style="grid-template-columns:36px 1fr auto">
+      <div class="prize-list-row" style="grid-template-columns:36px 1fr 0.8fr auto">
         <div class="prize-list-rank" style="font-size:13px">${matchIcons[mi % matchIcons.length]}</div>
         <div class="prize-list-pos">Match ${mi+1} · ${(m.title||'').toUpperCase()}</div>
+        <div class="prize-list-pos" style="color:var(--text-secondary);font-size:11px">${m.idp || '—'}</div>
         <div class="prize-list-amount" style="color:var(--text-primary)">${m.time || '—'}</div>
       </div>`).join('');
     scheduleHTML = `
@@ -4345,8 +4346,8 @@ function buildTournamentCardHTML(t) {
       </div>
       <div class="sched-list-body" style="display:none;overflow:hidden">
         <div class="prize-list-table" style="border-top:none;border-color:var(--border);border-radius:0 0 10px 10px;margin-top:-1px">
-          <div class="prize-list-table-head">
-            <span></span><span>Match</span><span>Time</span>
+          <div class="prize-list-table-head" style="grid-template-columns:36px 1fr 0.8fr auto">
+            <span></span><span>Match</span><span>IDP</span><span>Time</span>
           </div>
           ${schedRowsHTML}
         </div>
@@ -4500,6 +4501,7 @@ function openDetail(id) {
         <div style="flex:1">
           <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:${c.titleColor};text-transform:uppercase;margin-bottom:3px">${(m.title||'Match '+(i+1)).toUpperCase()}</div>
           <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600">${m.time||'—'}</div>
+          ${m.idp ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin-top:2px">🆔 ${m.idp}</div>` : ''}
         </div>
         ${m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:72px;height:56px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.18);flex-shrink:0;box-shadow:0 0 18px ${c.border},0 4px 18px rgba(0,0,0,0.5)" onerror="this.style.display='none'">` : `<div style="font-size:22px">${c.icon}</div>`}
       </div>`;
