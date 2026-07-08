@@ -401,6 +401,36 @@ body::after {
   color: var(--text-secondary);
 }
 
+/* ===== AUTO GENERATE RESULT (OCR) WIZARD ===== */
+.agr-overlay { display:none; position:fixed; inset:0; z-index:600; background:rgba(0,0,0,0.88); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px; }
+.agr-overlay.open { display:flex; }
+.agr-box { background:var(--bg-secondary); border:1px solid var(--border); border-radius:18px; width:100%; max-width:760px; max-height:92vh; display:flex; flex-direction:column; animation:popIn 0.25s ease; }
+.agr-header { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, rgba(255,120,0,0.08), transparent); flex-shrink:0; }
+.agr-title { font-family:var(--font-display); font-size:13px; font-weight:700; color:var(--text-primary); letter-spacing:0.1em; text-transform:uppercase; }
+.agr-close { background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px; }
+.agr-close:hover { color:var(--accent-red); }
+.agr-steps { display:flex; gap:6px; padding:12px 22px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.agr-step-pill { flex:1; text-align:center; padding:7px 4px; border-radius:8px; font-family:var(--font-display); font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--border); }
+.agr-step-pill.active { color:var(--accent-orange); border-color:var(--border-accent); background:rgba(255,120,0,0.08); }
+.agr-step-pill.done { color:var(--accent-green); }
+.agr-body { padding:20px 22px; overflow-y:auto; flex:1; }
+.agr-footer { padding:16px 22px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; flex-shrink:0; }
+.agr-btn { padding:10px 18px; border-radius:9px; font-family:var(--font-display); font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-secondary); transition:all 0.15s; }
+.agr-btn:hover { border-color:var(--border-accent); color:var(--text-primary); }
+.agr-btn.primary { background:var(--accent-orange); border-color:var(--accent-orange); color:#000; }
+.agr-btn.primary:hover { background:#ff9500; }
+.agr-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.agr-note { font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); line-height:1.6; margin-bottom:14px; }
+.agr-team-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; }
+.agr-conf-badge { display:inline-block; font-size:9px; font-weight:700; padding:5px 7px; border-radius:5px; letter-spacing:0.05em; text-align:center; }
+.agr-conf-high { color:var(--accent-green); background:rgba(0,255,157,0.1); border:1px solid rgba(0,255,157,0.25); }
+.agr-conf-low { color:#ffb300; background:rgba(255,179,0,0.1); border:1px solid rgba(255,179,0,0.3); }
+.agr-thumb-row { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.agr-thumb { position:relative; width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+.agr-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.agr-thumb .agr-thumb-x { position:absolute; top:2px; right:2px; width:18px; height:18px; background:rgba(255,58,58,0.85); border:none; border-radius:50%; color:#fff; font-size:11px; cursor:pointer; line-height:1; padding:0; }
+.agr-thumb .agr-thumb-status { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.75); font-size:7.5px; text-align:center; color:var(--text-secondary); padding:2px 0; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
 /* Empty state */
 .empty-state {
   padding: 48px 20px; text-align: center;
@@ -456,177 +486,15 @@ body::after {
   </div>
 
   <div class="admin-tabs">
-    <button class="tab-btn active" onclick="switchTab('news')">📰 News</button>
-    <button class="tab-btn" onclick="switchTab('tournaments')">🏆 Tournaments</button>
+    <button class="tab-btn active" onclick="switchTab('tournaments')">🏆 Tournaments</button>
     <button class="tab-btn" onclick="switchTab('results')">🥇 Results</button>
     <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
     <button class="tab-btn" onclick="switchTab('registrations')">📋 Registrations</button>
     <button class="tab-btn" onclick="switchTab('requests')" id="requests-tab-btn">📥 Requests <span id="req-badge" style="display:none;background:var(--accent-red);color:#fff;font-size:9px;font-family:var(--font-display);font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
-  <!-- ===== NEWS TAB ===== -->
-  <div id="tab-news" class="tab-panel active">
-
-    <!-- ===== HOME ANNOUNCEMENT BANNER ===== -->
-    <div class="section-card" style="margin-bottom:24px;border-color:rgba(255,120,0,0.25)">
-      <div class="section-card-header" style="background:linear-gradient(135deg,rgba(255,120,0,0.1),transparent)">
-        <div class="section-card-title">📢 Home Announcement Banner</div>
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">shown on home screen</span>
-      </div>
-      <div class="section-card-body">
-        <div style="display:grid;grid-template-columns:1fr 80px;gap:12px;margin-bottom:12px">
-          <div class="field" style="margin-bottom:0">
-            <label>Title *</label>
-            <input type="text" id="ann-title-input" placeholder="e.g. Weekly Championship" maxlength="60">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>Icon (emoji)</label>
-            <input type="text" id="ann-icon-input" placeholder="🏆" maxlength="4" style="text-align:center;font-size:20px">
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div class="field" style="margin-bottom:0">
-            <label>Label (top small text)</label>
-            <input type="text" id="ann-label-input" placeholder="📅 Upcoming" maxlength="40">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>Date / Subtitle</label>
-            <input type="text" id="ann-date-input" placeholder="SAT, 19 APR 2026 • 8:00 PM IST" maxlength="80">
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn-primary" onclick="saveAnnouncement()" style="max-width:200px">📢 Save Announcement</button>
-          <button onclick="clearAnnouncement()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:10px 16px;color:var(--text-muted);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">🗑 Hide Banner</button>
-        </div>
-        <div id="ann-current" style="margin-top:14px;padding:12px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;display:none">
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:6px">Current banner:</div>
-          <div id="ann-preview-text" style="font-size:13px;color:var(--text-primary);font-weight:600"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Firebase Rules Tip -->
-    <div id="firebase-rules-tip" style="background:rgba(255,120,0,0.07);border:1px solid rgba(255,120,0,0.25);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
-      <div style="font-size:20px;flex-shrink:0">🔑</div>
-      <div style="flex:1">
-        <div style="font-family:var(--font-display);font-size:10px;font-weight:700;color:var(--accent-orange);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Firebase Rules Required — Edit &amp; Delete All News</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;font-family:var(--font-mono)">
-          Go to <strong style="color:var(--text-primary)">Firebase Console → Realtime Database → Rules</strong> tab and paste:<br>
-          <code style="background:rgba(0,0,0,0.4);padding:6px 10px;border-radius:6px;display:inline-block;margin-top:6px;color:var(--accent-green);font-size:11px">{ "rules": { ".read": true, ".write": true } }</code><br>
-          <span style="font-size:11px;color:var(--text-muted);margin-top:6px;display:block">Also add <strong style="color:var(--accent-green)">tournamentChats</strong> to your rules for tournament-specific chat pinning to work.</span>
-        </div>
-        <button onclick="document.getElementById('firebase-rules-tip').style.display='none'" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;margin-top:8px;padding:0;font-family:var(--font-mono)">✕ Dismiss tip</button>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-val" id="stat-total">0</div>
-        <div class="stat-key">Total Posts</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="stat-pinned">0</div>
-        <div class="stat-key">Pinned</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="stat-today">0</div>
-        <div class="stat-key">Today</div>
-      </div>
-    </div>
-
-    <!-- Create / Edit Form -->
-    <div class="section-card" id="news-form-card">
-      <div class="section-card-header">
-        <div class="section-card-title" id="form-card-title">Post New Article</div>
-        <button class="action-btn edit" id="cancel-edit-btn" style="display:none" onclick="cancelEdit()">✕ Cancel Edit</button>
-      </div>
-      <div class="section-card-body">
-
-        <!-- Image Upload -->
-        <div style="margin-bottom:16px">
-          <div class="field" style="margin-bottom:0">
-            <label>Article Image <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Optional)</span></label>
-          </div>
-          <div class="img-upload-area" id="img-upload-area">
-            <input type="file" id="img-file-input" accept="image/*" onchange="handleFileSelect(event)">
-            <div class="img-upload-icon">🖼️</div>
-            <div class="img-upload-label">Drop image here or click to browse</div>
-            <div class="img-upload-hint">JPG, PNG, WEBP — max 5MB</div>
-          </div>
-          <div class="img-preview-wrap" id="img-preview-wrap">
-            <img id="img-preview" class="img-preview" src="" alt="preview">
-            <button class="img-preview-remove" onclick="removeImage()" title="Remove image">✕</button>
-          </div>
-          <div class="upload-progress" id="upload-progress">
-            <div class="progress-label">Uploading image… <span id="progress-pct">0%</span></div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
-          </div>
-
-          <div class="img-url-or">
-            <hr><span>OR paste URL</span><hr>
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <input type="url" id="news-image-url" placeholder="https://example.com/image.jpg" oninput="previewFromUrl(this.value)">
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 140px;gap:12px;margin-bottom:16px">
-          <div class="field" style="margin-bottom:0">
-            <label>Title *</label>
-            <input type="text" id="news-title" placeholder="e.g. Season 5 Tournament Announced!" maxlength="100">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>Tag</label>
-            <select id="news-tag">
-              <option value="NEWS">NEWS</option>
-              <option value="UPDATE">UPDATE</option>
-              <option value="EVENT">EVENT</option>
-              <option value="TOURNAMENT">TOURNAMENT</option>
-              <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
-              <option value="PATCH">PATCH</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Description / Full Article *</label>
-          <textarea id="news-desc" placeholder="Write the full article content here. This will also appear as the preview description on the news card." style="min-height:120px" maxlength="2000"></textarea>
-        </div>
-
-        <div class="field">
-          <label>Link URL <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Optional — shown as a tap button on the article)</span></label>
-          <input type="url" id="news-link-url" placeholder="https://youtube.com/watch?v=... or any link" style="font-family:var(--font-mono);font-size:13px">
-        </div>
-
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn-primary" id="submit-news-btn" onclick="submitNews()" style="max-width:200px">⚡ Publish Article</button>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;font-weight:600">
-            <input type="checkbox" id="news-pin" style="width:16px;height:16px;accent-color:var(--accent-orange)">
-            📌 Pin to top
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- News List -->
-    <div class="section-card">
-      <div class="section-card-header">
-        <div class="section-card-title">Published Articles</div>
-        <span id="news-count-label" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">0 posts</span>
-      </div>
-      <div id="news-admin-list">
-        <div class="empty-state">
-          <div class="empty-state-icon">📡</div>
-          <div class="empty-state-text">Loading articles…</div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- end tab-news -->
-
   <!-- ===== TOURNAMENTS TAB ===== -->
-  <div id="tab-tournaments" class="tab-panel">
+  <div id="tab-tournaments" class="tab-panel active">
 
     <!-- Tournament Form -->
     <div class="section-card" id="tournament-form-card">
@@ -686,14 +554,6 @@ body::after {
               <option value="CANCELLED">CANCELLED</option>
             </select>
           </div>
-          <div class="field" style="margin-bottom:0">
-            <label>Slots Left</label>
-            <input type="number" id="t-slots" placeholder="e.g. 8" min="0">
-          </div>
-        </div>
-        <div class="field">
-          <label>Room ID</label>
-          <input type="text" id="t-room" placeholder="Room ID (shown only after registration)" maxlength="60">
         </div>
         <div class="field">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -740,7 +600,10 @@ body::after {
     <div class="section-card" id="result-form-card">
       <div class="section-card-header">
         <div class="section-card-title" id="r-form-title">Add Result</div>
-        <button class="action-btn edit" id="r-cancel-btn" style="display:none" onclick="cancelEditResult()">✕ Cancel</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="action-btn edit" id="agr-open-btn" style="border:1px solid var(--border-accent);border-radius:7px" onclick="openAutoGenerateModal()">✨ Auto Generate Result</button>
+          <button class="action-btn edit" id="r-cancel-btn" style="display:none" onclick="cancelEditResult()">✕ Cancel</button>
+        </div>
       </div>
       <div class="section-card-body">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
@@ -1015,6 +878,24 @@ body::after {
   </div>
 </div>
 
+
+<!-- Auto Generate Result Modal (OCR Wizard) — optional add-on, does not touch manual result system -->
+<div class="agr-overlay" id="agr-modal">
+  <div class="agr-box">
+    <div class="agr-header">
+      <div class="agr-title">✨ Auto Generate Result</div>
+      <button class="agr-close" onclick="closeAutoGenerateModal()">✕</button>
+    </div>
+    <div class="agr-steps">
+      <div class="agr-step-pill" id="agr-pill-1">1 · Lobby</div>
+      <div class="agr-step-pill" id="agr-pill-2">2 · Results</div>
+      <div class="agr-step-pill" id="agr-pill-3">3 · Preview</div>
+    </div>
+    <div class="agr-body" id="agr-body"></div>
+    <div class="agr-footer" id="agr-footer"></div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1031,14 +912,13 @@ const firebaseConfig = {
   measurementId: "G-RRKPCPNBMP"
 };
 
-let db, newsRef, chatRef, tournamentsRef, resultsRef;
+let db, chatRef, tournamentsRef, resultsRef;
 
 function initFirebase() {
   try {
     if (typeof firebase === 'undefined') throw new Error('Firebase SDK not loaded');
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    newsRef = db.ref('news');
     chatRef = db.ref('chat');
     tournamentsRef = db.ref('tournaments');
     resultsRef = db.ref('results');
@@ -1076,8 +956,6 @@ function doLogin() {
     }
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('admin-app').classList.add('visible');
-    loadAnnouncementAdmin();
-    loadNewsAdmin();
     loadChatAdmin();
     loadPinnedMessageAdmin();
     loadTournamentPinDropdown();
@@ -1113,298 +991,14 @@ function switchTab(tab) {
   if (tab === 'requests') loadRequestsAdmin();
 }
 
-// ===== IMAGE HANDLING =====
-let uploadedImageUrl = '';
-let selectedFile = null;
-
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('❌ Image too large — max 5MB'); return; }
-  selectedFile = file;
-  document.getElementById('news-image-url').value = '';
-  uploadedImageUrl = '';
-
-  const reader = new FileReader();
-  reader.onload = ev => {
-    document.getElementById('img-preview').src = ev.target.result;
-    document.getElementById('img-preview-wrap').classList.add('visible');
-  };
-  reader.readAsDataURL(file);
-}
-
-function previewFromUrl(url) {
-  if (!url) {
-    document.getElementById('img-preview-wrap').classList.remove('visible');
-    uploadedImageUrl = '';
-    return;
-  }
-  document.getElementById('img-preview').src = url;
-  document.getElementById('img-preview-wrap').classList.add('visible');
-  selectedFile = null;
-  uploadedImageUrl = url;
-  document.getElementById('img-file-input').value = '';
-}
-
-function removeImage() {
-  selectedFile = null;
-  uploadedImageUrl = '';
-  document.getElementById('img-preview-wrap').classList.remove('visible');
-  document.getElementById('img-preview').src = '';
-  document.getElementById('news-image-url').value = '';
-  document.getElementById('img-file-input').value = '';
-}
-
-// ===== IMGBB FREE IMAGE HOSTING =====
-const IMGBB_API_KEY = 'e8e3e3a80a72b4f34022873387ed365a';
-
-async function uploadFileToStorage(file) {
-  const progressEl = document.getElementById('upload-progress');
-  const barEl = document.getElementById('progress-bar');
-  const pctEl = document.getElementById('progress-pct');
-  progressEl.classList.add('visible');
-  barEl.style.width = '30%';
-  pctEl.textContent = 'Uploading…';
-
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-
-  barEl.style.width = '60%';
-
-  const formData = new FormData();
-  formData.append('key', IMGBB_API_KEY);
-  formData.append('image', base64);
-
-  const response = await fetch('https://api.imgbb.com/1/upload', {
-    method: 'POST',
-    body: formData
-  });
-
-  progressEl.classList.remove('visible');
-  barEl.style.width = '0%';
-
-  if (!response.ok) throw new Error('imgbb upload failed (' + response.status + ')');
-  const data = await response.json();
-  if (!data.success) throw new Error(data.error?.message || 'imgbb error');
-  return data.data.url;
-}
-
-// ===== NEWS CRUD =====
-let newsData = [];
-let editingId = null;
-let deleteTargetId = null;
-
-async function submitNews() {
-  const title = document.getElementById('news-title').value.trim();
-  const desc = document.getElementById('news-desc').value.trim();
-  const linkUrl = document.getElementById('news-link-url').value.trim();
-  const tag = document.getElementById('news-tag').value;
-  const pinned = document.getElementById('news-pin').checked;
-
-  if (!title) { showToast('⚠️ Title is required'); return; }
-  if (!desc) { showToast('⚠️ Description is required'); return; }
-
-  const btn = document.getElementById('submit-news-btn');
-  btn.disabled = true;
-  btn.textContent = 'Publishing…';
-
-  try {
-    let imageUrl = uploadedImageUrl;
-
-    // If file selected, try upload to imgbb — skip if it fails (image is optional)
-    if (selectedFile) {
-      try {
-        imageUrl = await uploadFileToStorage(selectedFile);
-        uploadedImageUrl = imageUrl;
-      } catch(e) {
-        showToast('⚠️ Image skipped: ' + e.message);
-        imageUrl = '';
-        selectedFile = null;
-        removeImage();
-      }
-    }
-
-    const payload = {
-      title, description: desc, tag, pinned,
-      imageUrl: imageUrl || '',
-      linkUrl: linkUrl || '',
-      ts: Date.now()
-    };
-
-    if (editingId) {
-      await newsRef.child(editingId).update(payload);
-      showToast('✅ Article updated!');
-      cancelEdit();
-    } else {
-      await newsRef.push(payload);
-      showToast('🚀 Article published!');
-      resetForm();
-    }
-    // Real-time listener auto-refreshes the list
-  } catch(e) {
-    if (e.code === 'PERMISSION_DENIED') {
-      showToast('❌ Permission denied — set Firebase Rules to ".write": true');
-    } else {
-      showToast('❌ Error: ' + e.message);
-    }
-  }
-
-  btn.disabled = false;
-  btn.textContent = editingId ? '✏️ Update Article' : '⚡ Publish Article';
-}
-
-function resetForm() {
-  document.getElementById('news-title').value = '';
-  document.getElementById('news-desc').value = '';
-  document.getElementById('news-link-url').value = '';
-  document.getElementById('news-tag').value = 'NEWS';
-  document.getElementById('news-pin').checked = false;
-  removeImage();
-}
-
-function editNews(id) {
-  const item = newsData.find(n => n.id === id);
-  if (!item) return;
-  editingId = id;
-
-  document.getElementById('news-title').value = item.title || '';
-  document.getElementById('news-desc').value = item.description || '';
-  document.getElementById('news-link-url').value = item.linkUrl || '';
-  document.getElementById('news-tag').value = item.tag || 'NEWS';
-  document.getElementById('news-pin').checked = !!item.pinned;
-
-  if (item.imageUrl) {
-    document.getElementById('news-image-url').value = item.imageUrl;
-    document.getElementById('img-preview').src = item.imageUrl;
-    document.getElementById('img-preview-wrap').classList.add('visible');
-    uploadedImageUrl = item.imageUrl;
-  } else {
-    removeImage();
-  }
-
-  document.getElementById('form-card-title').textContent = 'Edit Article';
-  document.getElementById('submit-news-btn').textContent = '✏️ Update Article';
-  document.getElementById('cancel-edit-btn').style.display = 'inline-block';
-  document.getElementById('news-form-card').scrollIntoView({ behavior: 'smooth' });
-}
-
-function cancelEdit() {
-  editingId = null;
-  resetForm();
-  document.getElementById('form-card-title').textContent = 'Post New Article';
-  document.getElementById('submit-news-btn').textContent = '⚡ Publish Article';
-  document.getElementById('cancel-edit-btn').style.display = 'none';
-}
-
-function deleteNews(id) {
-  deleteTargetId = id;
-  document.getElementById('delete-modal').classList.add('open');
-}
-
-async function confirmDelete() {
-  if (!deleteTargetId) return;
-  try {
-    await newsRef.child(deleteTargetId).remove();
-    showToast('🗑 Article deleted');
-    // Real-time listener auto-refreshes
-  } catch(e) {
-    if (e.code === 'PERMISSION_DENIED') {
-      showToast('❌ Permission denied — set Firebase Rules to ".write": true');
-    } else {
-      showToast('❌ Delete failed: ' + e.message);
-    }
-  }
-  closeDeleteModal();
-}
-
 function closeDeleteModal() {
-  deleteTargetId = null;
   document.getElementById('delete-modal').classList.remove('open');
 }
 
-async function togglePin(id, currentPinned) {
-  try {
-    await newsRef.child(id).update({ pinned: !currentPinned });
-    showToast(currentPinned ? '📌 Unpinned' : '📌 Pinned to top!');
-    // Real-time listener auto-refreshes
-  } catch(e) {
-    showToast('❌ ' + e.message);
-  }
-}
-
-let newsListener = null;
-function loadNewsAdmin() {
-  if (!newsRef) { document.getElementById('news-admin-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Firebase not connected</div></div>'; return; }
-  // Detach any previous listener before attaching a new one
-  if (newsListener) { newsRef.off('value', newsListener); }
-  document.getElementById('news-admin-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading all articles…</div></div>';
-  newsListener = newsRef.on('value', snapshot => {
-    newsData = [];
-    snapshot.forEach(child => { newsData.push({ id: child.key, ...child.val() }); });
-    // Sort newest first in JS
-    newsData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    renderNewsAdmin();
-    updateStats();
-  }, err => {
-    document.getElementById('news-admin-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">Error: ' + err.message + '</div></div>';
-  });
-}
-
-function renderNewsAdmin() {
-  const list = document.getElementById('news-admin-list');
-  const countLabel = document.getElementById('news-count-label');
-  countLabel.textContent = newsData.length + ' post' + (newsData.length !== 1 ? 's' : '');
-
-  if (!newsData.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📰</div><div class="empty-state-text">No articles yet — create your first post above!</div></div>';
-    return;
-  }
-
-  let html = '<div style="display:flex;flex-direction:column;">';
-  newsData.forEach((item, idx) => {
-    const dateStr = item.ts ? new Date(item.ts).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
-    const thumb = item.imageUrl
-      ? `<img src="${escHTML(item.imageUrl)}" alt="" style="width:54px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0">`
-      : `<div style="width:54px;height:42px;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📰</div>`;
-    const pinnedBadge = item.pinned ? '<span class="pinned-badge">📌 PINNED</span>' : '';
-    const borderTop = idx > 0 ? 'border-top:1px solid var(--border);' : '';
-
-    html += `<div style="${borderTop}padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      ${thumb}
-      <div style="flex:1;min-width:120px;overflow:hidden;">
-        <div style="font-weight:700;color:var(--text-primary);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHTML(item.title)}${pinnedBadge}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-          <span class="tag-badge">${escHTML(item.tag || 'NEWS')}</span>
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${dateStr}</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-        <button class="action-btn pin" onclick="togglePin('${item.id}', ${!!item.pinned})" title="${item.pinned ? 'Unpin' : 'Pin to top'}">${item.pinned ? '📌' : '📍'}</button>
-        <button class="action-btn edit" onclick="editNews('${item.id}')">✏️ Edit</button>
-        <button class="action-btn delete" onclick="deleteNews('${item.id}')">🗑 Del</button>
-      </div>
-    </div>`;
-  });
-  html += '</div>';
-  list.innerHTML = html;
-}
-
-function updateStats() {
-  const total = newsData.length;
-  const pinned = newsData.filter(n => n.pinned).length;
-  const today = newsData.filter(n => {
-    if (!n.ts) return false;
-    const d = new Date(n.ts);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
-  }).length;
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-pinned').textContent = pinned;
-  document.getElementById('stat-today').textContent = today;
+async function confirmDelete() {
+  // Default no-op handler — restored on #confirm-delete-btn after each
+  // tab-specific delete flow (tournaments/results/registrations) completes.
+  closeDeleteModal();
 }
 
 // ===== TOURNAMENT ADMIN =====
@@ -1516,9 +1110,7 @@ async function submitTournament() {
     prize:       document.getElementById('t-prize').value.trim(),
     entryFee:    document.getElementById('t-entry').value.trim(),
     maxTeams:    parseInt(document.getElementById('t-maxteams').value) || 25,
-    slotsLeft:   parseInt(document.getElementById('t-slots').value)    || 0,
     status:      document.getElementById('t-status').value || 'UPCOMING',
-    roomId:      document.getElementById('t-room').value.trim(),
     description: document.getElementById('t-desc').value.trim(),
     cardImageUrl: (document.getElementById('t-card-img') || {}).value?.trim() || '',
     ts: Date.now()
@@ -1575,7 +1167,7 @@ function previewCardImg() {
 }
 
 function resetTournamentForm() {
-  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-slots','t-room','t-desc','t-card-img'].forEach(id => {
+  ['t-name','t-map','t-date','t-time','t-prize','t-entry','t-maxteams','t-desc','t-card-img'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('t-status').value = 'UPCOMING';
@@ -1595,11 +1187,9 @@ function editTournament(id) {
   document.getElementById('t-prize').value      = t.prize || '';
   document.getElementById('t-entry').value      = t.entryFee || '';
   document.getElementById('t-maxteams').value   = t.maxTeams || '';
-  document.getElementById('t-slots').value      = t.slotsLeft || '';
   document.getElementById('t-status').value     = t.status || 'UPCOMING';
   const ciEl = document.getElementById('t-card-img');
   if (ciEl) { ciEl.value = t.cardImageUrl || ''; previewCardImg(); }
-  document.getElementById('t-room').value       = t.roomId || '';
   document.getElementById('t-desc').value       = t.description || '';
 
   // Fill match schedule — prefer new array, fall back to legacy fields
@@ -1983,6 +1573,664 @@ function renderResultsAdmin() {
   list.innerHTML = html;
 }
 
+// ===== AUTO GENERATE RESULT (OCR) =====
+// Fully additive, optional add-on. It NEVER touches resultsRef directly and
+// NEVER computes points itself — it only pre-fills the SAME inputs
+// (data-role="et-team" / "et-m{n}-place" / "et-m{n}-kills") that
+// addResultTeamRow() already renders above, then calls the SAME
+// recalcAndSort(). Publishing still happens via the existing "Save Result"
+// button and submitResult(). Manual result creation is untouched.
+
+let agrState = null;
+let agrWorker = null;
+let agrTesseractLoadingPromise = null;
+
+function agrEnsureTesseractLoaded() {
+  if (typeof Tesseract !== 'undefined') return Promise.resolve();
+  if (agrTesseractLoadingPromise) return agrTesseractLoadingPromise;
+  agrTesseractLoadingPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('OCR engine failed to load — check your internet connection'));
+    document.head.appendChild(s);
+  });
+  return agrTesseractLoadingPromise;
+}
+
+function agrFreshState() {
+  return {
+    step: 1,
+    matchKey: 'm1',
+    lobbyDataUrl: null,
+    lobbyText: '',
+    teams: [],          // [{num, players:[name,...]}]  — num is the SLOT number
+    resultImages: [],   // [{id,file,dataUrl,status,ocrText,blocks:[{placement,rows:[{rawName,kills,matchedName,matchedTeam,confidence}]}]}]
+    nextImgId: 1
+  };
+}
+
+function openAutoGenerateModal() {
+  agrState = agrFreshState();
+  document.getElementById('agr-modal').classList.add('open');
+  agrEnsureTesseractLoaded().catch(() => {}); // warm-load in background
+  agrRender();
+}
+
+function closeAutoGenerateModal() {
+  document.getElementById('agr-modal').classList.remove('open');
+  if (agrWorker) { try { agrWorker.terminate(); } catch(e) {} agrWorker = null; }
+  agrState = null;
+}
+
+async function agrGetWorker(onProgress) {
+  await agrEnsureTesseractLoaded();
+  if (!agrWorker) {
+    agrWorker = await Tesseract.createWorker('eng', 1, { logger: onProgress || undefined });
+    // Game-UI screens are scattered blocks of text (names/numbers) separated by
+    // icons and empty space, not paragraphs — SPARSE_TEXT (11) finds those far
+    // better than the default "assume a full page of text" mode. Restricting
+    // the character set also stops it hallucinating punctuation out of icon edges.
+    try {
+      await agrWorker.setParameters({
+        tessedit_pageseg_mode: '11',
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _.-#'
+      });
+    } catch (e) { /* older tesseract.js builds may not support setParameters here — safe to ignore */ }
+  }
+  return agrWorker;
+}
+
+function agrFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ---- Image preprocessing before OCR ----
+// Raw screenshots defeat Tesseract: small condensed font, background grid texture,
+// avatar/badge icons touching the text, low native resolution relative to how
+// tiny the names render. This pipeline (upscale → grayscale → contrast stretch →
+// Otsu black/white threshold) turns that into clean, high-contrast text that a
+// generic OCR engine can actually read, with no server or extra dependency needed.
+function agrPreprocessImage(dataUrl, opts) {
+  opts = opts || {};
+  const binarize = opts.binarize !== false;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const MAX_DIM = 2400; // cap so huge screenshots don't crawl or blow memory
+        const scale = img.width < 900 ? 3 : (img.width < 1600 ? 2.2 : 1.6);
+        let w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        if (w > MAX_DIM || h > MAX_DIM) {
+          const shrink = Math.min(MAX_DIM / w, MAX_DIM / h);
+          w = Math.round(w * shrink); h = Math.round(h * shrink);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+        const n = w * h;
+        const gray = new Uint8ClampedArray(n);
+        let minV = 255, maxV = 0;
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+          const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          gray[p] = g;
+          if (g < minV) minV = g;
+          if (g > maxV) maxV = g;
+        }
+        // Contrast stretch so the darkest pixel in THIS image becomes pure black
+        // and the lightest becomes pure white, instead of a washed-out mid-range.
+        const range = Math.max(1, maxV - minV);
+        for (let p = 0; p < n; p++) gray[p] = Math.round((gray[p] - minV) * 255 / range);
+
+        if (binarize) {
+          // Otsu's method: picks the threshold that best splits the histogram
+          // into two clusters (text vs. background) — adapts per-screenshot
+          // instead of using one fixed brightness cutoff for every image.
+          const hist = new Array(256).fill(0);
+          for (let p = 0; p < n; p++) hist[gray[p]]++;
+          let sum = 0; for (let t = 0; t < 256; t++) sum += t * hist[t];
+          let sumB = 0, wB = 0, wF = 0, maxVar = 0, threshold = 127;
+          for (let t = 0; t < 256; t++) {
+            wB += hist[t]; if (wB === 0) continue;
+            wF = n - wB; if (wF === 0) break;
+            sumB += t * hist[t];
+            const mB = sumB / wB, mF = (sum - sumB) / wF;
+            const between = wB * wF * (mB - mF) * (mB - mF);
+            if (between > maxVar) { maxVar = between; threshold = t; }
+          }
+          for (let p = 0; p < n; p++) gray[p] = gray[p] >= threshold ? 255 : 0;
+        }
+
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) { d[i] = d[i + 1] = d[i + 2] = gray[p]; }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('Could not load image for preprocessing'));
+    img.src = dataUrl;
+  });
+}
+
+// ---- Fuzzy name matching (Levenshtein similarity) ----
+function agrLevenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  const dp = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0]; dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j];
+      dp[j] = a[i-1] === b[j-1] ? prev : 1 + Math.min(prev, dp[j], dp[j-1]);
+      prev = tmp;
+    }
+  }
+  return dp[n];
+}
+function agrCleanName(s) { return String(s || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(); }
+function agrNameSimilarity(a, b) {
+  const ca = agrCleanName(a), cb = agrCleanName(b);
+  if (!ca.length || !cb.length) return 0;
+  const dist = agrLevenshtein(ca, cb);
+  return Math.max(0, 1 - dist / Math.max(ca.length, cb.length));
+}
+function agrRoster() {
+  const roster = [];
+  agrState.teams.forEach(t => (t.players || []).forEach(p => { if (p && p.trim()) roster.push({ name: p.trim(), team: t.num }); }));
+  return roster;
+}
+function agrBestMatch(rawName) {
+  const roster = agrRoster();
+  let best = null, bestScore = -1;
+  roster.forEach(p => { const s = agrNameSimilarity(rawName, p.name); if (s > bestScore) { bestScore = s; best = p; } });
+  return best ? { name: best.name, team: best.team, confidence: Math.round(bestScore * 100) } : { name: '', team: null, confidence: 0 };
+}
+
+// ---- Step 1: lobby screenshot parsing → { team, players[] } ----
+function agrParseLobby(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const teams = [];
+  let current = null;
+  const teamHeaderRe = /^(?:TEAM|SQUAD|SLOT|T)?\s*#?\s*(\d{1,2})\s*$/i;
+  lines.forEach(line => {
+    const hm = line.match(teamHeaderRe);
+    if (hm && line.length <= 12) { current = { num: parseInt(hm[1]), players: [] }; teams.push(current); return; }
+    const cleaned = line.replace(/[^A-Za-z0-9 _.\-]/g, '').trim();
+    if (cleaned.length < 2 || /^\d+$/.test(cleaned)) return;
+    if (!current) { current = { num: teams.length + 1, players: [] }; teams.push(current); }
+    current.players.push(cleaned);
+  });
+  // Fallback if team headers weren't detected at all: chunk names into groups of 4
+  if (teams.length <= 1 && teams[0] && teams[0].players.length > 4) {
+    const allNames = teams[0].players;
+    const chunked = [];
+    for (let i = 0; i < allNames.length; i += 4) chunked.push({ num: chunked.length + 1, players: allNames.slice(i, i + 4) });
+    return { teams: chunked, autoChunked: true };
+  }
+  return { teams, autoChunked: false };
+}
+
+// ---- Step 2: result screenshot parsing ----
+// A single screenshot can hold MANY teams at once (like the standings/finishes
+// screen: a bold position number on the left, then that team's 4 players each
+// with an "N finishes" line). agrExtractBlocks() walks the OCR text top to
+// bottom and groups every 4 player rows under the position number that
+// precedes them, starting a new block whenever a fresh position number line
+// or a fresh group of 4 names is found. This also still works for a
+// screenshot that only shows one team.
+function agrExtractPlacement(text) {
+  const t = text.toUpperCase();
+  if (/WINNER\s*WINNER/.test(t) || /CHICKEN\s*DINNER/.test(t)) return 1;
+  let m = t.match(/#\s*(\d{1,2})/); if (m) return parseInt(m[1]);
+  m = t.match(/RANK[^\d]{0,6}(\d{1,2})/); if (m) return parseInt(m[1]);
+  m = t.match(/PLACE[D]?[^\d]{0,6}(\d{1,2})/); if (m) return parseInt(m[1]);
+  m = t.match(/\b(\d{1,2})\s*(?:ST|ND|RD|TH)\b/); if (m) return parseInt(m[1]);
+  return null;
+}
+
+// Matches "PlayerName    3 finishes" / "PlayerName - 1 finish" / plain "PlayerName   3"
+const AGR_ROW_RE = /^([A-Za-z0-9 _.\-々]{2,24}?)[\s:|\-]{1,4}(\d{1,2})\s*(?:finish(?:es)?)?\s*$/i;
+// A standalone position number sitting on its own line (the big rank digit on the left column)
+const AGR_POS_RE = /^#?\s*(\d{1,2})\s*$/;
+
+function agrExtractPlayerRowsFromLines(lines) {
+  const rows = [];
+  lines.forEach(line => {
+    const m = line.match(AGR_ROW_RE);
+    if (!m) return;
+    const name = m[1].replace(/[^A-Za-z0-9_.]/g, '').trim();
+    const kills = parseInt(m[2]);
+    if (name.length < 2 || kills > 30) return;
+    if (/^(RANK|TIME|KILLS?|DAMAGE|PLACE|MATCH|SCORE|FINISH(?:ES)?)$/i.test(name)) return;
+    rows.push({ rawName: name, kills });
+  });
+  return rows;
+}
+
+function agrExtractBlocks(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const blocks = [];
+  let current = null;
+  let sawWinner = /WINNER\s*WINNER/i.test(text) || /CHICKEN\s*DINNER/i.test(text);
+
+  const pushRow = (row) => {
+    if (!current || current.rows.length >= 4) {
+      current = { placement: current && current.rows.length >= 4 ? null : (sawWinner && !blocks.length ? 1 : null), rows: [] };
+      blocks.push(current);
+    }
+    current.rows.push(row);
+  };
+
+  lines.forEach(line => {
+    const posMatch = line.match(AGR_POS_RE);
+    const rowMatch = line.match(AGR_ROW_RE);
+    if (posMatch && !rowMatch) {
+      // Standalone number — treat as a new block's position, unless the current
+      // block is still short on players (then it's more likely a stray digit).
+      const num = parseInt(posMatch[1]);
+      if (!current || current.rows.length >= 4 || !current.rows.length) {
+        current = { placement: num, rows: [] };
+        blocks.push(current);
+      } else {
+        current.placement = current.placement || num;
+      }
+      return;
+    }
+    if (rowMatch) {
+      const name = rowMatch[1].replace(/[^A-Za-z0-9_.]/g, '').trim();
+      const kills = parseInt(rowMatch[2]);
+      if (name.length < 2 || kills > 30) return;
+      if (/^(RANK|TIME|KILLS?|DAMAGE|PLACE|MATCH|SCORE|FINISH(?:ES)?)$/i.test(name)) return;
+      pushRow({ rawName: name, kills });
+    }
+  });
+
+  // Drop empty trailing block, and give the very first block placement 1
+  // if a "winner winner" banner was detected and no number was ever read for it.
+  const cleaned = blocks.filter(b => b.rows.length);
+  if (cleaned.length && sawWinner && !cleaned[0].placement) cleaned[0].placement = 1;
+  return cleaned;
+}
+
+// ---- Rendering ----
+function agrSetPills() {
+  [1, 2, 3].forEach(n => {
+    const pill = document.getElementById('agr-pill-' + n);
+    pill.classList.toggle('active', agrState.step === n);
+    pill.classList.toggle('done', agrState.step > n);
+  });
+}
+function agrRender() {
+  agrSetPills();
+  const body = document.getElementById('agr-body');
+  const footer = document.getElementById('agr-footer');
+  if (agrState.step === 1) agrRenderStep1(body, footer);
+  else if (agrState.step === 2) agrRenderStep2(body, footer);
+  else agrRenderStep3(body, footer);
+}
+
+function agrRenderStep1(body, footer) {
+  body.innerHTML = `
+    <div class="agr-note">Pick which match this run fills in, then upload the pre-match lobby / custom-room screenshot. OCR reads each team's SLOT number + its 4 player names — avatars, frames and badges are ignored.</div>
+    <div class="field" style="max-width:220px">
+      <label>Target Match</label>
+      <select id="agr-match-select">
+        <option value="m1" ${agrState.matchKey==='m1'?'selected':''}>Match 1 (M1)</option>
+        <option value="m2" ${agrState.matchKey==='m2'?'selected':''}>Match 2 (M2)</option>
+        <option value="m3" ${agrState.matchKey==='m3'?'selected':''}>Match 3 (M3)</option>
+      </select>
+    </div>
+    <div class="img-upload-area" style="margin-top:6px">
+      <input type="file" accept="image/*" id="agr-lobby-input" onchange="agrHandleLobbyFile(this.files[0])">
+      <div class="img-upload-icon">📋</div>
+      <div class="img-upload-label">Upload Lobby Screenshot</div>
+      <div class="img-upload-hint">Tap to choose an image</div>
+    </div>
+    <div class="img-preview-wrap ${agrState.lobbyDataUrl?'visible':''}" id="agr-lobby-preview-wrap">
+      ${agrState.lobbyDataUrl ? `<img class="img-preview" src="${agrState.lobbyDataUrl}"><button class="img-preview-remove" onclick="agrClearLobby()">✕</button>` : ''}
+    </div>
+    <div class="upload-progress" id="agr-lobby-progress">
+      <div class="progress-label" id="agr-lobby-progress-label">Reading lobby…</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="agr-lobby-progress-fill"></div></div>
+    </div>
+    <div id="agr-teams-editor" style="margin-top:16px"></div>
+  `;
+  document.getElementById('agr-match-select').onchange = (e) => { agrState.matchKey = e.target.value; };
+  agrRenderTeamsEditor();
+  footer.innerHTML = `
+    <button class="agr-btn" onclick="closeAutoGenerateModal()">Cancel</button>
+    <button class="agr-btn primary" id="agr-step1-next" ${agrState.teams.length ? '' : 'disabled'} onclick="agrGoStep(2)">Continue →</button>
+  `;
+}
+
+function agrRenderTeamsEditor() {
+  const wrap = document.getElementById('agr-teams-editor');
+  if (!wrap) return;
+  if (!agrState.teams.length) { wrap.innerHTML = ''; return; }
+  let html = `<div class="agr-note">${agrState.teams.length} slot(s) detected — fix any OCR mistakes below, then continue. You can add/remove slots or players freely.</div>`;
+  agrState.teams.forEach((t, i) => {
+    html += `<div class="agr-team-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-family:var(--font-display);font-size:10px;color:var(--text-muted);letter-spacing:0.08em">SLOT #</span>
+        <input type="number" min="1" value="${t.num}" style="width:60px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px" oninput="agrState.teams[${i}].num=parseInt(this.value)||${i+1}">
+        <button type="button" onclick="agrRemoveTeam(${i})" style="margin-left:auto;background:rgba(255,58,58,0.1);border:1px solid rgba(255,58,58,0.2);color:var(--accent-red);border-radius:6px;width:28px;height:28px;cursor:pointer">✕</button>
+      </div>
+      <textarea rows="4" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;resize:vertical" placeholder="One player name per line" oninput="agrState.teams[${i}].players=this.value.split('\\n').map(s=>s.trim()).filter(Boolean)">${escHTML((t.players||[]).join('\n'))}</textarea>
+    </div>`;
+  });
+  html += `<button type="button" class="agr-btn" onclick="agrAddTeam()">+ Add Team</button>`;
+  wrap.innerHTML = html;
+}
+function agrAddTeam() {
+  agrState.teams.push({ num: agrState.teams.length + 1, players: [] });
+  agrRenderTeamsEditor();
+  const btn = document.getElementById('agr-step1-next'); if (btn) btn.disabled = false;
+}
+function agrRemoveTeam(i) {
+  agrState.teams.splice(i, 1);
+  agrRenderTeamsEditor();
+  const btn = document.getElementById('agr-step1-next'); if (btn) btn.disabled = !agrState.teams.length;
+}
+function agrClearLobby() {
+  agrState.lobbyDataUrl = null; agrState.lobbyText = ''; agrState.teams = [];
+  agrRender();
+}
+
+async function agrHandleLobbyFile(file) {
+  if (!file) return;
+  agrState.lobbyDataUrl = await agrFileToDataUrl(file);
+  const wrap = document.getElementById('agr-lobby-preview-wrap');
+  wrap.classList.add('visible');
+  wrap.innerHTML = `<img class="img-preview" src="${agrState.lobbyDataUrl}"><button class="img-preview-remove" onclick="agrClearLobby()">✕</button>`;
+  const prog = document.getElementById('agr-lobby-progress');
+  const fill = document.getElementById('agr-lobby-progress-fill');
+  const label = document.getElementById('agr-lobby-progress-label');
+  prog.classList.add('visible');
+  try {
+    const worker = await agrGetWorker((m) => {
+      if (m && m.status && typeof m.progress === 'number') {
+        label.textContent = (m.status === 'recognizing text' ? 'Reading names…' : m.status);
+        fill.style.width = Math.round(m.progress * 100) + '%';
+      }
+    });
+    label.textContent = 'Enhancing image…';
+    const preprocessed = await agrPreprocessImage(agrState.lobbyDataUrl);
+    const { data } = await worker.recognize(preprocessed);
+    agrState.lobbyText = data.text || '';
+    const parsed = agrParseLobby(agrState.lobbyText);
+    agrState.teams = parsed.teams;
+    prog.classList.remove('visible');
+    showToast(parsed.autoChunked ? '⚠️ Team numbers not detected — grouped players in 4s, please check' : ('✅ Lobby scanned — ' + parsed.teams.length + ' teams found'));
+    agrRenderTeamsEditor();
+    const nextBtn = document.getElementById('agr-step1-next');
+    if (nextBtn) nextBtn.disabled = !agrState.teams.length;
+  } catch (e) {
+    prog.classList.remove('visible');
+    showToast('❌ OCR failed: ' + e.message);
+  }
+}
+
+function agrRenderStep2(body, footer) {
+  body.innerHTML = `
+    <div class="agr-note">Upload the after-match result / standings screenshots. Each screenshot can show ONE team's finish screen or SEVERAL teams at once (a position number + that team's 4 players and finishes, repeated down the page) — both are read automatically, and you can add more screenshots any time.</div>
+    <div class="img-upload-area" id="agr-results-drop">
+      <input type="file" accept="image/*" multiple id="agr-results-input" onchange="agrHandleResultFiles(this.files)">
+      <div class="img-upload-icon">🎯</div>
+      <div class="img-upload-label">Upload Result Screenshots</div>
+      <div class="img-upload-hint">Tap to choose one or more images</div>
+    </div>
+    <div class="agr-thumb-row" id="agr-thumb-row"></div>
+    <button type="button" class="agr-btn primary" id="agr-run-ocr-btn" style="width:100%" onclick="agrRunResultsOCR()" ${agrState.resultImages.length ? '' : 'disabled'}>▶ Run OCR on All (${agrState.resultImages.length})</button>
+    <div class="upload-progress" id="agr-results-progress" style="margin-top:10px">
+      <div class="progress-label" id="agr-results-progress-label">Processing…</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="agr-results-progress-fill"></div></div>
+    </div>
+    <div id="agr-results-editor" style="margin-top:16px"></div>
+  `;
+  agrRenderThumbs();
+  agrRenderResultsEditor();
+  footer.innerHTML = `
+    <button class="agr-btn" onclick="agrGoStep(1)">← Back</button>
+    <button class="agr-btn primary" id="agr-step2-next" ${agrAnyRowsMatched() ? '' : 'disabled'} onclick="agrGoStep(3)">Build Standings →</button>
+  `;
+}
+function agrAnyRowsMatched() { return agrState.resultImages.some(img => (img.blocks || []).some(b => b.rows && b.rows.length)); }
+
+function agrRenderThumbs() {
+  const row = document.getElementById('agr-thumb-row');
+  if (!row) return;
+  row.innerHTML = agrState.resultImages.map(img => `
+    <div class="agr-thumb">
+      <img src="${img.dataUrl}">
+      <button class="agr-thumb-x" onclick="agrRemoveResultImage(${img.id})">✕</button>
+      <div class="agr-thumb-status">${img.status || 'pending'}</div>
+    </div>
+  `).join('');
+}
+
+async function agrHandleResultFiles(fileList) {
+  const files = Array.from(fileList || []);
+  for (const f of files) {
+    const dataUrl = await agrFileToDataUrl(f);
+    agrState.resultImages.push({ id: agrState.nextImgId++, file: f, dataUrl, status: 'pending', ocrText: '', blocks: [] });
+  }
+  agrRenderThumbs();
+  const btn = document.getElementById('agr-run-ocr-btn');
+  if (btn) { btn.disabled = !agrState.resultImages.length; btn.textContent = '▶ Run OCR on All (' + agrState.resultImages.length + ')'; }
+}
+function agrRemoveResultImage(id) {
+  agrState.resultImages = agrState.resultImages.filter(i => i.id !== id);
+  agrRenderThumbs();
+  agrRenderResultsEditor();
+  const btn = document.getElementById('agr-run-ocr-btn');
+  if (btn) { btn.disabled = !agrState.resultImages.length; btn.textContent = '▶ Run OCR on All (' + agrState.resultImages.length + ')'; }
+  const nextBtn = document.getElementById('agr-step2-next');
+  if (nextBtn) nextBtn.disabled = !agrAnyRowsMatched();
+}
+
+async function agrRunResultsOCR() {
+  if (!agrState.resultImages.length) return;
+  const prog = document.getElementById('agr-results-progress');
+  const fill = document.getElementById('agr-results-progress-fill');
+  const label = document.getElementById('agr-results-progress-label');
+  prog.classList.add('visible');
+  const btn = document.getElementById('agr-run-ocr-btn');
+  btn.disabled = true;
+  try {
+    const worker = await agrGetWorker();
+    for (let i = 0; i < agrState.resultImages.length; i++) {
+      const img = agrState.resultImages[i];
+      label.textContent = `Reading screenshot ${i+1} of ${agrState.resultImages.length}…`;
+      fill.style.width = Math.round((i / agrState.resultImages.length) * 100) + '%';
+      img.status = 'reading…';
+      agrRenderThumbs();
+      try {
+        const preprocessed = await agrPreprocessImage(img.dataUrl);
+        const { data } = await worker.recognize(preprocessed);
+        img.ocrText = data.text || '';
+        const rawBlocks = agrExtractBlocks(img.ocrText);
+        img.blocks = rawBlocks.map(b => ({
+          placement: b.placement,
+          rows: b.rows.map(r => {
+            const match = agrBestMatch(r.rawName);
+            return { rawName: r.rawName, kills: r.kills, matchedName: match.name, matchedTeam: match.team, confidence: match.confidence };
+          })
+        }));
+        const rowCount = img.blocks.reduce((s, b) => s + b.rows.length, 0);
+        img.status = img.blocks.length ? ('✓ ' + img.blocks.length + ' team(s), ' + rowCount + ' rows') : '⚠ no rows';
+      } catch (e) { img.status = '❌ failed'; }
+      agrRenderThumbs();
+    }
+    fill.style.width = '100%';
+    showToast('✅ OCR complete on ' + agrState.resultImages.length + ' screenshot(s)');
+  } catch (e) {
+    showToast('❌ OCR failed: ' + e.message);
+  }
+  prog.classList.remove('visible');
+  btn.disabled = false;
+  agrRenderResultsEditor();
+  const nextBtn = document.getElementById('agr-step2-next');
+  if (nextBtn) nextBtn.disabled = !agrAnyRowsMatched();
+}
+
+function agrRosterOptionsHTML(selectedTeam, selectedName) {
+  let html = '<option value="">— Ignore this row —</option>';
+  agrState.teams.forEach(t => {
+    html += `<optgroup label="Slot ${t.num}">`;
+    (t.players || []).forEach(p => {
+      const sel = (t.num === selectedTeam && p === selectedName) ? 'selected' : '';
+      html += `<option value="${escHTML(t.num + '|' + p)}" ${sel}>${escHTML(p)}</option>`;
+    });
+    html += `</optgroup>`;
+  });
+  return html;
+}
+
+function agrRenderResultsEditor() {
+  const wrap = document.getElementById('agr-results-editor');
+  if (!wrap) return;
+  const withData = agrState.resultImages.filter(img => img.ocrText);
+  if (!withData.length) { wrap.innerHTML = ''; return; }
+  let html = '';
+  withData.forEach((img) => {
+    const imgIdx = agrState.resultImages.indexOf(img);
+    html += `<div style="display:flex;align-items:center;gap:10px;margin:14px 0 8px">
+      <img src="${img.dataUrl}" style="width:34px;height:34px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">
+      <div style="font-family:var(--font-display);font-size:10px;color:var(--text-secondary);letter-spacing:0.06em">SCREENSHOT ${imgIdx+1} — ${(img.blocks||[]).length} TEAM(S) DETECTED</div>
+    </div>`;
+    if (!(img.blocks || []).length) {
+      html += `<div class="agr-note" style="margin-bottom:0">No player rows detected in this screenshot — add its team(s) manually on the next step, or re-upload a clearer image.</div>`;
+      return;
+    }
+    img.blocks.forEach((block, bi) => {
+      html += `<div class="agr-team-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-family:var(--font-display);font-size:9px;color:var(--text-muted);letter-spacing:0.06em">POSITION</div>
+          <input type="number" min="1" max="25" value="${block.placement||''}" placeholder="#" style="width:60px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--accent-orange);font-family:var(--font-mono);font-size:13px;font-weight:700" oninput="agrState.resultImages[${imgIdx}].blocks[${bi}].placement=parseInt(this.value)||null">
+          <div style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${block.rows.length} player(s)</div>
+        </div>
+        ${block.rows.map((row, ri) => `
+          <div style="display:grid;grid-template-columns:1fr 96px 60px;gap:8px;align-items:center;margin-bottom:6px">
+            <select style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text-primary);font-family:var(--font-body);font-size:12px" onchange="agrReassignRow(${imgIdx},${bi},${ri},this.value)">
+              ${agrRosterOptionsHTML(row.matchedTeam, row.matchedName)}
+            </select>
+            <div class="agr-conf-badge ${row.confidence>=90?'agr-conf-high':'agr-conf-low'}">${row.matchedName ? row.confidence+'%' : 'unmatched'}</div>
+            <input type="number" min="0" max="30" value="${row.kills}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;text-align:center" oninput="agrState.resultImages[${imgIdx}].blocks[${bi}].rows[${ri}].kills=parseInt(this.value)||0">
+          </div>
+        `).join('')}
+      </div>`;
+    });
+  });
+  wrap.innerHTML = html;
+}
+function agrReassignRow(imgIdx, blockIdx, rowIdx, value) {
+  const row = agrState.resultImages[imgIdx].blocks[blockIdx].rows[rowIdx];
+  if (!value) { row.matchedName = ''; row.matchedTeam = null; row.confidence = 0; return; }
+  const pipeAt = value.indexOf('|');
+  row.matchedTeam = parseInt(value.slice(0, pipeAt));
+  row.matchedName = value.slice(pipeAt + 1);
+  row.confidence = 100;
+  agrRenderResultsEditor();
+}
+
+// ---- Step 3: aggregate per SLOT across every block of every screenshot, then apply to the EXISTING form ----
+function agrAggregateTeams() {
+  const byTeam = {}; // slot number -> { placement, kills }
+  agrState.resultImages.forEach(img => {
+    (img.blocks || []).forEach(block => {
+      const matched = (block.rows || []).filter(r => r.matchedTeam != null);
+      if (!matched.length) return;
+      // A block's rows should mostly agree on the same slot — pick the majority slot
+      // in case OCR misassigned one player, then sum ALL of that slot's kills in this block.
+      const counts = {};
+      matched.forEach(r => { counts[r.matchedTeam] = (counts[r.matchedTeam] || 0) + 1; });
+      const teamNum = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+      const kills = matched.filter(r => String(r.matchedTeam) === String(teamNum)).reduce((s, r) => s + (r.kills || 0), 0);
+      const existing = byTeam[teamNum];
+      // If the same slot shows up in more than one block/screenshot, keep the
+      // best (non-null) placement found and add up the kills.
+      byTeam[teamNum] = {
+        placement: (existing && existing.placement) || block.placement || (existing ? existing.placement : null),
+        kills: (existing ? existing.kills : 0) + kills
+      };
+    });
+  });
+  return Object.keys(byTeam).map(teamNum => {
+    const teamObj = agrState.teams.find(t => String(t.num) === String(teamNum));
+    return { team: teamObj ? ('Slot ' + teamObj.num) : ('Slot ' + teamNum), placement: byTeam[teamNum].placement, kills: byTeam[teamNum].kills };
+  }).sort((a, b) => (a.placement || 99) - (b.placement || 99));
+}
+
+function agrRenderStep3(body, footer) {
+  const agg = agrAggregateTeams();
+  window.agrPreview = agg;
+  let html = `<div class="agr-note">Review before applying to Match ${agrState.matchKey.slice(1)}. Team name, placement and kills are all editable — nothing touches Firebase yet.</div>`;
+  if (!agg.length) {
+    html += `<div class="empty-state"><div class="empty-state-icon">🤔</div><div class="empty-state-text">No teams could be matched yet — go back and check the result screenshots.</div></div>`;
+  } else {
+    html += `<div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;padding:6px 4px;font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted)"><div>TEAM</div><div style="text-align:center">PLACEMENT</div><div style="text-align:center">KILLS</div></div>`;
+    agg.forEach((row, i) => {
+      html += `<div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;margin-bottom:6px">
+        <input type="text" value="${escHTML(row.team)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600" oninput="agrPreview[${i}].team=this.value">
+        <input type="number" min="1" value="${row.placement||''}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;text-align:center" oninput="agrPreview[${i}].placement=parseInt(this.value)||0">
+        <input type="number" min="0" value="${row.kills||0}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;text-align:center" oninput="agrPreview[${i}].kills=parseInt(this.value)||0">
+      </div>`;
+    });
+  }
+  body.innerHTML = html;
+  footer.innerHTML = `
+    <button class="agr-btn" onclick="agrGoStep(2)">← Back</button>
+    <button class="agr-btn primary" ${agg.length?'':'disabled'} onclick="agrApplyToForm()">✅ Apply to ${agrState.matchKey.toUpperCase()} Form</button>
+  `;
+}
+
+function agrGoStep(n) {
+  if (n === 2 && !agrState.teams.length) { showToast('⚠️ Add at least one team first'); return; }
+  agrState.step = n;
+  agrRender();
+}
+
+function agrFindExistingRowByTeam(name) {
+  const rows = Array.from(document.getElementById('extra-teams-list').children);
+  return rows.find(row => {
+    const el = row.querySelector('[data-role="et-team"]');
+    return el && el.value.trim().toLowerCase() === name.trim().toLowerCase();
+  }) || null;
+}
+
+// This is the only function that touches the existing manual-entry form —
+// it fills the same data-role inputs a human would type into, then reuses
+// the existing addResultTeamRow()/recalcAndSort() untouched.
+function agrApplyToForm() {
+  const matchKey = agrState.matchKey;
+  const rows = window.agrPreview || [];
+  if (!rows.length) { showToast('⚠️ Nothing to apply'); return; }
+  rows.forEach(r => {
+    if (!r.team || !r.team.trim()) return;
+    let row = agrFindExistingRowByTeam(r.team);
+    if (!row) { addResultTeamRow({ team: r.team }); row = document.getElementById('tr-' + teamRowCount); }
+    const placeEl = row.querySelector('[data-role="et-' + matchKey + '-place"]');
+    const killsEl = row.querySelector('[data-role="et-' + matchKey + '-kills"]');
+    if (placeEl) placeEl.value = r.placement || '';
+    if (killsEl) killsEl.value = r.kills || 0;
+  });
+  recalcAndSort();
+  closeAutoGenerateModal();
+  showToast('✅ Applied ' + rows.length + ' team(s) to ' + matchKey.toUpperCase() + ' — review below, then Save Result');
+  document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
 // ===== PIN ROOM MESSAGE =====
 function buildPinText() {
   var roomId   = (document.getElementById('pin-room-id').value || '').trim();
@@ -2201,62 +2449,6 @@ async function clearChat() {
   } catch(e) {
     showToast('❌ ' + e.message);
   }
-}
-
-// ===== ANNOUNCEMENT BANNER =====
-async function saveAnnouncement() {
-  if (!db) { showToast('❌ Firebase not connected'); return; }
-  const title = document.getElementById('ann-title-input').value.trim();
-  if (!title) { showToast('⚠️ Title is required'); return; }
-
-  const payload = {
-    title,
-    label: document.getElementById('ann-label-input').value.trim() || '📅 Upcoming',
-    date:  document.getElementById('ann-date-input').value.trim(),
-    icon:  document.getElementById('ann-icon-input').value.trim() || '🏆'
-  };
-
-  try {
-    await db.ref('announcement').set(payload);
-    showToast('✅ Announcement saved!');
-    showAnnouncementPreview(payload);
-  } catch(e) { showToast('❌ ' + e.message); }
-}
-
-async function clearAnnouncement() {
-  if (!db) return;
-  if (!confirm('Hide the home announcement banner?')) return;
-  try {
-    await db.ref('announcement').remove();
-    showToast('🗑 Announcement hidden');
-    document.getElementById('ann-current').style.display = 'none';
-    ['ann-title-input','ann-label-input','ann-date-input','ann-icon-input'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-  } catch(e) { showToast('❌ ' + e.message); }
-}
-
-function showAnnouncementPreview(ann) {
-  const wrap = document.getElementById('ann-current');
-  const txt  = document.getElementById('ann-preview-text');
-  if (!wrap || !txt) return;
-  txt.textContent = (ann.icon || '🏆') + '  ' + (ann.title || '') + '  —  ' + (ann.date || '');
-  wrap.style.display = 'block';
-}
-
-async function loadAnnouncementAdmin() {
-  if (!db) return;
-  try {
-    const snap = await db.ref('announcement').once('value');
-    if (snap.exists()) {
-      const ann = snap.val();
-      document.getElementById('ann-title-input').value = ann.title || '';
-      document.getElementById('ann-label-input').value = ann.label || '';
-      document.getElementById('ann-date-input').value  = ann.date  || '';
-      document.getElementById('ann-icon-input').value  = ann.icon  || '';
-      showAnnouncementPreview(ann);
-    }
-  } catch(e) { console.warn('Announcement load failed', e); }
 }
 
 // ===== REQUESTS ADMIN (Pending Registrations) =====
@@ -2639,30 +2831,6 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
-
-// Drag and drop on upload area — deferred until DOM ready
-window.addEventListener('load', function() {
-  const uploadArea = document.getElementById('img-upload-area');
-  if (!uploadArea) return;
-  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-  uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      selectedFile = file;
-      uploadedImageUrl = '';
-      document.getElementById('news-image-url').value = '';
-      const reader = new FileReader();
-      reader.onload = ev => {
-        document.getElementById('img-preview').src = ev.target.result;
-        document.getElementById('img-preview-wrap').classList.add('visible');
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-});
 </script>
 </body>
 </html>
