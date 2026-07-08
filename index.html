@@ -62,24 +62,27 @@ body {
   overflow: hidden;
 }
 
-/* NOISE TEXTURE OVERLAY */
-body::before {
+/* NOISE TEXTURE OVERLAY — scoped to #app so it doesn't spill into the
+   empty margin area on screens wider than the app's 480px width */
+#app::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-position: center;
   pointer-events: none;
   z-index: 2;
   opacity: 0.4;
 }
 
-/* GRID PATTERN */
-body::after {
+/* GRID PATTERN — scoped to #app, same reason as above */
+#app::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   background-image: linear-gradient(rgba(255,120,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,120,0,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+  background-position: center;
   pointer-events: none;
   z-index: 0;
 }
@@ -93,6 +96,7 @@ body::after {
   max-width: 480px;
   margin: 0 auto;
   z-index: 1;
+  background: var(--bg-primary);
 }
 
 /* SCROLLABLE CONTENT AREA */
@@ -1714,10 +1718,22 @@ body.on-dashboard-page #dashboard-fixed-footer { display: block; }
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid var(--border);
-  padding-top: 14px;
-  padding-bottom: 4px;
+  padding-top: 10px;
+  padding-bottom: 2px;
 }
-#dashboard-fixed-footer .edit-profile-btn { margin-top: 0; }
+.dsf-buttons-row {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px;
+}
+#dashboard-fixed-footer .edit-profile-btn,
+#dashboard-fixed-footer .logout-profile-btn {
+  flex: 1;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 8px;
+  font-size: 12px;
+}
 
 /* === TOAST === */
 .toast {
@@ -3152,7 +3168,7 @@ body.on-chat-page #bottom-nav { display: none !important; }
         <div class="section-title">My Matches</div>
       </div>
 
-      <div id="my-matches-list" style="padding-bottom:210px">
+      <div id="my-matches-list" style="padding-bottom:170px">
         <div class="my-matches-loading">⏳ Loading your matches...</div>
       </div>
     </div><!-- end dashboard-page -->
@@ -3165,31 +3181,33 @@ body.on-chat-page #bottom-nav { display: none !important; }
   <div id="dashboard-fixed-footer">
     <div class="dsf-blur-fade"></div>
     <div class="dsf-panel">
-      <button class="edit-profile-btn" onclick="openEditProfile()">✏️ Edit Profile</button>
-      <button class="logout-profile-btn" id="account-logout-btn" onclick="doLogout()">🚪 Logout</button>
+      <div class="dsf-buttons-row">
+        <button class="edit-profile-btn" onclick="openEditProfile()">✏️ Edit Profile</button>
+        <button class="logout-profile-btn" id="account-logout-btn" onclick="doLogout()">🚪 Logout</button>
+      </div>
 
       <!-- Social Floating Buttons -->
-      <div id="social-floats" style="display:flex;justify-content:center;gap:18px;padding:14px 0 12px;">
+      <div id="social-floats" style="display:flex;justify-content:center;gap:12px;padding:10px 0 8px;">
         <!-- WhatsApp -->
         <a href="https://wa.me/918849110467" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
-          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,211,102,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(37,211,102,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(37,211,102,0.35)'">
-            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.533 5.858L.057 23.57a.75.75 0 00.916.916l5.712-1.476A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.525-5.388-1.437l-.386-.228-4.003 1.034 1.053-3.885-.25-.4A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,211,102,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(37,211,102,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(37,211,102,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.533 5.858L.057 23.57a.75.75 0 00.916.916l5.712-1.476A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.525-5.388-1.437l-.386-.228-4.003 1.034 1.053-3.885-.25-.4A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
           </div>
-          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#25D366;text-transform:uppercase">WhatsApp</span>
+          <span style="font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.1em;color:#25D366;text-transform:uppercase">WhatsApp</span>
         </a>
         <!-- Instagram -->
         <a href="https://www.instagram.com/battlezone.esportz?igsh=MXJlZDdiZ3Z4aWZqZQ==" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
-          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(220,39,67,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(220,39,67,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(220,39,67,0.35)'">
-            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(220,39,67,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(220,39,67,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(220,39,67,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
           </div>
-          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#e1306c;text-transform:uppercase">Instagram</span>
+          <span style="font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.1em;color:#e1306c;text-transform:uppercase">Instagram</span>
         </a>
         <!-- YouTube -->
         <a href="https://youtube.com/@battle_zone_gamerz?si=QdcY5jfYCEaAaNJz" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;">
-          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FF0000,#CC0000);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(255,0,0,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(255,0,0,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(255,0,0,0.35)'">
-            <svg viewBox="0 0 24 24" fill="white" width="26" height="26"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#FF0000,#CC0000);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(255,0,0,0.35);transition:transform 0.2s,box-shadow 0.2s" onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(255,0,0,0.55)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='0 4px 18px rgba(255,0,0,0.35)'">
+            <svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
           </div>
-          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#FF0000;text-transform:uppercase">YouTube</span>
+          <span style="font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:0.1em;color:#FF0000;text-transform:uppercase">YouTube</span>
         </a>
       </div>
     </div><!-- end dsf-panel -->
