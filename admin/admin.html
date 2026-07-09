@@ -632,8 +632,8 @@ body::after {
             <input type="text" id="r-date" placeholder="e.g. Apr 18, 2026" maxlength="40">
           </div>
           <div class="field" style="margin-bottom:0">
-            <label>Map</label>
-            <input type="text" id="r-map" placeholder="e.g. Erangel, Miramar" maxlength="40">
+            <label>Time</label>
+            <input type="text" id="r-time" placeholder="e.g. 8:30 PM" maxlength="40">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
@@ -1515,7 +1515,7 @@ async function submitResult() {
   const payload = {
     name,
     date:       document.getElementById('r-date').value.trim(),
-    map:        document.getElementById('r-map').value.trim(),
+    time:       document.getElementById('r-time').value.trim(),
     mode:       rMode,
     place1:     lb[0] ? lb[0].team : '',
     place2:     lb[1] ? lb[1].team : '',
@@ -1548,7 +1548,7 @@ async function submitResult() {
 }
 
 function resetResultForm() {
-  ['r-name','r-date','r-map','r-teams','r-prize','r-summary'].forEach(id => {
+  ['r-name','r-date','r-time','r-teams','r-prize','r-summary'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const rmSel = document.getElementById('r-mode'); if (rmSel) rmSel.value = 'SCRIMS';
@@ -1562,7 +1562,7 @@ function editResult(id) {
   editingResultId = id;
   document.getElementById('r-name').value = r.name || '';
   document.getElementById('r-date').value = r.date || '';
-  document.getElementById('r-map').value = r.map || '';
+  document.getElementById('r-time').value = r.time || '';
   const presetModesR = ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
   const rmSel = document.getElementById('r-mode');
   const rmCustom = document.getElementById('r-mode-custom');

@@ -207,6 +207,28 @@ body {
   color: var(--accent-orange);
   text-shadow: 0 0 20px rgba(255,120,0,0.4);
 }
+.results-refresh-btn {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255,120,0,0.08);
+  color: var(--accent-orange);
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.results-refresh-btn:active { background: rgba(255,120,0,0.18); }
+.results-refresh-btn.spinning { animation: bz-spin 0.6s linear; }
+@keyframes bz-spin { from { transform: translateY(-50%) rotate(0deg); } to { transform: translateY(-50%) rotate(360deg); } }
 /* === PAGE BRAND HEADER (news / results / my account) === */
 .page-brand-header {
   display: flex;
@@ -1213,15 +1235,23 @@ body {
 }
 .result-date {
   font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.result-time {
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 .winner-tag {
   background: linear-gradient(135deg, rgba(255,120,0,0.2), rgba(255,60,0,0.1));
   border: 1px solid rgba(255,120,0,0.3);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 8px 20px;
+  min-width: 130px;
   text-align: center;
 }
 .winner-label {
@@ -3135,11 +3165,12 @@ body.on-chat-page #bottom-nav { display: none !important; }
 
     <!-- ===== RESULTS PAGE ===== -->
     <div id="results-page" class="page">
-      <div class="top-header" style="justify-content:center;text-align:center">
+      <div class="top-header" style="justify-content:center;text-align:center;position:relative">
         <div class="page-brand-header">
           <div class="header-logo">⚔ BATTLEZONE</div>
           <div class="page-brand-sub" style="display:block;width:100%;text-align:center"> results · match outcomes &amp; standings</div>
         </div>
+        <button id="results-refresh-btn" class="results-refresh-btn" onclick="refreshResultsPage()" aria-label="Refresh results">⟳</button>
       </div>
       <div class="results-filter">
         <div class="filter-chip active" onclick="setFilter(this,'all')">All</div>
@@ -4134,44 +4165,7 @@ window.onload = async function() {
   // so it cannot be blocked by auth errors or any other async failures above.
 
   // ---- Load results from Firebase ----
-  try {
-    const rSnap = await db.ref('results').once('value');
-    const rArr = [];
-    rSnap.forEach(c => { rArr.push({ _key: c.key, ...c.val() }); });
-    rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-
-    if (rArr.length > 0) {
-      results = rArr.map(r => {
-        // Build leaderboard from place fields + optional lb array
-        let lb = [];
-        if (r.lb && Array.isArray(r.lb)) {
-          lb = r.lb.map(row => ({ r: row.r, team: row.team||'', players: row.players||'', matches: row.matches||0, wwcd: row.wwcd||0, place: row.place||0, kills: row.kills||0, total: row.total||0 }));
-        } else {
-          if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
-          if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
-          if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
-        }
-        return {
-          id: r._key,
-          name: r.name || '',
-          date: r.date || '',
-          map: r.map || '',
-          mode: r.mode || '',
-          winner: r.place1 || r.winner || '',
-          kills: r.totalKills || r.kills || 0,
-          teams: r.totalTeams || r.teams || 0,
-          prize: r.prize || '',
-          lb,
-          matchData: r.matchData || null
-        };
-      });
-    } else {
-      results = []; // No results yet — admin will add them
-    }
-  } catch(e) {
-    console.warn('Firebase results load failed:', e);
-    results = [];
-  }
+  await loadResultsFromFirebase();
 
   // Chat — Firebase listener
   initFirebaseChat();
@@ -5400,6 +5394,57 @@ async function sendTournamentMessage() {
 }
 
 // ========= RESULTS =========
+async function loadResultsFromFirebase() {
+  try {
+    const rSnap = await db.ref('results').once('value');
+    const rArr = [];
+    rSnap.forEach(c => { rArr.push({ _key: c.key, ...c.val() }); });
+    rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    if (rArr.length > 0) {
+      results = rArr.map(r => {
+        // Build leaderboard from place fields + optional lb array
+        let lb = [];
+        if (r.lb && Array.isArray(r.lb)) {
+          lb = r.lb.map(row => ({ r: row.r, team: row.team||'', players: row.players||'', matches: row.matches||0, wwcd: row.wwcd||0, place: row.place||0, kills: row.kills||0, total: row.total||0 }));
+        } else {
+          if (r.place1) lb.push({ r: 1, team: r.place1, players: r.place1Players || '', kills: r.place1Kills || 0, place: '#1' });
+          if (r.place2) lb.push({ r: 2, team: r.place2, players: r.place2Players || '', kills: r.place2Kills || 0, place: '#2' });
+          if (r.place3) lb.push({ r: 3, team: r.place3, players: r.place3Players || '', kills: r.place3Kills || 0, place: '#3' });
+        }
+        return {
+          id: r._key,
+          name: r.name || '',
+          date: r.date || '',
+          time: r.time || '',
+          mode: r.mode || '',
+          winner: r.place1 || r.winner || '',
+          kills: r.totalKills || r.kills || 0,
+          teams: r.totalTeams || r.teams || 0,
+          prize: r.prize || '',
+          lb,
+          matchData: r.matchData || null
+        };
+      });
+    } else {
+      results = []; // No results yet — admin will add them
+    }
+  } catch(e) {
+    console.warn('Firebase results load failed:', e);
+    results = [];
+  }
+}
+
+async function refreshResultsPage() {
+  const btn = document.getElementById('results-refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  await loadResultsFromFirebase();
+  const activeChip = document.querySelector('.results-filter .filter-chip.active');
+  const filterVal = activeChip ? activeChip.getAttribute('onclick').match(/'([^']*)'\)$/)?.[1] : 'all';
+  renderResults(filterVal || 'all');
+  if (btn) setTimeout(() => btn.classList.remove('spinning'), 400);
+}
+
 function renderResults(filter) {
   const list = document.getElementById('results-list');
   const filtered = filter && filter !== 'all' ? results.filter(r => (r.mode||'').toLowerCase() === filter) : results;
@@ -5408,7 +5453,8 @@ function renderResults(filter) {
       <div class="result-card-top">
         <div class="result-match-info">
           <div class="result-match-name">${r.name}</div>
-          <div class="result-date">📅 ${r.date} • 🗺 ${r.map}</div>
+          <div class="result-date">📅 ${r.date}</div>
+          <div class="result-time">🕒 ${r.time || '—'}</div>
         </div>
         <div class="winner-tag">
           <div class="winner-label">🏆 Winner</div>
