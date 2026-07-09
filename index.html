@@ -75,16 +75,17 @@ body {
   opacity: 0.4;
 }
 
-/* GRID PATTERN — scoped to #app, same reason as above */
+/* CROSSHAIR PATTERN — scoped to #app, same reason as above */
 #app::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(255,120,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,120,0,0.03) 1px, transparent 1px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cg stroke='rgba(255,120,0,0.5)' stroke-width='1'%3E%3Cline x1='16' y1='20' x2='24' y2='20'/%3E%3Cline x1='20' y1='16' x2='20' y2='24'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 40px 40px;
   background-position: center;
   pointer-events: none;
   z-index: 0;
+  opacity: 0.12;
 }
 
 /* LAYOUT */
@@ -101,6 +102,8 @@ body {
 
 /* SCROLLABLE CONTENT AREA */
 #content {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -574,7 +577,7 @@ body {
 /* === TOURNAMENT CARD === */
 .tournament-list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
 .tournament-card {
-  background: transparent;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;

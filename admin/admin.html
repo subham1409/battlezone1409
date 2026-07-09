@@ -527,6 +527,22 @@ body::after {
             <input type="text" id="t-prize" placeholder="e.g. ₹50,000" maxlength="40">
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Mode</label>
+            <select id="t-mode" onchange="toggleModeCustom()">
+              <option value="SCRIMS">SCRIMS</option>
+              <option value="WOW 2v2">WOW 2v2</option>
+              <option value="WOW 3v3">WOW 3v3</option>
+              <option value="WOW 4v4">WOW 4v4</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;display:none" id="t-mode-custom-wrap">
+            <label>Custom Mode Name</label>
+            <input type="text" id="t-mode-custom" placeholder="e.g. WOW 5v5" maxlength="40">
+          </div>
+        </div>
 
         <!-- Dynamic Match Schedule -->
         <div style="background:rgba(0,255,157,0.04);border:1px solid rgba(0,255,157,0.12);border-radius:12px;padding:14px 16px;margin-bottom:12px">
@@ -1072,6 +1088,13 @@ function initTournamentFormDefaults() {
   clearPrizeRows(); addPrizeRow(); addPrizeRow(); addPrizeRow();
 }
 
+function toggleModeCustom() {
+  const sel = document.getElementById('t-mode');
+  const wrap = document.getElementById('t-mode-custom-wrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value === 'OTHER' ? '' : 'none';
+}
+
 async function submitTournament() {
   // --- GUARD CHECKS ---
   if (!tournamentsRef) { alert('tournamentsRef is null — Firebase not connected'); return; }
@@ -1102,9 +1125,15 @@ async function submitTournament() {
     if (val) prizeList.push(val);
   });
 
+  const modeSel = document.getElementById('t-mode').value || 'SCRIMS';
+  const mode = modeSel === 'OTHER'
+    ? (document.getElementById('t-mode-custom').value.trim() || 'OTHER')
+    : modeSel;
+
   const payload = {
     name,
     map:         document.getElementById('t-map').value.trim(),
+    mode,
     date:        document.getElementById('t-date').value.trim(),
     time:        document.getElementById('t-time').value.trim(),
     prize:       document.getElementById('t-prize').value.trim(),
@@ -1171,6 +1200,9 @@ function resetTournamentForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('t-status').value = 'UPCOMING';
+  const mSel = document.getElementById('t-mode'); if (mSel) mSel.value = 'SCRIMS';
+  const mCustom = document.getElementById('t-mode-custom'); if (mCustom) mCustom.value = '';
+  toggleModeCustom();
   const ci = document.getElementById('t-card-img'); if (ci) ci.value = '';
   const cp = document.getElementById('t-card-img-preview'); if (cp) { cp.src=''; cp.style.display='none'; }
   clearMatchRows(); addMatchRow('', '', '8:30'); addMatchRow('', '', '9:00'); addMatchRow('', '', '9:30');
@@ -1188,6 +1220,22 @@ function editTournament(id) {
   document.getElementById('t-entry').value      = t.entryFee || '';
   document.getElementById('t-maxteams').value   = t.maxTeams || '';
   document.getElementById('t-status').value     = t.status || 'UPCOMING';
+  const presetModes = ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
+  const mSel = document.getElementById('t-mode');
+  const mCustom = document.getElementById('t-mode-custom');
+  if (mSel) {
+    if (t.mode && presetModes.includes(t.mode)) {
+      mSel.value = t.mode;
+      if (mCustom) mCustom.value = '';
+    } else if (t.mode) {
+      mSel.value = 'OTHER';
+      if (mCustom) mCustom.value = t.mode;
+    } else {
+      mSel.value = 'SCRIMS';
+      if (mCustom) mCustom.value = '';
+    }
+    toggleModeCustom();
+  }
   const ciEl = document.getElementById('t-card-img');
   if (ciEl) { ciEl.value = t.cardImageUrl || ''; previewCardImg(); }
   document.getElementById('t-desc').value       = t.description || '';
