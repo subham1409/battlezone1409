@@ -3143,9 +3143,10 @@ body.on-chat-page #bottom-nav { display: none !important; }
       </div>
       <div class="results-filter">
         <div class="filter-chip active" onclick="setFilter(this,'all')">All</div>
-        <div class="filter-chip" onclick="setFilter(this,'erangel')">Erangel</div>
-        <div class="filter-chip" onclick="setFilter(this,'miramar')">Miramar</div>
-        <div class="filter-chip" onclick="setFilter(this,'sanhok')">Sanhok</div>
+        <div class="filter-chip" onclick="setFilter(this,'scrims')">Scrims</div>
+        <div class="filter-chip" onclick="setFilter(this,'wow 2v2')">WOW 2v2</div>
+        <div class="filter-chip" onclick="setFilter(this,'wow 3v3')">WOW 3v3</div>
+        <div class="filter-chip" onclick="setFilter(this,'wow 4v4')">WOW 4v4</div>
       </div>
       <div id="results-list"></div>
     </div>
@@ -4155,6 +4156,7 @@ window.onload = async function() {
           name: r.name || '',
           date: r.date || '',
           map: r.map || '',
+          mode: r.mode || '',
           winner: r.place1 || r.winner || '',
           kills: r.totalKills || r.kills || 0,
           teams: r.totalTeams || r.teams || 0,
@@ -5400,7 +5402,7 @@ async function sendTournamentMessage() {
 // ========= RESULTS =========
 function renderResults(filter) {
   const list = document.getElementById('results-list');
-  const filtered = filter && filter !== 'all' ? results.filter(r => (r.map||'').toLowerCase() === filter) : results;
+  const filtered = filter && filter !== 'all' ? results.filter(r => (r.mode||'').toLowerCase() === filter) : results;
   list.innerHTML = filtered.map(r => `
     <div class="result-card" onclick="openLeaderboard('${r.id}')">
       <div class="result-card-top">

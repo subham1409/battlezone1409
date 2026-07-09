@@ -636,6 +636,22 @@ body::after {
             <input type="text" id="r-map" placeholder="e.g. Erangel, Miramar" maxlength="40">
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0">
+            <label>Mode</label>
+            <select id="r-mode" onchange="toggleResultModeCustom()">
+              <option value="SCRIMS">SCRIMS</option>
+              <option value="WOW 2v2">WOW 2v2</option>
+              <option value="WOW 3v3">WOW 3v3</option>
+              <option value="WOW 4v4">WOW 4v4</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;display:none" id="r-mode-custom-wrap">
+            <label>Custom Mode Name</label>
+            <input type="text" id="r-mode-custom" placeholder="e.g. WOW 5v5" maxlength="40">
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="field" style="margin-bottom:0">
             <label>Total Teams</label>
@@ -1475,6 +1491,13 @@ function collectResultData() {
   return { matchData, lb };
 }
 
+function toggleResultModeCustom() {
+  const sel = document.getElementById('r-mode');
+  const wrap = document.getElementById('r-mode-custom-wrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value === 'OTHER' ? '' : 'none';
+}
+
 async function submitResult() {
   if (!resultsRef) { showToast('❌ Firebase not connected'); return; }
   const name = document.getElementById('r-name').value.trim();
@@ -1484,10 +1507,16 @@ async function submitResult() {
   const winner = lb.length > 0 ? lb[0].team : '';
   const totalKills = lb.reduce((sum, row) => sum + (row.kills || 0), 0);
 
+  const rModeSel = document.getElementById('r-mode').value || 'SCRIMS';
+  const rMode = rModeSel === 'OTHER'
+    ? (document.getElementById('r-mode-custom').value.trim() || 'OTHER')
+    : rModeSel;
+
   const payload = {
     name,
     date:       document.getElementById('r-date').value.trim(),
     map:        document.getElementById('r-map').value.trim(),
+    mode:       rMode,
     place1:     lb[0] ? lb[0].team : '',
     place2:     lb[1] ? lb[1].team : '',
     place3:     lb[2] ? lb[2].team : '',
@@ -1522,6 +1551,9 @@ function resetResultForm() {
   ['r-name','r-date','r-map','r-teams','r-prize','r-summary'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const rmSel = document.getElementById('r-mode'); if (rmSel) rmSel.value = 'SCRIMS';
+  const rmCustom = document.getElementById('r-mode-custom'); if (rmCustom) rmCustom.value = '';
+  toggleResultModeCustom();
   clearTeamRows();
 }
 
@@ -1531,6 +1563,22 @@ function editResult(id) {
   document.getElementById('r-name').value = r.name || '';
   document.getElementById('r-date').value = r.date || '';
   document.getElementById('r-map').value = r.map || '';
+  const presetModesR = ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
+  const rmSel = document.getElementById('r-mode');
+  const rmCustom = document.getElementById('r-mode-custom');
+  if (rmSel) {
+    if (r.mode && presetModesR.includes(r.mode)) {
+      rmSel.value = r.mode;
+      if (rmCustom) rmCustom.value = '';
+    } else if (r.mode) {
+      rmSel.value = 'OTHER';
+      if (rmCustom) rmCustom.value = r.mode;
+    } else {
+      rmSel.value = 'SCRIMS';
+      if (rmCustom) rmCustom.value = '';
+    }
+    toggleResultModeCustom();
+  }
   document.getElementById('r-teams').value = r.totalTeams || '';
   document.getElementById('r-prize').value = r.prize || '';
   document.getElementById('r-summary').value = r.summary || '';
