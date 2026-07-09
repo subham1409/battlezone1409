@@ -4863,7 +4863,7 @@ async function confirmPayNow() {
   }
 
   // 4: Open WhatsApp
-  setTimeout(() => { window.open(waUrl, '_blank'); }, 400);
+  setTimeout(() => { window.location.href = waUrl; }, 400);
 
   _pendingRegData = null;
 }
