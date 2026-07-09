@@ -12,12 +12,20 @@
     {
       "src": "logo.jpg",
       "use": "@vercel/static"
+    },
+    {
+      "src": "admin/admin.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/send-otp",
       "dest": "/api/send-otp.js"
+    },
+    {
+      "src": "/admin/admin.html",
+      "dest": "/admin/admin.html"
     },
     {
       "src": "/",
