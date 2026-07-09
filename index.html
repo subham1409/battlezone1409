@@ -4844,7 +4844,7 @@ async function confirmPayNow() {
     '📅 Submitted: ' + timeStr
   ].join('\n');
 
-  const waUrl = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+  const waUrl = 'whatsapp://send?phone=' + waNum + '&text=' + encodeURIComponent(msg);
 
   closePaymentModal();
 
