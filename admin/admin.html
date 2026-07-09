@@ -1444,6 +1444,21 @@ function computeRowStats(row) {
 function recalcAndSort() {
   const container = document.getElementById('extra-teams-list');
   const rows = Array.from(container.children);
+
+  // Preserve focus + cursor position, since re-sorting moves DOM nodes
+  // which otherwise strips focus from whatever field the user is typing in.
+  const active = document.activeElement;
+  let restoreRowId = null, restoreRole = null, selStart = null, selEnd = null;
+  if (active && container.contains(active)) {
+    const parentRow = rows.find(r => r.contains(active));
+    if (parentRow) {
+      restoreRowId = parentRow.id;
+      restoreRole = active.getAttribute('data-role');
+      selStart = active.selectionStart;
+      selEnd = active.selectionEnd;
+    }
+  }
+
   const stats = rows.map(row => ({ row, ...computeRowStats(row) }));
   stats.sort((a, b) => b.total - a.total || b.placePoints - a.placePoints || b.wwcd - a.wwcd);
   stats.forEach((s, i) => {
@@ -1459,6 +1474,17 @@ function recalcAndSort() {
     const dp = s.row.querySelector('[data-role="disp-place"]'); if (dp) dp.textContent = s.placePoints;
     const dt = s.row.querySelector('[data-role="disp-total"]'); if (dt) { dt.textContent = s.total; dt.style.color = rankColor; }
   });
+
+  if (restoreRowId) {
+    const row = document.getElementById(restoreRowId);
+    const el = row && row.querySelector('[data-role="'+restoreRole+'"]');
+    if (el) {
+      el.focus();
+      if (typeof selStart === 'number' && el.setSelectionRange) {
+        try { el.setSelectionRange(selStart, selEnd); } catch(e) {}
+      }
+    }
+  }
 }
 
 // Builds the final payload pieces: raw per-match data (for the M1/M2/M3 tabs on the site)
