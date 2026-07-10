@@ -85,7 +85,8 @@ body {
   background-position: center;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.12;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 2px rgba(255,120,0,0.55));
 }
 
 /* LAYOUT */
@@ -486,11 +487,10 @@ body {
   inset: 0;
   border-radius: 16px;
   background: linear-gradient(135deg, #0d0f18 0%, #12141f 50%, #0a0c15 100%);
-  border: 1px solid rgba(255,120,0,0.35);
+  border: 1px solid rgba(255,120,0,0.25);
   box-shadow:
-    inset 0 0 30px rgba(255,120,0,0.08),
-    0 0 24px rgba(255,120,0,0.18),
-    0 0 50px rgba(255,120,0,0.08);
+    inset 0 0 30px rgba(255,120,0,0.05),
+    0 0 14px rgba(255,120,0,0.1);
   z-index: 0;
 }
 /* Sweep light streak across card */
@@ -755,7 +755,7 @@ body {
 .badge-open      { background: rgba(0,255,157,0.12);  color: var(--accent-green);  border: 1px solid rgba(0,255,157,0.2);  }
 .badge-upcoming  { background: rgba(255,120,0,0.12);  color: var(--accent-orange); border: 1px solid rgba(255,120,0,0.2);  }
 .badge-full      { background: rgba(255,58,58,0.12);  color: var(--accent-red);    border: 1px solid rgba(255,58,58,0.2);  }
-.badge-completed { background: rgba(100,160,255,0.12);color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
+.badge-completed { background: var(--bg-card);color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
 .badge-cancelled { background: rgba(255,58,58,0.10);  color: #ff6b6b;              border: 1px solid rgba(255,58,58,0.25); }
 .tournament-name {
   font-family: var(--font-display);
@@ -4440,7 +4440,7 @@ function buildTournamentCardHTML(t) {
     <div class="prize-list-section" style="padding:0 16px 5px">
       <div class="prize-toggle-bar" onclick="event.stopPropagation();togglePrize(this)" style="
         display:flex;align-items:center;justify-content:space-between;
-        padding:6px 14px;cursor:pointer;
+        padding:3px 14px;cursor:pointer;
         background:rgba(255,120,0,0.06);
         border:1px solid rgba(255,120,0,0.18);
         border-radius:10px;margin-bottom:0;
@@ -4479,7 +4479,7 @@ function buildTournamentCardHTML(t) {
     <div class="prize-list-section" style="padding:0 16px 5px">
       <div class="sched-toggle-bar" onclick="event.stopPropagation();toggleSchedule(this)" style="
         display:flex;align-items:center;justify-content:space-between;
-        padding:6px 14px;cursor:pointer;
+        padding:3px 14px;cursor:pointer;
         background:rgba(255,255,255,0.03);
         border:1px solid var(--border);
         border-radius:10px;margin-bottom:0;
@@ -4530,15 +4530,12 @@ function buildTournamentCardHTML(t) {
   const cardImgBanner = t.cardImageUrl
     ? `<div style="width:100%;height:150px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:#0a0d14">
         <img src="${t.cardImageUrl}" alt="${(t.name||'').replace(/"/g,'&quot;')}"
-          style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85)"
+          style="width:100%;height:100%;object-fit:cover;object-position:center 75%;display:block;filter:brightness(0.85)"
           onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
         <div class="img-fallback" style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,${mc.from},${mc.to});align-items:center;justify-content:center;font-size:48px">${mc.icon}</div>
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.3) 55%,rgba(13,17,23,0.92) 100%);pointer-events:none"></div>
         <div style="position:absolute;bottom:0;left:0;right:0;height:65px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
-        <div style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;align-items:flex-end;justify-content:space-between">
-          <div class="tournament-badge ${badgeClass}" style="font-size:10px;padding:4px 10px">${badgeLabel}</div>
-          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.1em;background:rgba(0,0,0,0.5);padding:3px 8px;border-radius:5px;backdrop-filter:blur(4px)">📅 ${t.date||''}</div>
-        </div>
+        <div class="tournament-badge ${badgeClass}" style="position:absolute;top:10px;left:12px;font-size:10px;padding:4px 10px">${badgeLabel}</div>
       </div>`
     : `<div style="width:100%;height:130px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:linear-gradient(135deg,${mc.from} 0%,${mc.to} 100%)">
         <div style="position:absolute;inset:0;background-image:linear-gradient(${mc.accent} 1px,transparent 1px),linear-gradient(90deg,${mc.accent} 1px,transparent 1px);background-size:28px 28px;opacity:0.6"></div>
@@ -4547,10 +4544,7 @@ function buildTournamentCardHTML(t) {
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(0,0,0,0.3) 60%,rgba(13,17,23,0.92) 100%)"></div>
         <div style="position:absolute;bottom:0;left:0;right:0;height:38px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
         <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${mc.accent.replace('0.18','0.8')},transparent)"></div>
-        <div style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;align-items:flex-end;justify-content:space-between">
-          <div class="tournament-badge ${badgeClass}" style="font-size:10px;padding:4px 10px">${badgeLabel}</div>
-          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.1em;background:rgba(0,0,0,0.4);padding:3px 8px;border-radius:5px;backdrop-filter:blur(4px)">📅 ${t.date||''}</div>
-        </div>
+        <div class="tournament-badge ${badgeClass}" style="position:absolute;top:10px;left:12px;font-size:10px;padding:4px 10px">${badgeLabel}</div>
       </div>`;
 
   return `
