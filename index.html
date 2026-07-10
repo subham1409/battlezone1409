@@ -477,7 +477,7 @@ body {
   justify-content: center;
   padding: 8px 0 10px;
   min-height: 72px;
-  overflow: hidden;
+  overflow: visible;
 }
 /* Dark card bg with border */
 .logo-hero-wrap::before {
@@ -486,8 +486,11 @@ body {
   inset: 0;
   border-radius: 16px;
   background: linear-gradient(135deg, #0d0f18 0%, #12141f 50%, #0a0c15 100%);
-  border: 1px solid rgba(255,120,0,0.2);
-  box-shadow: inset 0 0 30px rgba(255,120,0,0.04);
+  border: 1px solid rgba(255,120,0,0.35);
+  box-shadow:
+    inset 0 0 30px rgba(255,120,0,0.08),
+    0 0 24px rgba(255,120,0,0.18),
+    0 0 50px rgba(255,120,0,0.08);
   z-index: 0;
 }
 /* Sweep light streak across card */
@@ -499,7 +502,7 @@ body {
   background: linear-gradient(
     105deg,
     transparent 30%,
-    rgba(255,120,0,0.06) 50%,
+    rgba(255,120,0,0.12) 50%,
     transparent 70%
   );
   background-size: 200% 100%;
@@ -2897,11 +2900,7 @@ body.on-chat-page #bottom-nav { display: none !important; }
       <div class="logo-hero-wrap">
         <!-- scanline clipped inside card -->
         <div class="logo-hero-inner"><div class="logo-hero-scanline"></div></div>
-        <!-- corner brackets -->
-        <div class="logo-corner logo-corner-tl"></div>
-        <div class="logo-corner logo-corner-tr"></div>
-        <div class="logo-corner logo-corner-bl"></div>
-        <div class="logo-corner logo-corner-br"></div>
+        <!-- corner brackets removed -->
         <!-- bottom glow bar -->
         <div class="logo-hero-glow"></div>
         <!-- logos -->
