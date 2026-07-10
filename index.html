@@ -472,9 +472,10 @@ body {
   margin: 8px 16px 14px;
   border-radius: 16px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 0;
+  padding: 8px 0 10px;
   min-height: 72px;
   overflow: hidden;
 }
@@ -558,8 +559,61 @@ body {
     0 0 0 4px rgba(255,120,0,0.06),
     0 0 20px rgba(255,120,0,0.3),
     0 0 40px rgba(255,120,0,0.1);
-  animation: logoGlowPulse 2.8s ease-in-out infinite alternate;
   -webkit-user-drag: none;
+}
+/* Row holding both brand + partner logos side by side */
+.logo-hero-row {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+}
+.logo-hero-row a {
+  display: inline-flex;
+  line-height: 0;
+  position: relative;
+}
+/* Glowing vertical divider between the two logos */
+.logo-hero-row a:first-child::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  transform: translateY(-50%);
+  width: 1.5px;
+  height: 38px;
+  background: linear-gradient(180deg, transparent, rgba(255,120,0,0.8) 50%, transparent);
+  box-shadow: 0 0 6px rgba(255,120,0,0.6);
+}
+/* Partner gaming logo — same exact size/frame as brand logo */
+.partner-hero-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,120,0,0.5);
+  box-shadow:
+    0 0 0 4px rgba(255,120,0,0.06),
+    0 0 20px rgba(255,120,0,0.3),
+    0 0 40px rgba(255,120,0,0.1);
+  -webkit-user-drag: none;
+}
+/* Caption under the two logos */
+.gaming-partner-caption {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 8px;
+  white-space: nowrap;
+}
+.gaming-partner-caption b {
+  color: #ff9635;
+  font-weight: 700;
 }
 @keyframes logoGlowPulse {
   from {
@@ -2850,8 +2904,16 @@ body.on-chat-page #bottom-nav { display: none !important; }
         <div class="logo-corner logo-corner-br"></div>
         <!-- bottom glow bar -->
         <div class="logo-hero-glow"></div>
-        <!-- logo -->
-        <img src="https://i.ibb.co/HsRRJjY/logo.jpg" class="logo-hero-img" alt="BATTLEZONE Logo" draggable="false" />
+        <!-- logos -->
+        <div class="logo-hero-row">
+          <a href="https://www.instagram.com/battlezoneesports_com?igsh=MWRoODI3NTYybjEycQ==" target="_blank" rel="noopener noreferrer" aria-label="BattleZone Esports Instagram">
+            <img src="https://i.ibb.co/HsRRJjY/logo.jpg" class="logo-hero-img" alt="BATTLEZONE Logo" draggable="false" />
+          </a>
+          <a href="https://www.instagram.com/thunder.strikegaming?igsh=MW4zNWR0bDU3M3cxNA==" target="_blank" rel="noopener noreferrer" aria-label="Thunder Strike Gaming Instagram">
+            <img src="https://i.ibb.co/SDrQFJm9/IMG-3538.jpg" class="partner-hero-img" alt="Thunder Strike Gaming Logo" draggable="false" />
+          </a>
+        </div>
+        <div class="gaming-partner-caption">Gaming Partner - <b>Thunder Strike Gaming</b></div>
       </div>
 
       <!-- Tagline below logo -->
