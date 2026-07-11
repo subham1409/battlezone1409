@@ -755,7 +755,7 @@ body {
 .badge-open      { background: rgba(0,255,157,0.12);  color: var(--accent-green);  border: 1px solid rgba(0,255,157,0.2);  }
 .badge-upcoming  { background: rgba(255,120,0,0.12);  color: var(--accent-orange); border: 1px solid rgba(255,120,0,0.2);  }
 .badge-full      { background: rgba(255,58,58,0.12);  color: var(--accent-red);    border: 1px solid rgba(255,58,58,0.2);  }
-.badge-completed { background: var(--bg-card);color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
+.badge-completed { background: rgba(100,160,255,0.12); color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
 .badge-cancelled { background: rgba(255,58,58,0.10);  color: #ff6b6b;              border: 1px solid rgba(255,58,58,0.25); }
 .tournament-name {
   font-family: var(--font-display);
@@ -5278,7 +5278,80 @@ async function loadMyMatches() {
 let activeTournamentChatId = null;
 let tchatListener = null;
 let tchatPinnedListener = null;
+let tchatPinnedRawVal = null;      // last raw pinnedMessage value from Firebase
+let tchatMyTeamSlotInfo = null;    // { teamName, slot } for the current user in this tournament
 const TCHAT_SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+// Works out the current user's Team Name + Slot Number for a tournament.
+// Slot numbering: first 3 slots are reserved by the admin, so the 1st
+// confirmed registrant gets slot 4, the 2nd gets slot 5, and so on —
+// in the order teams were registered (confirmed registrations, oldest first).
+async function getMyTeamSlotInfo(tournamentId) {
+  try {
+    const snap = await db.ref('registrations/' + tournamentId).orderByChild('ts').once('value');
+    const list = [];
+    snap.forEach(node => {
+      const r = node.val() || {};
+      list.push({ teamName: r.teamName || '', email1: (r.email1 || '').toLowerCase(), ts: r.ts || 0 });
+    });
+    // orderByChild('ts') already sorts ascending, but sort again defensively
+    list.sort((a, b) => a.ts - b.ts);
+
+    const myEmail = (currentUser.email || '').toLowerCase();
+    let myIndex = -1;
+    let myTeamName = '';
+    list.forEach((r, i) => {
+      if (myIndex === -1 && myEmail && r.email1 === myEmail) {
+        myIndex = i;
+        myTeamName = r.teamName;
+      }
+    });
+    if (myIndex === -1) return null;
+    return { teamName: myTeamName, slot: myIndex + 4 };
+  } catch (e) {
+    console.warn('getMyTeamSlotInfo error:', e);
+    return null;
+  }
+}
+
+// Renders the pinned banner by combining the admin's Room ID/Password
+// message with the current user's compulsory Team Name + Slot info.
+function renderTchatPinnedBanner() {
+  const banner = document.getElementById('tchat-pinned-banner');
+  const textEl = document.getElementById('tchat-pinned-text');
+  if (!banner || !textEl) return;
+
+  const val = tchatPinnedRawVal;
+  let head = '';   // Room ID / Password block
+  let rest = '';   // any extra note the admin added below
+
+  if (val && val.text) {
+    const parts = val.text.split('\n\n');
+    head = parts[0] || '';
+    rest = parts.slice(1).join('\n\n');
+    if (val.roomId) head = '🏠 Room ID: ' + val.roomId + '\n' + head;
+  }
+
+  let compulsory = '';
+  if (tchatMyTeamSlotInfo) {
+    compulsory = '👥 Your Team Name : ' + tchatMyTeamSlotInfo.teamName + '\n🎯 Your Slot      : ' + tchatMyTeamSlotInfo.slot;
+  }
+
+  let displayText = head;
+  if (compulsory) displayText += (displayText ? '\n' : '') + compulsory;
+  if (rest) displayText += (displayText ? '\n\n' : '') + rest;
+
+  if (displayText) {
+    textEl.textContent = displayText;
+    banner.dataset.hasmsg = '1';
+    const inputFocused = document.activeElement && document.activeElement.id === 'tchat-input';
+    if (!inputFocused) banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+    banner.dataset.hasmsg = '0';
+    textEl.textContent = '';
+  }
+}
 
 function openTournamentChat(tournamentId, tournamentName) {
   activeTournamentChatId = tournamentId;
@@ -5304,24 +5377,25 @@ function openTournamentChat(tournamentId, tournamentName) {
     db.ref('pinnedMessage').off('value', tchatPinnedListener);
   }
 
+  // Reset compulsory team/slot info + banner state for the new tournament
+  tchatPinnedRawVal = null;
+  tchatMyTeamSlotInfo = null;
+  const _bannerReset = document.getElementById('tchat-pinned-banner');
+  if (_bannerReset) { _bannerReset.style.display = 'none'; _bannerReset.dataset.hasmsg = '0'; }
+
+  // Fetch this user's Team Name + Slot for this tournament (registered users only)
+  if (isRegistered) {
+    getMyTeamSlotInfo(tournamentId).then(info => {
+      if (activeTournamentChatId !== tournamentId) return; // chat switched before this resolved
+      tchatMyTeamSlotInfo = info;
+      renderTchatPinnedBanner();
+    });
+  }
+
   // Tournament-specific pinned room info
   tchatPinnedListener = db.ref('tournamentChats/' + tournamentId + '/pinnedMessage').on('value', snap => {
-    const banner = document.getElementById('tchat-pinned-banner');
-    const textEl = document.getElementById('tchat-pinned-text');
-    if (!banner || !textEl) return;
-    if (snap.exists() && snap.val() && snap.val().text) {
-      const val = snap.val();
-      let displayText = val.text || '';
-      if (val.roomId) displayText = '\ud83c\udfe0 Room ID: ' + val.roomId + '\n' + displayText;
-      textEl.textContent = displayText;
-      banner.dataset.hasmsg = '1';
-      const inputFocused = document.activeElement && document.activeElement.id === 'tchat-input';
-      if (!inputFocused) banner.style.display = 'block';
-    } else {
-      banner.style.display = 'none';
-      banner.dataset.hasmsg = '0';
-      textEl.textContent = '';
-    }
+    tchatPinnedRawVal = (snap.exists() && snap.val() && snap.val().text) ? snap.val() : null;
+    renderTchatPinnedBanner();
   });
 
   // Load messages for this tournament
@@ -5381,6 +5455,8 @@ function closeTournamentChat() {
     tchatPinnedListener = null;
   }
   activeTournamentChatId = null;
+  tchatPinnedRawVal = null;
+  tchatMyTeamSlotInfo = null;
 }
 
 function addTchatMessageToDOM(m) {
