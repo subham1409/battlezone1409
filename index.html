@@ -4430,12 +4430,22 @@ function buildTournamentCardHTML(t) {
       const s = ['th','st','nd','rd'], v = n % 100;
       return n + (s[(v-20)%10] || s[v] || s[0]) + ' Place';
     };
-    const prizeRowsHTML = pl.map((p, i) => `
+    const prizeRowsHTML = (() => {
+      let placeIdx = 0;
+      return pl.map(p => {
+        const isCustom = p && typeof p === 'object';
+        const icon = isCustom ? '🏅' : (rankIcons[placeIdx] || '🏅');
+        const posLabel = isCustom ? (p.label || 'Prize') : (posLabels[placeIdx] || ordinal(placeIdx+1));
+        const amount = isCustom ? (p.value || '') : p;
+        if (!isCustom) placeIdx++;
+        return `
       <div class="prize-list-row">
-        <div class="prize-list-rank">${rankIcons[i] || '🏅'}</div>
-        <div class="prize-list-pos">${posLabels[i] || ordinal(i+1)}</div>
-        <div class="prize-list-amount">${p}</div>
-      </div>`).join('');
+        <div class="prize-list-rank">${icon}</div>
+        <div class="prize-list-pos">${posLabel}</div>
+        <div class="prize-list-amount">${amount}</div>
+      </div>`;
+      }).join('');
+    })();
     prizeListHTML = `
     <div class="prize-list-section" style="padding:0 16px 5px">
       <div class="prize-toggle-bar" onclick="event.stopPropagation();togglePrize(this)" style="

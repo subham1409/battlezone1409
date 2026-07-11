@@ -572,9 +572,12 @@ body::after {
           </div>
         </div>
         <div class="field">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
             <label style="margin-bottom:0">Prize Distribution <span style="color:var(--text-muted);font-weight:400;font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:11px">(Shown on home screen tournament cards)</span></label>
-            <button type="button" onclick="addPrizeRow()" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:var(--accent-orange);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer;flex-shrink:0">+ ADD PLACE</button>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
+              <button type="button" onclick="addPrizeRow()" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:var(--accent-orange);font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer;flex-shrink:0">+ ADD PLACE</button>
+              <button type="button" onclick="addCustomPrizeRow()" title="Add a custom prize holder, e.g. MVP" style="background:rgba(0,200,255,0.10);border:1px solid rgba(0,200,255,0.3);color:#4fc3f7;font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 12px;border-radius:7px;cursor:pointer;flex-shrink:0">+ ADD CUSTOM</button>
+            </div>
           </div>
           <div id="prize-rows-container" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
@@ -1074,29 +1077,50 @@ function clearMatchRows() {
 
 
 // ── PRIZE ROW HELPERS ──────────────────────────────────────────────────────
-let prizeRowCount = 0;
+let prizeRowCount = 0;   // unique id counter for all rows (fixed + custom)
+let fixedPrizeIndex = 0; // counts only fixed-place rows, used to pick 1st/2nd/3rd... icon+label
 const PRIZE_ICONS = ['🥇','🥈','🥉','🏅','🏅'];
 const PRIZE_LABELS = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'];
 const PRIZE_PLACEHOLDERS = ['e.g. ₹3,000','e.g. ₹1,500','e.g. ₹500','e.g. ₹200','e.g. ₹100'];
+// Standard numbered row (1st Place, 2nd Place, ...) — same logic as before
 function addPrizeRow(val = '') {
   prizeRowCount++;
+  fixedPrizeIndex++;
   const n = prizeRowCount;
-  const icon = PRIZE_ICONS[n - 1] || '🏅';
-  const label = PRIZE_LABELS[n - 1] || (n + 'th Place');
-  const ph = PRIZE_PLACEHOLDERS[n - 1] || 'e.g. ₹50';
+  const idx = fixedPrizeIndex;
+  const icon = PRIZE_ICONS[idx - 1] || '🏅';
+  const plabel = PRIZE_LABELS[idx - 1] || (idx + 'th Place');
+  const ph = PRIZE_PLACEHOLDERS[idx - 1] || 'e.g. ₹50';
   const container = document.getElementById('prize-rows-container');
   const div = document.createElement('div');
-  div.dataset.rowId = n;  // use data attribute
+  div.dataset.rowId = n;
+  div.dataset.rowType = 'fixed';
   div.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px 12px';
   div.innerHTML = `
-    <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;min-width:80px">${icon} ${label}</div>
+    <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);white-space:nowrap;min-width:80px">${icon} ${plabel}</div>
     <input type="text" id="t-prize-val-${n}" placeholder="${ph}" maxlength="20" value="${escHTML(val)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%">
+    <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>`;
+  container.appendChild(div);
+}
+// Extra row with a fully custom holder name (e.g. "MVP") + its own prize value — always added at the end
+function addCustomPrizeRow(label = '', val = '') {
+  prizeRowCount++;
+  const n = prizeRowCount;
+  const container = document.getElementById('prize-rows-container');
+  const div = document.createElement('div');
+  div.dataset.rowId = n;
+  div.dataset.rowType = 'custom';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;background:rgba(79,195,247,0.06);border:1px solid rgba(79,195,247,0.2);border-radius:9px;padding:9px 12px';
+  div.innerHTML = `
+    <input type="text" id="t-prize-label-${n}" placeholder="e.g. MVP" maxlength="30" value="${escHTML(label)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%">
+    <input type="text" id="t-prize-val-${n}" placeholder="e.g. 100" maxlength="20" value="${escHTML(val)}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;outline:none;width:100%">
     <button type="button" onclick="this.closest('[data-row-id]').remove()" title="Remove" style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:14px;padding:7px 10px;border-radius:7px;cursor:pointer">✕</button>`;
   container.appendChild(div);
 }
 function clearPrizeRows() {
   document.getElementById('prize-rows-container').innerHTML = '';
   prizeRowCount = 0;
+  fixedPrizeIndex = 0;
 }
 // Initialise form with 2 match rows + 3 prize rows on load
 function initTournamentFormDefaults() {
@@ -1133,12 +1157,17 @@ async function submitTournament() {
     if (title || idp || time) matchSchedule.push({ title: title || ('Match ' + (matchSchedule.length + 1)), idp, time });
   });
 
-  // Collect prize list
+  // Collect prize list — fixed rows push plain strings (same as before), custom rows push {label, value}
   const prizeList = [];
   document.querySelectorAll('#prize-rows-container > div').forEach(row => {
     const n = row.dataset.rowId;
     const val = (document.getElementById('t-prize-val-' + n) || {}).value?.trim() || '';
-    if (val) prizeList.push(val);
+    if (row.dataset.rowType === 'custom') {
+      const label = (document.getElementById('t-prize-label-' + n) || {}).value?.trim() || '';
+      if (val || label) prizeList.push({ label: label || 'Prize', value: val });
+    } else if (val) {
+      prizeList.push(val);
+    }
   });
 
   const modeSel = document.getElementById('t-mode').value || 'SCRIMS';
@@ -1267,11 +1296,17 @@ function editTournament(id) {
   if (sched.length === 0) { addMatchRow('', '', '8:30'); addMatchRow('', '', '9:00'); addMatchRow('', '', '9:30'); }
   else sched.forEach(m => addMatchRow(m.title || '', m.idp || '', m.time || ''));
 
-  // Fill prize distribution
+  // Fill prize distribution — rebuild each row as fixed (plain string) or custom ({label,value} object)
   clearPrizeRows();
   const pl = t.prizeList || [];
-  if (pl.length === 0) { addPrizeRow(); addPrizeRow(); addPrizeRow(); }
-  else pl.forEach(v => addPrizeRow(v));
+  if (pl.length === 0) {
+    addPrizeRow(); addPrizeRow(); addPrizeRow();
+  } else {
+    pl.forEach(v => {
+      if (v && typeof v === 'object') addCustomPrizeRow(v.label || '', v.value || '');
+      else addPrizeRow(v);
+    });
+  }
 
   document.getElementById('t-form-title').textContent = 'Edit Tournament';
   document.getElementById('t-submit-btn').textContent  = '✏️ Update Tournament';
@@ -1347,7 +1382,14 @@ function renderTournamentsAdmin() {
   tourData.forEach(t => {
     const col = statusColor[t.status] || '#7a8699';
     const pl = t.prizeList || [];
-    const plPreview = pl.length ? pl.slice(0,3).map((p,i)=>['🥇','🥈','🥉'][i]+' '+escHTML(p)).join(' · ') : '<span style="color:var(--text-muted)">—</span>';
+    let placeIdx = 0;
+    const plPreview = pl.length
+      ? pl.slice(0,3).map(p => {
+          if (p && typeof p === 'object') return escHTML(p.label||'Prize') + ': ' + escHTML(p.value||'');
+          placeIdx++;
+          return (['🥇','🥈','🥉'][placeIdx-1]||'🏅') + ' ' + escHTML(p);
+        }).join(' · ')
+      : '<span style="color:var(--text-muted)">—</span>';
     html += `<tr>
       <td style="font-weight:700;color:var(--text-primary);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(t.name)}</td>
       <td style="font-family:var(--font-mono);font-size:11px">${escHTML(t.date||'—')}</td>
