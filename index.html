@@ -752,11 +752,11 @@ body {
   margin-bottom: 6px;
   display: inline-block;
 }
-.badge-open      { background: rgba(0,255,157,0.12);  color: var(--accent-green);  border: 1px solid rgba(0,255,157,0.2);  }
-.badge-upcoming  { background: rgba(255,120,0,0.12);  color: var(--accent-orange); border: 1px solid rgba(255,120,0,0.2);  }
-.badge-full      { background: rgba(255,58,58,0.12);  color: var(--accent-red);    border: 1px solid rgba(255,58,58,0.2);  }
-.badge-completed { background: rgba(100,160,255,0.12); color: #6495ed;              border: 1px solid rgba(100,160,255,0.25);}
-.badge-cancelled { background: rgba(255,58,58,0.10);  color: #ff6b6b;              border: 1px solid rgba(255,58,58,0.25); }
+.badge-open      { background: #121721;  color: #6495ed;  border: 1px solid rgba(100,149,237,0.45);  box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.badge-upcoming  { background: #121721;  color: #6495ed;  border: 1px solid rgba(100,149,237,0.45);  box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.badge-full      { background: #121721;  color: #6495ed;  border: 1px solid rgba(100,149,237,0.45);  box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.badge-completed { background: #121721;  color: #6495ed;  border: 1px solid rgba(100,149,237,0.45);  box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.badge-cancelled { background: #121721;  color: #6495ed;  border: 1px solid rgba(100,149,237,0.45);  box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 .tournament-name {
   font-family: var(--font-display);
   font-size: 14px;
@@ -3047,7 +3047,7 @@ body.on-chat-page #bottom-nav { display: none !important; }
         </div>
         <!-- Match Schedule Grid -->
         <!-- Match Schedule — rendered dynamically -->
-        <div id="d-schedule" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+        <div id="d-schedule" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
         <button class="rules-toggle" onclick="toggleRules()">
           <span>📋 Match Rules</span>
           <span id="rules-arrow">▼</span>
@@ -4504,7 +4504,7 @@ function buildTournamentCardHTML(t) {
       <div class="sched-list-body" style="display:none;overflow:hidden">
         <div class="prize-list-table" style="border-top:none;border-color:var(--border);border-radius:0 0 10px 10px;margin-top:-1px">
           <div class="prize-list-table-head" style="grid-template-columns:36px 1fr 0.8fr auto">
-            <span></span><span>Match</span><span>IDP</span><span>Time</span>
+            <span></span><span>Match</span><span>IDP</span><span>Start</span>
           </div>
           ${schedRowsHTML}
         </div>
@@ -4648,13 +4648,18 @@ function openDetail(id) {
     const sched = t.matchSchedule && t.matchSchedule.length > 0 ? t.matchSchedule : [];
     scheduleEl.innerHTML = sched.map((m, i) => {
       const c = matchColors[i % matchColors.length];
-      return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div style="flex:1">
-          <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.12em;color:${c.titleColor};text-transform:uppercase;margin-bottom:3px">${(m.title||'Match '+(i+1)).toUpperCase()}</div>
-          <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:600">${m.time||'—'}</div>
-          ${m.idp ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin-top:2px">🆔 ${m.idp}</div>` : ''}
+      const badge = m.imageUrl
+        ? `<img src="${m.imageUrl}" alt="" style="width:22px;height:18px;object-fit:cover;border-radius:5px;border:1px solid rgba(255,255,255,0.18);flex-shrink:0" onerror="this.style.display='none'">`
+        : `<div style="font-size:15px;line-height:1;flex-shrink:0">${c.icon}</div>`;
+      return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:10px 10px;display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:${c.titleColor};text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(m.title||'Match '+(i+1)).toUpperCase()}</div>
+          ${badge}
         </div>
-        ${m.imageUrl ? `<img src="${m.imageUrl}" alt="" style="width:72px;height:56px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.18);flex-shrink:0;box-shadow:0 0 18px ${c.border},0 4px 18px rgba(0,0,0,0.5)" onerror="this.style.display='none'">` : `<div style="font-size:22px">${c.icon}</div>`}
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);font-weight:700;white-space:nowrap">${m.time||'—'}</div>
+          ${m.idp ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);white-space:nowrap">🆔 ${m.idp}</div>` : ''}
+        </div>
       </div>`;
     }).join('');
   }
