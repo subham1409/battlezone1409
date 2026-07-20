@@ -705,8 +705,7 @@ body {
   bottom: 0;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent-orange), rgba(255,120,0,0.15) 65%, transparent);
-  box-shadow: 0 0 8px rgba(255,120,0,0.55);
+  background: linear-gradient(90deg, rgba(255,120,0,0.22), rgba(255,120,0,0.22) 65%, transparent);
 }
 .tournament-card-header .tc-title {
   display: flex;
@@ -726,7 +725,7 @@ body {
 }
 .tournament-card-header .tournament-badge { margin-bottom: 0; flex-shrink: 0; }
 .tournament-card-top {
-  padding: 13px 16px 12px;
+  padding: 10px 16px 8px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -734,7 +733,7 @@ body {
 }
 /* Prize List Table inside tournament card */
 .prize-list-section {
-  padding: 0 14px 12px;
+  padding: 0 14px 8px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -749,7 +748,7 @@ body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent-orange);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   padding: 0 2px;
 }
 .prize-toggle-bar:hover {
@@ -765,7 +764,7 @@ body {
 .prize-list-table-head {
   display: grid;
   grid-template-columns: 36px 1fr auto;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: rgba(255,120,0,0.08);
   border-bottom: 1px solid var(--border);
 }
@@ -780,7 +779,7 @@ body {
 .prize-list-row {
   display: grid;
   grid-template-columns: 36px 1fr auto;
-  padding: 9px 12px;
+  padding: 7px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   align-items: center;
 }
@@ -857,7 +856,7 @@ body {
   text-align: right;
 }
 .tournament-card-bottom {
-  padding: 10px 16px;
+  padding: 8px 16px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -4605,27 +4604,27 @@ function buildTournamentCardHTML(t) {
       <div class="tournament-badge ${badgeClass}" style="font-size:9px;padding:3px 9px">${badgeLabel}</div>
     </div>
     <div class="tournament-card-top" style="position:relative;padding-bottom:8px">
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
         <div style="display:flex;align-items:center;gap:7px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:5px;background:rgba(255,120,0,0.14);font-size:10px;flex-shrink:0">🕒</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;background:rgba(255,120,0,0.14);font-size:9px;flex-shrink:0">🕒</span>
           <span style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:var(--accent-orange);text-transform:uppercase">Time</span>
           <span style="color:var(--text-muted);font-size:11px">:</span>
           <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--text-primary)">${t.time || '—'}</span>
         </div>
         <div style="display:flex;align-items:center;gap:7px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:5px;background:rgba(100,160,255,0.14);font-size:10px;flex-shrink:0">📅</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;background:rgba(100,160,255,0.14);font-size:9px;flex-shrink:0">📅</span>
           <span style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:#6495ed;text-transform:uppercase">Date</span>
           <span style="color:var(--text-muted);font-size:11px">:</span>
           <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--text-primary)">${t.date || '—'}</span>
         </div>
         <div style="display:flex;align-items:center;gap:7px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:5px;background:rgba(0,255,157,0.14);font-size:10px;flex-shrink:0">🎮</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;background:rgba(0,255,157,0.14);font-size:9px;flex-shrink:0">🎮</span>
           <span style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.1em;color:var(--accent-green);text-transform:uppercase">Mode</span>
           <span style="color:var(--text-muted);font-size:11px">:</span>
           <span style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text-primary);letter-spacing:0.04em;text-transform:uppercase">${t.mode || '—'}</span>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;padding-left:10px">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;padding-left:10px">
         <div class="prize-amount">${t.prize || ''}</div>
         <div class="prize-sub">Prize Pool</div>
         <div class="prize-entry-fee">${t.fee || 'FREE'}</div>
