@@ -656,17 +656,77 @@ body {
 /* === TOURNAMENT CARD === */
 .tournament-list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
 .tournament-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,120,0,0.05) 0%, rgba(255,120,0,0) 60px), var(--bg-card);
+  border: 1px solid rgba(255,120,0,0.22);
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px rgba(0,0,0,0.25);
+}
+.tournament-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,150,0,0.55), rgba(255,150,0,0) 35%, rgba(255,150,0,0) 65%, rgba(255,80,0,0.4));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.tournament-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 14px; right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,150,0,0.7), transparent);
+  pointer-events: none;
+}
+.tournament-card:hover {
+  border-color: rgba(255,120,0,0.45);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(255,120,0,0.12);
+}
+.tournament-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px 11px;
   position: relative;
 }
-.tournament-card:hover { border-color: var(--border); transform: none; }
+.tournament-card-header::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-orange), rgba(255,120,0,0.15) 65%, transparent);
+  box-shadow: 0 0 8px rgba(255,120,0,0.55);
+}
+.tournament-card-header .tc-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tournament-card-header .tc-map-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(255,120,0,0.35));
+}
+.tournament-card-header .tournament-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tournament-card-header .tournament-badge { margin-bottom: 0; flex-shrink: 0; }
 .tournament-card-top {
-  padding: 14px 16px 12px;
+  padding: 13px 16px 12px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -4536,30 +4596,14 @@ function buildTournamentCardHTML(t) {
   const mapKey = (t.map || '').toLowerCase().split(',')[0].trim();
   const mc = mapColors[mapKey] || { from:'#0d1020', to:'#080a14', accent:'rgba(255,120,0,0.18)', icon:'🎮', label:(t.map||'BGMI').toUpperCase() };
 
-  // Card image banner — always shown (image if URL, styled placeholder if not)
-  const cardImgBanner = t.cardImageUrl
-    ? `<div style="width:100%;height:150px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:#0a0d14">
-        <img src="${t.cardImageUrl}" alt="${(t.name||'').replace(/"/g,'&quot;')}"
-          style="width:100%;height:100%;object-fit:cover;object-position:center 75%;display:block;filter:brightness(0.85)"
-          onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">
-        <div class="img-fallback" style="display:none;position:absolute;inset:0;background:linear-gradient(135deg,${mc.from},${mc.to});align-items:center;justify-content:center;font-size:48px">${mc.icon}</div>
-        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.3) 55%,rgba(13,17,23,0.92) 100%);pointer-events:none"></div>
-        <div style="position:absolute;bottom:0;left:0;right:0;height:65px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
-        <div class="tournament-badge ${badgeClass}" style="position:absolute;top:10px;left:12px;font-size:10px;padding:4px 10px">${badgeLabel}</div>
-      </div>`
-    : `<div style="width:100%;height:130px;overflow:hidden;border-radius:12px 12px 0 0;position:relative;background:linear-gradient(135deg,${mc.from} 0%,${mc.to} 100%)">
-        <div style="position:absolute;inset:0;background-image:linear-gradient(${mc.accent} 1px,transparent 1px),linear-gradient(90deg,${mc.accent} 1px,transparent 1px);background-size:28px 28px;opacity:0.6"></div>
-        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,${mc.accent} 0%,transparent 65%)"></div>
-        <div style="position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:56px;opacity:0.35;filter:drop-shadow(0 0 18px ${mc.accent})">${mc.icon}</div>
-        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(0,0,0,0.3) 60%,rgba(13,17,23,0.92) 100%)"></div>
-        <div style="position:absolute;bottom:0;left:0;right:0;height:38px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);mask-image:linear-gradient(to top,black 40%,transparent 100%);-webkit-mask-image:linear-gradient(to top,black 40%,transparent 100%);pointer-events:none"></div>
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${mc.accent.replace('0.18','0.8')},transparent)"></div>
-        <div class="tournament-badge ${badgeClass}" style="position:absolute;top:10px;left:12px;font-size:10px;padding:4px 10px">${badgeLabel}</div>
-      </div>`;
-
   return `
   <div class="tournament-card" style="cursor:default${full ? ';opacity:0.78' : ''}">
-    ${cardImgBanner}
+    <div class="tournament-card-header">
+      <div class="tc-title">
+        <span class="tournament-name">${escapeHTML(t.name || 'Tournament')}</span>
+      </div>
+      <div class="tournament-badge ${badgeClass}" style="font-size:9px;padding:3px 9px">${badgeLabel}</div>
+    </div>
     <div class="tournament-card-top" style="position:relative;padding-bottom:8px">
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;align-items:center;gap:7px">
