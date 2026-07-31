@@ -377,6 +377,35 @@ body {
   white-space: pre-wrap;
   word-break: break-all;
 }
+/* === "All Teams' Drop" tap bar (below Room Info) === */
+.tchat-drop-bar {
+  display: none;
+  margin: 8px 12px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,120,0,0.1);
+  border: 1px solid rgba(255,120,0,0.3);
+  color: var(--accent-orange);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.tchat-drop-bar:active { background: rgba(255,120,0,0.18); }
+.all-drops-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr 1fr;
+  gap: 6px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
 
 /* === CHAT TEXTAREA === */
 .chat-textarea {
@@ -3715,6 +3744,9 @@ body.on-chat-page #bottom-nav { display: none !important; }
     </div>
   </div>
 
+  <!-- All Teams' Drop — tap to view every registered team's map drops -->
+  <div class="tchat-drop-bar" id="tchat-drop-bar" onclick="openAllTeamDrops()">🗺️ All Team's Drop — Tap to view</div>
+
   <div class="tchat-messages" id="tchat-messages"></div>
 
   <!-- Input bar — registered users only -->
@@ -5541,6 +5573,96 @@ function renderTchatPinnedBanner() {
   }
 }
 
+// ─── ALL TEAMS' DROP VIEW (tournament chat) ──────────────────────────────────
+async function openAllTeamDrops() {
+  const tid = activeTournamentChatId;
+  if (!tid) return;
+
+  let regsSnap;
+  try {
+    regsSnap = await db.ref('registrations/' + tid).once('value');
+  } catch (e) {
+    showToast('⚠️ Could not load team drops');
+    return;
+  }
+
+  const regs = [];
+  if (regsSnap.exists()) {
+    regsSnap.forEach(node => {
+      const r = node.val();
+      if (r && r.teamName) regs.push(r);
+    });
+  }
+
+  if (!regs.length) {
+    showAllTeamDropsModal([]);
+    return;
+  }
+
+  const rows = await Promise.all(regs.map(async r => {
+    let td = null;
+    try {
+      const emailKey = (r.email1 || '').replace(/[.#$[\]]/g, '_');
+      if (emailKey) {
+        const s = await db.ref('teamDetails/' + emailKey).once('value');
+        if (s.exists()) td = s.val();
+      }
+    } catch (e) { /* ignore per-team lookup failure */ }
+    return {
+      teamName: r.teamName,
+      erangel: (td && td.erangel) || '—',
+      miramar: (td && td.miramar) || '—',
+      rondo:   (td && td.rondo)   || '—'
+    };
+  }));
+
+  showAllTeamDropsModal(rows);
+}
+
+function showAllTeamDropsModal(rows) {
+  closeAllTeamDropsModal();
+
+  const headerRow = `
+    <div class="all-drops-row" style="border-bottom:1px solid rgba(255,120,0,0.3)">
+      <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase">Team</div>
+      <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase">Erangel</div>
+      <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase">Miramar</div>
+      <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase">Rondo</div>
+    </div>`;
+
+  const bodyRows = rows.length
+    ? rows.map(r => `
+      <div class="all-drops-row">
+        <div style="font-size:11px;font-weight:700;color:var(--text-primary);word-break:break-word">${escapeHTML(r.teamName)}</div>
+        <div style="font-size:10px;color:var(--accent-orange);word-break:break-word">${escapeHTML(r.erangel)}</div>
+        <div style="font-size:10px;color:var(--accent-green);word-break:break-word">${escapeHTML(r.miramar)}</div>
+        <div style="font-size:10px;color:#6495ed;word-break:break-word">${escapeHTML(r.rondo)}</div>
+      </div>`).join('')
+    : `<div style="padding:24px 8px;text-align:center;color:var(--text-muted);font-size:12px">No team drops shared yet</div>`;
+
+  const html = `
+  <div id="all-drops-modal-overlay" style="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.88);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeAllTeamDropsModal()">
+    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-top-left-radius:22px;border-top-right-radius:22px;width:100%;max-width:480px;max-height:78vh;display:flex;flex-direction:column;padding:20px 14px 22px;animation:slideUp 0.3s ease">
+      <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;flex-shrink:0"></div>
+      <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;text-align:center;flex-shrink:0">🗺️ All Teams' Drop Locations</div>
+      <div style="flex-shrink:0">${headerRow}</div>
+      <div style="overflow-y:auto;flex:1">${bodyRows}</div>
+      <button onclick="closeAllTeamDropsModal()" style="width:100%;margin-top:14px;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text-secondary);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;flex-shrink:0">Close</button>
+    </div>
+  </div>
+  <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>`;
+
+  const el = document.createElement('div');
+  el.id = 'all-drops-modal-wrapper';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+}
+
+function closeAllTeamDropsModal() {
+  const el = document.getElementById('all-drops-modal-wrapper');
+  if (el) el.remove();
+}
+
 function openTournamentChat(tournamentId, tournamentName) {
   activeTournamentChatId = tournamentId;
 
@@ -5552,6 +5674,8 @@ function openTournamentChat(tournamentId, tournamentName) {
   const isRegistered = registeredTournamentIds.has(tournamentId);
   document.getElementById('tchat-input-bar').style.display  = isRegistered ? 'block' : 'none';
   document.getElementById('tchat-locked-msg').style.display = isRegistered ? 'none'  : 'flex';
+  const dropBarEl = document.getElementById('tchat-drop-bar');
+  if (dropBarEl) dropBarEl.style.display = isRegistered ? 'flex' : 'none';
 
   // Clear old messages
   document.getElementById('tchat-messages').innerHTML = '';
@@ -6044,23 +6168,34 @@ function updateTeamDetailUI() {
 }
 
 function persistTeamDetailsLocal(td) {
-  try { localStorage.setItem('bz_team_details', JSON.stringify(td)); } catch(e) {}
+  try {
+    const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
+    if (!emailKey) return;
+    localStorage.setItem('bz_team_details_' + emailKey, JSON.stringify(td));
+  } catch(e) {}
 }
 
 async function loadTeamDetails() {
   if (currentUser.isGuest || !currentUser.email) { myTeamDetails = null; updateTeamDetailUI(); return; }
-  // Fast path: local cache first so UI doesn't flash
+  const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+  // One-time cleanup of the old shared (non-namespaced) cache key from a previous version
+  try { localStorage.removeItem('bz_team_details'); } catch(e) {}
+  myTeamDetails = null;
+  // Fast path: local cache scoped to THIS user's email, so UI doesn't flash
   try {
-    const raw = localStorage.getItem('bz_team_details');
+    const raw = localStorage.getItem('bz_team_details_' + emailKey);
     if (raw) { myTeamDetails = JSON.parse(raw); updateTeamDetailUI(); }
   } catch(e) {}
   // Source of truth: Firebase
   try {
-    const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
     const snap = await db.ref('teamDetails/' + emailKey).once('value');
     if (snap.exists()) {
       myTeamDetails = snap.val();
       persistTeamDetailsLocal(myTeamDetails);
+    } else {
+      // No record for this account — never fall back to another user's cached data
+      myTeamDetails = null;
+      try { localStorage.removeItem('bz_team_details_' + emailKey); } catch(e) {}
     }
   } catch(e) { console.warn('Team details load failed:', e); }
   updateTeamDetailUI();
