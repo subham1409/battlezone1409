@@ -230,6 +230,54 @@ body {
 .results-refresh-btn:active { background: rgba(255,120,0,0.18); }
 .results-refresh-btn.spinning { animation: bz-spin 0.6s linear; }
 @keyframes bz-spin { from { transform: translateY(-50%) rotate(0deg); } to { transform: translateY(-50%) rotate(360deg); } }
+/* === TEAM DROP DETAILS BUTTON (home header, right side) === */
+.team-detail-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px 7px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,120,0,0.25);
+  background: rgba(255,120,0,0.08);
+  color: var(--accent-orange);
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.team-detail-btn:active { background: rgba(255,120,0,0.18); }
+.team-detail-btn .tdb-icon { font-size: 14px; line-height: 1; }
+.team-detail-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  box-shadow: 0 0 0 2px rgba(8,10,14,0.95);
+  display: none;
+  flex-shrink: 0;
+}
+.team-detail-dot.show { display: block; }
+/* Compact one-line strip prompting the user to set drop locations */
+.team-drop-strip {
+  display: none;
+  margin: 2px 16px 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255,120,0,0.08);
+  border: 1px solid rgba(255,120,0,0.22);
+  color: var(--accent-orange);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.team-drop-strip:active { background: rgba(255,120,0,0.16); }
 /* === PAGE BRAND HEADER (news / results / my account) === */
 .page-brand-header {
   display: flex;
@@ -2943,6 +2991,11 @@ body.on-chat-page #bottom-nav { display: none !important; }
 
         <div class="header-logo" style="position:absolute;left:50%;transform:translateX(-50%)">⚔ BATTLEZONE</div>
 
+        <button class="team-detail-btn" id="team-detail-btn" onclick="openTeamDetailModal()" aria-label="Set team drop details">
+          <span class="tdb-icon">📍</span>
+          <span class="team-detail-dot" id="team-detail-dot"></span>
+        </button>
+
       </div>
 
       <!-- Announcement Banner — loaded from Firebase -->
@@ -2974,48 +3027,9 @@ body.on-chat-page #bottom-nav { display: none !important; }
         <div class="gaming-partner-caption">Gaming Partner - <b>Thunder Strike Gaming</b></div>
       </div>
 
-      <!-- Tagline below logo -->
-      <div class="home-marquee-wrap">
-        <style>
-          .home-marquee-wrap{
-            overflow:hidden;
-            margin:2px 16px 14px;
-            width:calc(100% - 32px);
-            padding:4px 0;
-            border-top:1px solid rgba(255,255,255,0.06);
-            border-bottom:1px solid rgba(255,255,255,0.06);
-          }
-          .home-marquee-track{
-            display:inline-block;
-            white-space:nowrap;
-            padding-left:100%;
-            line-height:1;
-            animation:homeMarqueeScroll 16s linear infinite;
-            animation-timing-function:linear;
-            will-change:transform;
-          }
-          .home-marquee-track span{
-            font-family:var(--font-body);
-            font-size:9px;
-            line-height:1;
-            font-weight:600;
-            letter-spacing:0.08em;
-            text-transform:uppercase;
-            color:var(--text-secondary);
-          }
-          .home-marquee-track span b{
-            color:var(--accent-orange);
-            font-weight:600;
-            opacity:0.85;
-          }
-          @keyframes homeMarqueeScroll{
-            0%{transform:translateX(0);}
-            100%{transform:translateX(-100%);}
-          }
-        </style>
-        <div class="home-marquee-track">
-          <span><b>·</b> All advance room <b>·</b> Payment in just 1 hour</span>
-        </div>
+      <!-- Team Drop Details reminder strip — shown until user fills team name/mobile/drops -->
+      <div class="team-drop-strip" id="team-drop-banner" onclick="openTeamDetailModal()">
+        📍 Choose your drop location now and save time
       </div>
 
       <!-- Tournaments -->
@@ -3279,6 +3293,127 @@ body.on-chat-page #bottom-nav { display: none !important; }
 
         <button class="fs-submit-btn" id="fs-submit-btn" onclick="submitSquadEntry()">⚡ POST ENTRY</button>
         <div class="fs-cancel-link" onclick="closeSquadForm()">← Cancel</div>
+        <div style="height:48px"></div>
+      </div>
+    </div>
+
+    <!-- ===== TEAM DROP DETAILS FORM OVERLAY ===== -->
+    <div class="fs-overlay" id="team-detail-overlay">
+      <div class="fs-sheet" id="team-detail-sheet">
+        <div class="fs-sheet-handle"></div>
+        <div class="fs-sheet-title">📍 Set Your Team Drop Details</div>
+        <div class="fs-sheet-sub">Fill this once so squads can see each other's drop &amp; registration is faster</div>
+
+        <!-- Team Name -->
+        <div class="fs-field">
+          <div class="fs-field-label">Team Name <span class="fs-req">*</span></div>
+          <input type="text" class="fs-input" id="td-teamname" placeholder="e.g. PhoenixSquad" maxlength="30">
+        </div>
+
+        <!-- Mobile Number -->
+        <div class="fs-field">
+          <div class="fs-field-label">Mobile Number <span class="fs-req">*</span></div>
+          <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="td-mobile-wrap">
+            <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+            <input type="tel" class="fs-input" placeholder="9876543210" id="td-mobile" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')">
+          </div>
+        </div>
+
+        <!-- Erangel Drop -->
+        <div class="fs-field">
+          <div class="fs-field-label">Erangel Drop <span class="fs-req">*</span></div>
+          <select class="fs-input fs-select" id="td-erangel">
+            <option value="">Select drop location...</option>
+            <option>Zharki</option>
+            <option>Shooting Range</option>
+            <option>Severny</option>
+            <option>Stalber</option>
+            <option>Kameshki</option>
+            <option>Yasnaya Polyana</option>
+            <option>Lipovka</option>
+            <option>Mansion</option>
+            <option>Shelter</option>
+            <option>Prison</option>
+            <option>Mylta</option>
+            <option>Mylta Power</option>
+            <option>Farm</option>
+            <option>Pochinki</option>
+            <option>School</option>
+            <option>Rozhok</option>
+            <option>Ruins</option>
+            <option>Gatka</option>
+            <option>Quarry</option>
+            <option>Primorsk</option>
+            <option>Ferry Pier</option>
+            <option>Georgopol</option>
+            <option>Hospital</option>
+            <option>Sosnovka Military Base</option>
+            <option>Novorepnoye</option>
+          </select>
+        </div>
+
+        <!-- Miramar Drop -->
+        <div class="fs-field">
+          <div class="fs-field-label">Miramar Drop <span class="fs-req">*</span></div>
+          <select class="fs-input fs-select" id="td-miramar">
+            <option value="">Select drop location...</option>
+            <option>El Pozo</option>
+            <option>Monte Nuevo</option>
+            <option>Pecado</option>
+            <option>Hacienda del Patrón</option>
+            <option>San Martin</option>
+            <option>Power Grid</option>
+            <option>Water Treatment</option>
+            <option>Cruz del Valle</option>
+            <option>Torre Ahumada</option>
+            <option>Campo Militar</option>
+            <option>Tierra Bronca</option>
+            <option>Minas Generales</option>
+            <option>Los Leones</option>
+            <option>Puerto Paraíso</option>
+            <option>Chumacera</option>
+            <option>Graveyard</option>
+            <option>Junkyard</option>
+            <option>Impala</option>
+            <option>Valle del Mar</option>
+            <option>Prison</option>
+            <option>Oasis</option>
+            <option>Alcantara</option>
+            <option>La Cobreria</option>
+            <option>Partona (new southern town)</option>
+            <option>Resort</option>
+            <option>Truck Stop</option>
+          </select>
+        </div>
+
+        <!-- Rondo Drop -->
+        <div class="fs-field">
+          <div class="fs-field-label">Rondo Drop <span class="fs-req">*</span></div>
+          <select class="fs-input fs-select" id="td-rondo">
+            <option value="">Select drop location...</option>
+            <option>Jadena City</option>
+            <option>Stadium</option>
+            <option>NEOX Factory</option>
+            <option>Test Track</option>
+            <option>Rin Jiang</option>
+            <option>Yu Lin</option>
+            <option>Jao Tin</option>
+            <option>Mey Ran</option>
+            <option>Tin Long Garden</option>
+            <option>Lo Hua Xing</option>
+            <option>Dan Ching</option>
+            <option>Bamboo</option>
+            <option>Hung Shan</option>
+            <option>Fong Tun</option>
+            <option>Nanshan</option>
+            <option>Long Ho</option>
+            <option>Bao Tian</option>
+            <option>Tin Lung</option>
+          </select>
+        </div>
+
+        <button class="fs-submit-btn" id="td-submit-btn" onclick="saveTeamDetails()">💾 Save Team Details</button>
+        <div class="fs-cancel-link" onclick="closeTeamDetailModal()">← Cancel</div>
         <div style="height:48px"></div>
       </div>
     </div>
@@ -3726,6 +3861,7 @@ function generateGamerName() {
 }
 
 let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
+let myTeamDetails = null; // { teamName, mobile, erangel, miramar, rondo } — set via Team Drop Details modal
 
 // ── SESSION PERSISTENCE ──────────────────────────────────────
 // Save session to localStorage so page refresh doesn't log out user
@@ -3765,6 +3901,7 @@ function applyLoggedInUser(userData, skipToast) {
   if (chatLabel) chatLabel.textContent = chatName;
   if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
   checkRegisteredChatAccess();
+  loadTeamDetails();
 }
 
 let _regListenerEmail = null; // guard: only attach listeners once per email
@@ -3778,6 +3915,8 @@ function checkRegisteredChatAccess() {
     updateChatAccessUI(false);
     if (tournaments.length) renderTournaments();
     _regListenerEmail = null;
+    myTeamDetails = null;
+    updateTeamDetailUI();
     return;
   }
   // Logged-in: show input bar immediately, every time
@@ -4707,8 +4846,9 @@ function openDetail(id) {
     }).join('');
   }
 
-  document.getElementById('team-name-input').value = '';
-  document.getElementById('phone1-input').value = '';
+  // Pre-fill from saved Team Drop Details (if set) so user can just hit Register & Pay
+  document.getElementById('team-name-input').value = (myTeamDetails && myTeamDetails.teamName) || '';
+  document.getElementById('phone1-input').value = (myTeamDetails && myTeamDetails.mobile) || '';
   document.getElementById('phone2-input').value = '';
   document.getElementById('email1-input').value = currentUser.email || '';
   document.getElementById('email2-input').value = '';
@@ -5888,6 +6028,92 @@ function setSquadFilter(el, val) {
   el.classList.add('active');
   currentSquadFilter = val;
   renderSquadEntries();
+}
+
+// ─── TEAM DROP DETAILS (team name, mobile, drop location per map) ───────────
+function teamDetailsComplete(td) {
+  return !!(td && td.teamName && td.mobile && td.erangel && td.miramar && td.rondo);
+}
+
+function updateTeamDetailUI() {
+  const dot = document.getElementById('team-detail-dot');
+  const banner = document.getElementById('team-drop-banner');
+  const complete = teamDetailsComplete(myTeamDetails);
+  if (dot) dot.classList.toggle('show', !complete);
+  if (banner) banner.style.display = (!complete && !currentUser.isGuest) ? 'block' : 'none';
+}
+
+function persistTeamDetailsLocal(td) {
+  try { localStorage.setItem('bz_team_details', JSON.stringify(td)); } catch(e) {}
+}
+
+async function loadTeamDetails() {
+  if (currentUser.isGuest || !currentUser.email) { myTeamDetails = null; updateTeamDetailUI(); return; }
+  // Fast path: local cache first so UI doesn't flash
+  try {
+    const raw = localStorage.getItem('bz_team_details');
+    if (raw) { myTeamDetails = JSON.parse(raw); updateTeamDetailUI(); }
+  } catch(e) {}
+  // Source of truth: Firebase
+  try {
+    const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+    const snap = await db.ref('teamDetails/' + emailKey).once('value');
+    if (snap.exists()) {
+      myTeamDetails = snap.val();
+      persistTeamDetailsLocal(myTeamDetails);
+    }
+  } catch(e) { console.warn('Team details load failed:', e); }
+  updateTeamDetailUI();
+}
+
+function openTeamDetailModal() {
+  if (currentUser.isGuest || !currentUser.email) {
+    showToast('🔒 Sign up to set your team drop details');
+    setTimeout(() => showAuthScreen(), 600);
+    return;
+  }
+  const td = myTeamDetails || {};
+  document.getElementById('td-teamname').value = td.teamName || '';
+  document.getElementById('td-mobile').value = td.mobile || '';
+  document.getElementById('td-erangel').value = td.erangel || '';
+  document.getElementById('td-miramar').value = td.miramar || '';
+  document.getElementById('td-rondo').value = td.rondo || '';
+  document.getElementById('team-detail-overlay').classList.add('open');
+}
+
+function closeTeamDetailModal() {
+  document.getElementById('team-detail-overlay').classList.remove('open');
+}
+
+async function saveTeamDetails() {
+  const teamName = document.getElementById('td-teamname').value.trim();
+  const mobile   = document.getElementById('td-mobile').value.trim();
+  const erangel  = document.getElementById('td-erangel').value;
+  const miramar  = document.getElementById('td-miramar').value;
+  const rondo    = document.getElementById('td-rondo').value;
+
+  if (!teamName) { showToast('⚠️ Enter your team name'); return; }
+  if (!mobile || mobile.length !== 10) { showToast('⚠️ Enter a valid 10-digit mobile number'); return; }
+  if (!erangel) { showToast('⚠️ Select your Erangel drop'); return; }
+  if (!miramar) { showToast('⚠️ Select your Miramar drop'); return; }
+  if (!rondo)   { showToast('⚠️ Select your Rondo drop'); return; }
+
+  const btn = document.getElementById('td-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'SAVING...'; }
+
+  const td = { teamName, mobile, erangel, miramar, rondo, updatedAt: Date.now() };
+  try {
+    const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+    await db.ref('teamDetails/' + emailKey).set(td);
+    myTeamDetails = td;
+    persistTeamDetailsLocal(td);
+    updateTeamDetailUI();
+    closeTeamDetailModal();
+    showToast('✅ Team drop details saved!');
+  } catch(e) {
+    showToast('⚠️ Could not save: ' + (e.message || 'Check connection'));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Save Team Details'; }
 }
 
 function openSquadForm(type) {
