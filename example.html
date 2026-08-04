@@ -1346,6 +1346,15 @@ body {
 }
 .chat-msg.own .msg-content { align-items: flex-end; display: flex; flex-direction: column; }
 .chat-msg.own .msg-sender { text-align: right; color: var(--accent-orange); }
+.report-btn {
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 2px;
+  text-align: right;
+  font-weight: 600;
+}
+.report-btn:hover { color: var(--accent-red); }
 .chat-input-area {
   position: relative;
   bottom: auto;
@@ -2216,6 +2225,28 @@ body.on-dashboard-page #dashboard-fixed-footer { display: block; }
 }
 .auth-input::placeholder { color: var(--text-muted); font-size: 13px; }
 .auth-input.no-prefix { padding: 14px 16px; border-radius: 12px; }
+
+.auth-otp-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.otp-digit {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  padding: 14px 4px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  caret-color: var(--accent-orange);
+}
+.otp-digit:focus { border-color: var(--border-accent); background: rgba(255,120,0,0.06); }
 
 .auth-submit-btn {
   width: 100%;
@@ -4282,6 +4313,22 @@ async function authFinish() {
     } catch(e) { console.warn('Save failed:', e); }
   }
 
+  // Save user data to Excel (non-blocking)
+  try {
+    fetch('/api/save-userdata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username,
+        email: currentUser.email || '',
+        phone: phone,
+        bgmiId: bgmiId || '',
+        googleUid: currentUser.googleUid || '',
+        createdAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      })
+    }).catch(() => {});
+  } catch(e) {}
+
   // Hide auth screen
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = 'none';
@@ -4303,14 +4350,18 @@ async function authFinish() {
 }
 
 // =====================================================================
-// BATTLEZONE FRONTEND — Firebase-Connected Version
+// BATTLEZONE FRONTEND — API-Connected Version
+// Backend API base URL — change if your server runs on a different port
 // =====================================================================
+const API_BASE = '/api';
 
 // ========= STATE =========
 let currentPage = 'home';
 let currentDetail = null;
-let tournaments = []; // Loaded live from Firebase
-let results = [];     // Loaded live from Firebase
+let messages = [];
+let msgId = 100;
+let tournaments = []; // Now loaded from API
+let results = [];     // Now loaded from API
 let registeredTournamentIds = new Set(); // tracks which tournaments current user is confirmed for
 let pendingTournamentIds = new Set();   // tracks which tournaments current user has a pending request
 
@@ -4327,6 +4378,18 @@ function loadPersistedRegisteredIds() {
 }
 function clearPersistedRegisteredIds() {
   try { localStorage.removeItem('bz_reg_ids'); } catch(e) {}
+}
+
+// ========= API HELPERS =========
+async function apiFetch(path) {
+  try {
+    const res = await fetch(API_BASE + path);
+    const data = await res.json();
+    return data.success ? data.data : null;
+  } catch(e) {
+    console.warn('API error:', path, e);
+    return null;
+  }
 }
 
 // Show a loading skeleton in tournament list
@@ -5237,6 +5300,10 @@ function initFirebaseChat() {
   chatListenerAttached = true;
 }
 
+function renderMessages() {
+  // No-op: Firebase listener handles rendering live
+}
+
 function addMessageToDOM(m, scroll) {
   const container = document.getElementById('chat-messages');
   if (!container) return;
@@ -5350,6 +5417,10 @@ function addEmoji(e) {
   const input = document.getElementById('chat-input');
   input.value += e;
   input.focus();
+}
+
+function reportMsg(id) {
+  showToast('⚑ Message reported for review');
 }
 
 // ========= TERMS & CONDITIONS (skill-based platform info) =========
