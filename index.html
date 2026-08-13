@@ -2895,6 +2895,46 @@ body.on-chat-page #bottom-nav { display: none !important; }
 }
 .my-matches-empty-icon { font-size: 32px; margin-bottom: 10px; }
 .my-matches-empty-text { font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.08em; line-height: 1.7; }
+
+/* ===== SMOOTH ANIMATIONS & TRANSITIONS (additive, no design changes) ===== */
+@keyframes bzPageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page.active { animation: bzPageIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+.auth-step.active { animation: bzPageIn 0.3s cubic-bezier(0.16,1,0.3,1); }
+
+@keyframes bzFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-overlay.open,
+.leaderboard-overlay.open,
+.edit-profile-overlay.open,
+#tchat-overlay.open {
+  animation: bzFadeIn 0.25s ease;
+}
+
+@keyframes bzPopIn {
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-box { animation: bzPopIn 0.3s cubic-bezier(0.16,1,0.3,1); }
+
+a, button, .nav-item, input, select, textarea,
+.tournament-card, .result-card, .fs-card, .my-match-card, .glass-card, .banner-card {
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.2s ease,
+              border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.tournament-card:active, .result-card:active, .fs-card:active,
+.my-match-card:active, .glass-card:active, .banner-card:active {
+  transform: scale(0.98);
+}
+
+button:active, .nav-item:active { transform: scale(0.95); }
+
+#content { scroll-behavior: smooth; }
 </style>
 
 
