@@ -625,6 +625,13 @@ body::after {
         </div>
       </div>
       <div class="section-card-body">
+        <div class="field" style="margin-bottom:12px">
+          <label>📌 Load From Tournament (auto-fills details &amp; registered teams below)</label>
+          <select id="r-tournament-select" onchange="onResultTournamentSelected()">
+            <option value="">⏳ Loading tournaments…</option>
+          </select>
+          <div id="r-tournament-hint" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:5px;display:none"></div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="field" style="margin-bottom:0">
             <label>Match Name *</label>
@@ -991,10 +998,12 @@ function doLogin() {
     }
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('admin-app').classList.add('visible');
+    // Kick off the tournaments fetch FIRST — the "Load From Tournament" dropdown on the
+    // Results tab depends on it, so we don't want it queued behind chat/results/etc.
+    loadTournamentsAdmin();
     loadChatAdmin();
     loadPinnedMessageAdmin();
     loadTournamentPinDropdown();
-    loadTournamentsAdmin();
     loadResultsAdmin();
     initTournamentFormDefaults();
     // Listen for pending requests badge
@@ -1366,6 +1375,10 @@ function loadTournamentsAdmin() {
     });
     tourData.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     console.log('[BZ-ADMIN] tournaments live update — count:', tourData.length, tourData.map(t => t.name));
+    // Populate the "Load From Tournament" dropdown FIRST, before building the (heavier)
+    // tournament management table below — so it shows real names as fast as the data arrives
+    // instead of waiting behind the full table render.
+    populateResultTournamentSelect();
     renderTournamentsAdmin();
   }, err => {
     console.error('[BZ-ADMIN] tournament listener error:', err);
@@ -1404,6 +1417,20 @@ function renderTournamentsAdmin() {
   });
   html += '</tbody></table>';
   list.innerHTML = html;
+
+  populateResultTournamentSelect();
+}
+
+// Keeps the "Load From Tournament" dropdown on the Add Result form in sync with
+// the live tournaments list. Called every time tourData refreshes. Preserves the
+// currently selected value across re-renders where possible.
+function populateResultTournamentSelect() {
+  const sel = document.getElementById('r-tournament-select');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Manual Entry (no tournament) —</option>' +
+    tourData.map(t => `<option value="${t.id}">${escHTML(t.name || 'Untitled')}${t.date ? ' — ' + escHTML(t.date) : ''}${t.mode ? ' (' + escHTML(t.mode) + ')' : ''}</option>`).join('');
+  if (current && tourData.some(t => t.id === current)) sel.value = current;
 }
 
 // ===== RESULTS ADMIN =====
@@ -1432,13 +1459,13 @@ function addResultTeamRow(data) {
 
   row.innerHTML = `
     <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:#3d4a5c;text-align:center;padding:6px 2px" data-role="rank-label">#—</div>
-    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(data&&data.team||'')}" style="${INPUT_NAME}" data-role="et-team" oninput="recalcAndSort()">
-    <input type="number" placeholder="#" min="0" value="${m1.place||''}" style="${INPUT_BASE}" data-role="et-m1-place" oninput="recalcAndSort()">
-    <input type="number" placeholder="0" min="0" value="${m1.kills||''}" style="${INPUT_BASE}" data-role="et-m1-kills" oninput="recalcAndSort()">
-    <input type="number" placeholder="#" min="0" value="${m2.place||''}" style="${INPUT_BASE}" data-role="et-m2-place" oninput="recalcAndSort()">
-    <input type="number" placeholder="0" min="0" value="${m2.kills||''}" style="${INPUT_BASE}" data-role="et-m2-kills" oninput="recalcAndSort()">
-    <input type="number" placeholder="#" min="0" value="${m3.place||''}" style="${INPUT_BASE}" data-role="et-m3-place" oninput="recalcAndSort()">
-    <input type="number" placeholder="0" min="0" value="${m3.kills||''}" style="${INPUT_BASE}" data-role="et-m3-kills" oninput="recalcAndSort()">
+    <input type="text" placeholder="Team name" maxlength="60" value="${escHTML(data&&data.team||'')}" style="${INPUT_NAME}" data-role="et-team" oninput="updateRowStats()">
+    <input type="number" placeholder="#" min="0" value="${m1.place||''}" style="${INPUT_BASE}" data-role="et-m1-place" oninput="updateRowStats()">
+    <input type="number" placeholder="0" min="0" value="${m1.kills||''}" style="${INPUT_BASE}" data-role="et-m1-kills" oninput="updateRowStats()">
+    <input type="number" placeholder="#" min="0" value="${m2.place||''}" style="${INPUT_BASE}" data-role="et-m2-place" oninput="updateRowStats()">
+    <input type="number" placeholder="0" min="0" value="${m2.kills||''}" style="${INPUT_BASE}" data-role="et-m2-kills" oninput="updateRowStats()">
+    <input type="number" placeholder="#" min="0" value="${m3.place||''}" style="${INPUT_BASE}" data-role="et-m3-place" oninput="updateRowStats()">
+    <input type="number" placeholder="0" min="0" value="${m3.kills||''}" style="${INPUT_BASE}" data-role="et-m3-kills" oninput="updateRowStats()">
     <div style="${DISP_BASE}" data-role="disp-matches">0</div>
     <div style="${DISP_BASE}" data-role="disp-wwcd">0</div>
     <div style="${DISP_BASE}" data-role="disp-place">0</div>
@@ -1481,8 +1508,26 @@ function computeRowStats(row) {
   return { team, matches, wwcd, placePoints, kills, total: placePoints + kills };
 }
 
-// Recomputes every row's stats, re-sorts rows by Total (tie-break: Position Points, then WWCD),
-// and updates the rank badge + computed columns live.
+// Recomputes every row's stats and updates the computed columns (matches, WWCD,
+// position points, total) live as the admin types — but does NOT move any rows.
+// This is what runs on every keystroke, so typing "1" into a placement field no
+// longer makes the row jump to the top while you're still typing.
+function updateRowStats() {
+  const container = document.getElementById('extra-teams-list');
+  const rows = Array.from(container.children);
+  rows.forEach(row => {
+    const s = computeRowStats(row);
+    const dm = row.querySelector('[data-role="disp-matches"]'); if (dm) dm.textContent = s.matches;
+    const dw = row.querySelector('[data-role="disp-wwcd"]'); if (dw) dw.textContent = s.wwcd;
+    const dp = row.querySelector('[data-role="disp-place"]'); if (dp) dp.textContent = s.placePoints;
+    const dt = row.querySelector('[data-role="disp-total"]'); if (dt) dt.textContent = s.total;
+  });
+}
+
+// Re-sorts rows by Total (tie-break: Position Points, then WWCD) and refreshes the
+// rank badge + computed columns. Only called on deliberate actions (add/remove row,
+// loading a tournament's teams, editing an existing result, and Save Result) —
+// never on every keystroke — so rows only reorder when the admin saves/updates.
 function recalcAndSort() {
   const container = document.getElementById('extra-teams-list');
   const rows = Array.from(container.children);
@@ -1566,10 +1611,86 @@ function toggleResultModeCustom() {
   wrap.style.display = sel.value === 'OTHER' ? '' : 'none';
 }
 
+// Fired when admin picks a tournament from the "Load From Tournament" dropdown.
+// Auto-fills Match Name / Date / Time / Mode / Total Teams from the tournament record,
+// then pulls that tournament's confirmed registrations and pre-fills one team row per
+// registered team (name only) so the admin just has to type in placements/kills.
+async function onResultTournamentSelected() {
+  const sel = document.getElementById('r-tournament-select');
+  const hint = document.getElementById('r-tournament-hint');
+  if (!sel) return;
+  const tId = sel.value;
+
+  if (!tId) {
+    if (hint) hint.style.display = 'none';
+    return; // switched back to manual entry — leave whatever is in the form as-is
+  }
+
+  const t = tourData.find(x => x.id === tId);
+  if (!t) { showToast('⚠️ Tournament not found'); return; }
+
+  // Autofill top fields
+  document.getElementById('r-name').value = t.name || '';
+  document.getElementById('r-date').value = t.date || '';
+  document.getElementById('r-time').value = t.time || '';
+  if (t.maxTeams) document.getElementById('r-teams').value = t.maxTeams;
+
+  const presetModesR = ['SCRIMS', 'WOW 2v2', 'WOW 3v3', 'WOW 4v4'];
+  const rmSel = document.getElementById('r-mode');
+  const rmCustom = document.getElementById('r-mode-custom');
+  if (rmSel) {
+    if (t.mode && presetModesR.includes(t.mode)) {
+      rmSel.value = t.mode;
+      if (rmCustom) rmCustom.value = '';
+    } else if (t.mode) {
+      rmSel.value = 'OTHER';
+      if (rmCustom) rmCustom.value = t.mode;
+    } else {
+      rmSel.value = 'SCRIMS';
+      if (rmCustom) rmCustom.value = '';
+    }
+    toggleResultModeCustom();
+  }
+
+  // Pull registered teams and build one row per team
+  clearTeamRows();
+  if (hint) { hint.style.display = ''; hint.textContent = '⏳ Loading registered teams…'; }
+  sel.disabled = true;
+
+  try {
+    if (!db) throw new Error('Firebase not connected');
+    const regSnap = await db.ref('registrations/' + tId).once('value');
+    const teamNames = [];
+    regSnap.forEach(c => {
+      const v = c.val();
+      if (v && v.teamName) teamNames.push(v.teamName);
+    });
+
+    if (teamNames.length === 0) {
+      if (hint) hint.textContent = '⚠️ No confirmed registrations found for this tournament — add teams manually below.';
+      showToast('⚠️ No registered teams found');
+    } else {
+      teamNames.forEach(team => addResultTeamRow({ team }));
+      document.getElementById('r-teams').value = teamNames.length;
+      if (hint) hint.textContent = '✅ Loaded ' + teamNames.length + ' registered team' + (teamNames.length !== 1 ? 's' : '') + ' — enter placement & kills for each match.';
+      showToast('✅ Loaded ' + teamNames.length + ' team' + (teamNames.length !== 1 ? 's' : ''));
+    }
+  } catch (e) {
+    if (hint) hint.textContent = '❌ Could not load registered teams: ' + e.message;
+    showToast('❌ ' + e.message);
+  }
+
+  sel.disabled = false;
+  document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
 async function submitResult() {
   if (!resultsRef) { showToast('❌ Firebase not connected'); return; }
   const name = document.getElementById('r-name').value.trim();
   if (!name) { showToast('⚠️ Match name required'); return; }
+
+  // Re-sort the visible rows now (on Save/Update), not while the admin was typing.
+  recalcAndSort();
 
   const { matchData, lb } = collectResultData();
   const winner = lb.length > 0 ? lb[0].team : '';
@@ -1623,6 +1744,8 @@ function resetResultForm() {
   const rmCustom = document.getElementById('r-mode-custom'); if (rmCustom) rmCustom.value = '';
   toggleResultModeCustom();
   clearTeamRows();
+  const tSel = document.getElementById('r-tournament-select'); if (tSel) tSel.value = '';
+  const tHint = document.getElementById('r-tournament-hint'); if (tHint) tHint.style.display = 'none';
 }
 
 function editResult(id) {
@@ -1653,6 +1776,9 @@ function editResult(id) {
   document.getElementById('r-form-title').textContent = 'Edit Result';
   document.getElementById('r-submit-btn').textContent = '✏️ Update Result';
   document.getElementById('r-cancel-btn').style.display = 'inline-block';
+
+  const tSel = document.getElementById('r-tournament-select'); if (tSel) tSel.value = '';
+  const tHint = document.getElementById('r-tournament-hint'); if (tHint) tHint.style.display = 'none';
 
   clearTeamRows();
 
