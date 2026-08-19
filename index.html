@@ -229,11 +229,17 @@ body {
   line-height: 1;
 }
 .header-brand-logo {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   object-fit: cover;
   -webkit-user-drag: none;
+  flex-shrink: 0;
+}
+.header-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
 }
 .results-refresh-btn {
@@ -309,6 +315,12 @@ body {
   display: none;
 }
 .team-detail-dot.show { display: block; }
+.tdb-icon img.game-logo-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
 /* Compact one-line strip prompting the user to set drop locations */
 .team-drop-strip {
   display: none;
@@ -1210,88 +1222,6 @@ body {
 }
 .submit-btn:hover { background: #ff9500; }
 
-/* === CHAT PAGE === */
-.chat-header {
-  padding: 0 14px 0 12px;
-  height: 52px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, rgba(8,10,14,0.97) 0%, rgba(13,17,27,0.97) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  flex-shrink: 0;
-  box-shadow: 0 1px 0 rgba(255,120,0,0.15), 0 4px 20px rgba(0,0,0,0.4);
-}
-.chat-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,120,0,0.5), transparent);
-}
-.chat-header-left {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-.chat-title {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--accent-orange);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 0 14px rgba(255,120,0,0.45);
-  line-height: 1;
-  white-space: nowrap;
-}
-.chat-title-sub {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--accent-green);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  opacity: 0.85;
-}
-.chat-header-right {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-.chat-you-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  display: none;
-}
-.chat-you-name {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent-green);
-  letter-spacing: 0.04em;
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  background: rgba(0,255,157,0.08);
-  border: 1px solid rgba(0,255,157,0.2);
-  border-radius: 20px;
-  padding: 3px 9px;
-}
 .online-badge {
   display: flex;
   align-items: center;
@@ -1309,20 +1239,6 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
-}
-.chat-messages {
-  padding: 14px 14px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
-  overscroll-behavior: contain;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  background: var(--bg-primary);
 }
 .chat-msg { display: flex; align-items: flex-start; gap: 10px; }
 .chat-msg.own { flex-direction: row-reverse; }
@@ -2174,6 +2090,71 @@ body.on-dashboard-page #dashboard-fixed-footer { display: block; }
 .auth-step { display: none; padding: 22px; }
 .auth-step.active { display: block; }
 
+/* ===== GAME CHOICE SCREEN ===== */
+#game-choice-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 32px 24px 60px;
+  max-width: 480px;
+  margin: 0 auto;
+  left: 0; right: 0;
+}
+.game-choice-wrap {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 28px 22px 24px;
+}
+.game-choice-card {
+  flex: 1 1 140px;
+  max-width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.game-choice-card:hover, .game-choice-card:active {
+  border-color: var(--accent-orange);
+  background: rgba(255,120,0,0.06);
+  transform: translateY(-2px);
+}
+.gcc-logo-ring {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-accent);
+  background: #0b0b0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gcc-logo-ring img { width: 100%; height: 100%; object-fit: cover; }
+.gcc-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.game-choice-card.gcc-active { border-color: var(--accent-green); background: rgba(0,255,120,0.06); }
+
 /* Choice buttons */
 .auth-choice-btn {
   width: 100%;
@@ -2354,66 +2335,6 @@ body.on-dashboard-page #dashboard-fixed-footer { display: block; }
 }
 .auth-dot.active { background: var(--accent-orange); width: 20px; border-radius: 3px; }
 .auth-dot.done { background: var(--accent-green); }
-
-/* ===== CHAT PAGE — sits outside #content, fixed above bottom nav ===== */
-/* ===== COMMUNITY CHAT PAGE — mirrors tchat-overlay approach exactly ===== */
-#chat-page {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
-  background: var(--bg-primary);
-  flex-direction: column;
-  max-width: 480px;
-  margin: 0 auto;
-  overflow: hidden;
-  overscroll-behavior: contain;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-#chat-page.active {
-  display: flex;
-}
-#chat-page .chat-header {
-  flex-shrink: 0;
-}
-#chat-page .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 14px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  background: var(--bg-primary);
-}
-#chat-page #chat-input-bar {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  background: rgba(8,10,14,0.97);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-#chat-page .chat-input-area {
-  position: relative;
-  bottom: auto;
-  margin-top: 0;
-}
-#chat-page #chat-locked-msg {
-  flex-shrink: 0;
-}
-#chat-page .emoji-row { display: none; }
-/* Hide bottom nav entirely when chat is open — back arrow handles navigation */
-body.on-chat-page #bottom-nav { display: none !important; }
 
 /* ===== FIND SQUAD PAGE ===== */
 .fs-action-bar {
@@ -3085,6 +3006,32 @@ button:active, .nav-item:active { transform: scale(0.95); }
   </div>
 </div>
 
+<!-- ===== CHOOSE YOUR GAME SCREEN ===== -->
+<div id="game-choice-screen" style="display:none">
+  <div class="auth-logo">⚔ BATTLEZONE</div>
+  <div class="auth-tagline" id="gc-tagline">Choose your game</div>
+
+  <div class="auth-box" style="max-width:420px">
+    <div class="auth-box-header">
+      <div class="auth-box-title" id="gc-title">Choose Your Game</div>
+      <div class="auth-box-sub" id="gc-sub">Pick the esport you want to play on BATTLEZONE</div>
+    </div>
+
+    <div class="game-choice-wrap">
+      <div class="game-choice-card" id="gcc-bgmi" onclick="selectGame('bgmi')">
+        <div class="gcc-logo-ring"><img src="https://upload.wikimedia.org/wikipedia/en/6/63/Battleground_Mobile_India.webp?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original" alt="BGMI"></div>
+        <div class="gcc-label">BGMI</div>
+      </div>
+      <div class="game-choice-card" id="gcc-freefire" onclick="selectGame('freefire')">
+        <div class="gcc-logo-ring"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDTdoQHm89cqAnKrbH1YktAnA3TwgB7YKVgtIFMxsotw&s" alt="Free Fire"></div>
+        <div class="gcc-label">FREE FIRE</div>
+      </div>
+    </div>
+
+    <div class="auth-back-link" id="gc-cancel" style="display:none;text-align:center;margin-top:6px" onclick="hideGameChoiceScreen()">← <span>Cancel</span></div>
+  </div>
+</div>
+
 <div id="app">
   <div id="content">
 
@@ -3100,10 +3047,17 @@ button:active, .nav-item:active { transform: scale(0.95); }
           </div>
         </div>
 
+        <div class="header-icon-group">
         <button class="team-detail-btn" id="team-detail-btn" onclick="openTeamDetailModal()" aria-label="My team details">
           <span class="tdb-icon">🛡️<span class="team-detail-dot" id="team-detail-dot"></span></span>
           <span class="tdb-label">My Team</span>
         </button>
+
+        <button class="team-detail-btn" id="my-game-btn" onclick="showGameChoiceScreen('switch')" aria-label="My game">
+          <span class="tdb-icon" id="my-game-icon">🎮</span>
+          <span class="tdb-label" id="my-game-label">My Game</span>
+        </button>
+        </div>
 
       </div>
 
@@ -3562,6 +3516,37 @@ button:active, .nav-item:active { transform: scale(0.95); }
       </div>
     </div>
 
+    <!-- ===== FREE FIRE — MY SQUAD DETAILS FORM OVERLAY ===== -->
+    <div class="fs-overlay" id="ff-team-detail-overlay">
+      <div class="fs-sheet" id="ff-team-detail-sheet">
+        <div class="fs-sheet-handle"></div>
+        <div class="fs-sheet-title">🔥 Set Your Squad Details</div>
+        <div class="fs-sheet-sub">Saved to the Free Fire database so squads can find each other</div>
+
+        <div class="fs-field">
+          <div class="fs-field-label">Team Name <span class="fs-req">*</span></div>
+          <input type="text" class="fs-input" id="ff-td-teamname" placeholder="e.g. Fire Squad" maxlength="30">
+        </div>
+
+        <div class="fs-field">
+          <div class="fs-field-label">Free Fire UID <span class="fs-req">*</span></div>
+          <input type="text" class="fs-input" id="ff-td-uid" placeholder="e.g. 123456789" maxlength="20" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+        </div>
+
+        <div class="fs-field">
+          <div class="fs-field-label">Mobile Number <span class="fs-req">*</span></div>
+          <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden" id="ff-td-mobile-wrap">
+            <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
+            <input type="tel" class="fs-input" placeholder="9876543210" id="ff-td-mobile" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')">
+          </div>
+        </div>
+
+        <button class="fs-submit-btn" id="ff-td-submit-btn" onclick="saveFreeFireTeamDetails()">💾 Save Squad Details</button>
+        <div class="fs-cancel-link" onclick="closeFreeFireTeamDetailModal()">← Cancel</div>
+        <div style="height:48px"></div>
+      </div>
+    </div>
+
     <!-- ===== RESULTS PAGE ===== -->
     <div id="results-page" class="page">
       <div class="top-header" style="justify-content:center;text-align:center;position:relative">
@@ -3665,14 +3650,6 @@ button:active, .nav-item:active { transform: scale(0.95); }
       </div>
       <span>Find Squad</span>
     </div>
-    <div class="nav-item" id="nav-chat" onclick="switchPage('chat')">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#3d4a5c" stroke-width="1.8" stroke-linecap="round">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-        </svg>
-      </div>
-      <span>Chat</span>
-    </div>
     <div class="nav-item" id="nav-results" onclick="switchPage('results')">
       <div class="nav-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="#3d4a5c" stroke-width="1.8" stroke-linecap="round">
@@ -3691,60 +3668,6 @@ button:active, .nav-item:active { transform: scale(0.95); }
     </div>
   </nav>
 </div>
-
-<!-- ===== CHAT PAGE ===== -->
-<div id="chat-page">
-  <div class="chat-header">
-    <div class="tchat-back" onclick="switchPage('home')" style="flex-shrink:0">←</div>
-    <div class="chat-header-left">
-      <div class="chat-title">💬 Community Talk</div>
-      <div class="chat-title-sub">⚡ Live</div>
-    </div>
-    <div class="chat-header-right">
-      <div class="chat-you-name" id="chat-you-label">Anonymous</div>
-    </div>
-  </div>
-  <div class="emoji-row">
-    <span onclick="addEmoji('🔥')">🔥</span>
-    <span onclick="addEmoji('💀')">💀</span>
-    <span onclick="addEmoji('🎯')">🎯</span>
-    <span onclick="addEmoji('🏆')">🏆</span>
-    <span onclick="addEmoji('⚡')">⚡</span>
-    <span onclick="addEmoji('👊')">👊</span>
-    <span onclick="addEmoji('😤')">😤</span>
-    <span onclick="addEmoji('🤝')">🤝</span>
-    <span onclick="addEmoji('💣')">💣</span>
-    <span onclick="addEmoji('🐔')">🐔</span>
-  </div>
-  <!-- Pinned animated message from admin -->
-  <div id="pinned-banner" style="display:none;margin:10px 12px 0;border-radius:12px;overflow:hidden;position:relative">
-    <div class="pinned-banner-inner">
-      <div class="pinned-badge">📌 ROOM INFO</div>
-      <div class="pinned-msg-text" id="pinned-msg-text"></div>
-    </div>
-  </div>
-  <div class="chat-messages" id="chat-messages"></div>
-  <!-- Input bar -->
-  <div id="chat-input-bar">
-    <div class="chat-input-area">
-      <textarea class="chat-input chat-textarea" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" oninput="autoGrowChat(this)" onfocus="tchatInputFocus()" onblur="tchatInputBlur()"></textarea>
-      <button class="send-btn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-  <!-- Locked msg -->
-  <div id="chat-locked-msg" style="display:none;align-items:center;justify-content:center;padding:16px 18px;gap:12px">
-    <div style="font-size:22px">🔒</div>
-    <div>
-      <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Create an account to join the chat</div>
-    </div>
-  </div>
-</div>
-
 
 <!-- Terms & Conditions Modal -->
 <div class="tnc-overlay" id="tnc-overlay" onclick="if(event.target===this)closeTncModal()">
@@ -3938,7 +3861,32 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
 const db = firebase.database();
-const chatRef = db.ref('chat');
+
+// ── FREE FIRE — separate Firebase project. BGMI (login/registrations/results/
+// chat/find-squad) always stays in `db` above. Free Fire find-squad + team
+// details are stored here instead, per game selected by the player. ──
+const firebaseConfigFF = {
+  apiKey: "AIzaSyBUmSHqTil8R2vHo5A0odZyVk-AYoUPqnw",
+  authDomain: "freefiredata-1197c.firebaseapp.com",
+  // ⚠️ TODO: you did not give me a databaseURL for this project — I filled in the
+  // standard default pattern below. Open Firebase Console → Realtime Database on
+  // the "freefiredata-1197c" project, copy the exact URL shown there, and replace
+  // this if it's different (it may have a region suffix like "...asia-southeast1...").
+  databaseURL: "https://freefiredata-1197c-default-rtdb.firebaseio.com",
+  projectId: "freefiredata-1197c",
+  storageBucket: "freefiredata-1197c.firebasestorage.app",
+  messagingSenderId: "165564522717",
+  appId: "1:165564522717:web:479775f1b7c309beb0fb34",
+  measurementId: "G-XMYHE1K7RL"
+};
+const ffApp = firebase.initializeApp(firebaseConfigFF, "freefire");
+const dbFF = ffApp.database();
+
+// Game logos
+const GAME_LOGOS = {
+  bgmi: "https://upload.wikimedia.org/wikipedia/en/6/63/Battleground_Mobile_India.webp?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
+  freefire: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDTdoQHm89cqAnKrbH1YktAnA3TwgB7YKVgtIFMxsotw&s"
+};
 
 // ── ANONYMOUS AUTH — ensures Firebase rules that require auth still allow reads ──
 // Sign in anonymously so db.ref reads are authenticated (fixes "tournaments not showing" issue)
@@ -4007,8 +3955,8 @@ function generateGamerName() {
   return p + s + n;
 }
 
-let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
-let myTeamDetails = null; // { teamName, mobile, erangel, miramar, rondo } — set via Team Drop Details modal
+let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null, game: null };
+let myTeamDetails = null; // { teamName, mobile, erangel, miramar, rondo } — set via Team Drop Details modal (BGMI) or {teamName, mobile, ffUid} (Free Fire)
 
 // ── SESSION PERSISTENCE ──────────────────────────────────────
 // Save session to localStorage so page refresh doesn't log out user
@@ -4036,7 +3984,8 @@ function applyLoggedInUser(userData, skipToast) {
     chatName: chatName,
     bgmiId: userData.bgmiId || null,
     email: userData.email || null,
-    googleUid: userData.googleUid || null
+    googleUid: userData.googleUid || null,
+    game: userData.game || 'bgmi' // legacy accounts (pre-Free Fire) default to BGMI
   };
   const authScr = document.getElementById('auth-screen');
   if (authScr) { authScr.style.display = 'none'; authScr.classList.add('hidden'); }
@@ -4044,14 +3993,14 @@ function applyLoggedInUser(userData, skipToast) {
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   const av = document.querySelector('.profile-avatar');
   if (av) av.textContent = initials;  document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
-  const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = chatName;
   if (!skipToast) showToast('🎮 Welcome back ' + username + '!');
   checkRegisteredChatAccess();
   loadTeamDetails();
+  applyGameVisibility();
 }
 
 let _regListenerEmail = null; // guard: only attach listeners once per email
+let _regListenerGame = null;  // which game's database the current listeners are attached to
 
 function checkRegisteredChatAccess() {
   // Always show/hide input bar immediately based on login state
@@ -4059,22 +4008,30 @@ function checkRegisteredChatAccess() {
     registeredTournamentIds = new Set();
     pendingTournamentIds = new Set();
     clearPersistedRegisteredIds();
-    updateChatAccessUI(false);
     if (tournaments.length) renderTournaments();
     _regListenerEmail = null;
+    _regListenerGame = null;
     myTeamDetails = null;
     updateTeamDetailUI();
     return;
   }
-  // Logged-in: show input bar immediately, every time
-  updateChatAccessUI(true);
 
-  // Only attach Firebase listeners once per logged-in email
-  if (_regListenerEmail === currentUser.email) return;
+  const game = getActiveGame();
+  // Only (re)attach Firebase listeners once per logged-in email + selected game
+  if (_regListenerEmail === currentUser.email && _regListenerGame === game) return;
+
+  // Tear down any previously-attached listeners on BOTH databases (harmless no-op
+  // if nothing was attached there) before pointing at the newly-selected game's db.
+  db.ref('registrations').off();
+  db.ref('pendingRegistrations').off();
+  dbFF.ref('registrations').off();
+  dbFF.ref('pendingRegistrations').off();
+
   _regListenerEmail = currentUser.email;
+  _regListenerGame = game;
 
   const emailLower = currentUser.email.toLowerCase();
-  db.ref('registrations').on('value', snap => {
+  getGameDb().ref('registrations').on('value', snap => {
     const newIds = new Set();
     snap.forEach(tourneyNode => {
       tourneyNode.forEach(reg => {
@@ -4091,7 +4048,7 @@ function checkRegisteredChatAccess() {
     if (tournaments.length) renderTournaments(); // only re-render if tournament data is ready
   });
   // Real-time listener for pending registrations (so "Waiting" button stays accurate)
-  db.ref('pendingRegistrations').on('value', snap => {
+  getGameDb().ref('pendingRegistrations').on('value', snap => {
     // Always read email fresh so it works even if session restored after listener attached
     const myEmail = (currentUser.email || '').toLowerCase();
     const newPending = new Set();
@@ -4119,29 +4076,10 @@ function showAuthScreen() {
   authGoStep(0);
 }
 
-function updateChatAccessUI(hasAccess) {
-  const lockEl = document.getElementById('chat-locked-msg');
-  const inputEl = document.getElementById('chat-input-bar');
-  if (lockEl) {
-    if (hasAccess) {
-      lockEl.style.display = 'none';
-    } else {
-      lockEl.style.display = 'flex';
-      if (currentUser.isGuest) {
-        lockEl.innerHTML = `<div style="font-size:22px">🔒</div><div><div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;text-transform:uppercase">Chat Locked</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Create an account to join the chat — <span style="color:var(--accent-orange);cursor:pointer;font-weight:700;text-decoration:underline" onclick="showAuthScreen()">Sign Up →</span></div></div>`;
-      } else {
-        // logged-in users always have access — this branch should not be reached
-        lockEl.style.display = 'none';
-      }
-    }
-  }
-  if (inputEl) inputEl.style.display = hasAccess ? 'block' : 'none';
-}
-
 function doLogout() {
   clearSession();
   clearPersistedRegisteredIds();
-  currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null };
+  currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null, game: null };
   firebase.auth().signOut().catch(() => {});
   const authScr = document.getElementById('auth-screen');
   authScr.style.display = '';
@@ -4153,13 +4091,22 @@ function doLogout() {
 function authGuest() {
   const gamerName = generateGamerName();
   const chatName = generateGamerName();
-  currentUser = { isGuest: true, username: gamerName, chatName: chatName, bgmiId: null, email: null };
+  let guestGame = null;
+  try { guestGame = localStorage.getItem('bz_guest_game'); } catch(e) {}
+  currentUser = { isGuest: true, username: gamerName, chatName: chatName, bgmiId: null, email: null, game: (guestGame === 'bgmi' || guestGame === 'freefire') ? guestGame : null };
   const authScr = document.getElementById('auth-screen');
-  authScr.style.display = 'none';
-  authScr.classList.add('hidden');
-  const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = chatName;
-  showToast('👤 Joined as ' + gamerName);
+
+  if (currentUser.game) {
+    // Guest already picked a game on this device before — skip straight in
+    authScr.style.display = 'none';
+    authScr.classList.add('hidden');
+    applyGameVisibility();
+    showToast('👤 Joined as ' + gamerName);
+  } else {
+    authScr.style.display = 'none';
+    authScr.classList.add('hidden');
+    showGameChoiceScreen('guest');
+  }
 }
 
 function authGoStep(step) {
@@ -4177,6 +4124,166 @@ function authGoStep(step) {
   const t = titles[Math.min(step, titles.length - 1)];
   document.getElementById('auth-box-title').textContent = t[0];
   document.getElementById('auth-box-sub').textContent = t[1];
+}
+
+// =====================================================================
+// GAME SELECTION (BGMI vs FREE FIRE)
+// =====================================================================
+let gameChoiceContext = null; // 'signup' | 'guest' | 'switch'
+
+function showGameChoiceScreen(context) {
+  gameChoiceContext = context;
+  const scr = document.getElementById('game-choice-screen');
+  const title = document.getElementById('gc-title');
+  const sub = document.getElementById('gc-sub');
+  const cancelLink = document.getElementById('gc-cancel');
+
+  if (context === 'switch') {
+    title.textContent = 'Switch Your Game';
+    sub.textContent = 'Change which esport you play on BATTLEZONE';
+    cancelLink.style.display = '';
+  } else {
+    title.textContent = 'Choose Your Game';
+    sub.textContent = 'Pick the esport you want to play on BATTLEZONE';
+    cancelLink.style.display = 'none';
+  }
+
+  // Highlight current selection if any
+  document.querySelectorAll('.game-choice-card').forEach(c => c.classList.remove('gcc-active'));
+  if (currentUser.game) {
+    const active = document.getElementById(currentUser.game === 'bgmi' ? 'gcc-bgmi' : 'gcc-freefire');
+    if (active) active.classList.add('gcc-active');
+  }
+
+  scr.style.display = 'flex';
+}
+
+function hideGameChoiceScreen() {
+  document.getElementById('game-choice-screen').style.display = 'none';
+}
+
+async function selectGame(game) {
+  const previousGame = currentUser.game;
+  currentUser.game = game;
+
+  if (currentUser.isGuest || !currentUser.email) {
+    // Guests: remember their pick locally only (no account to save it against)
+    try { localStorage.setItem('bz_guest_game', game); } catch(e) {}
+  } else {
+    const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+    try {
+      await db.ref('users/' + emailKey + '/game').set(game);
+    } catch(e) { console.warn('Could not save game selection:', e); }
+    // Keep the persisted session in sync
+    try {
+      const raw = localStorage.getItem('bz_session');
+      if (raw) {
+        const s = JSON.parse(raw);
+        s.game = game;
+        localStorage.setItem('bz_session', JSON.stringify(s));
+      }
+    } catch(e) {}
+  }
+
+  hideGameChoiceScreen();
+
+  // If this was part of onboarding (brand new signup or first-time guest), reveal the app now
+  if (gameChoiceContext === 'signup' || gameChoiceContext === 'guest') {
+    const authScr = document.getElementById('auth-screen');
+    if (authScr) { authScr.style.display = 'none'; authScr.classList.add('hidden'); }
+  }
+
+  applyGameVisibility();
+  if (game !== previousGame) {
+    showToast((game === 'bgmi' ? '🏆 BGMI' : '🔥 Free Fire') + ' selected!');
+  }
+  gameChoiceContext = null;
+}
+
+// Show/hide BGMI-only tournament & results UI depending on selected game,
+// and point the Find Squad feature at the right Firebase database.
+function applyGameVisibility() {
+  const game = currentUser.game || 'bgmi'; // default view before a choice is made
+  const isFF = game === 'freefire';
+
+  // Bottom nav: both games now show all 4 tabs (Home, Find Squad, Results, My Account)
+  const navResults = document.getElementById('nav-results');
+  if (navResults) navResults.style.display = '';
+
+  // "My Team" (BGMI map-drop details) vs Free Fire's simpler team modal
+  const teamBtn = document.getElementById('team-detail-btn');
+  if (teamBtn) teamBtn.querySelector('.tdb-label').textContent = isFF ? 'My Squad' : 'My Team';
+
+  const myGameIcon = document.getElementById('my-game-icon');
+  const myGameLabel = document.getElementById('my-game-label');
+  if (myGameIcon) myGameIcon.innerHTML = `<img class="game-logo-icon" src="${GAME_LOGOS[isFF ? 'freefire' : 'bgmi']}" alt="${isFF ? 'Free Fire' : 'BGMI'}">`;
+  if (myGameLabel) myGameLabel.textContent = isFF ? 'Free Fire' : 'BGMI';
+
+  // Home page: BGMI shows Scrims/WOW, Free Fire shows Squad Scrims/Solo Scrims —
+  // both use the same tournament list UI, just pointed at the right database
+  // (via getGameDb()) and filtered on a different mode taxonomy.
+  const ffHome = document.getElementById('ff-home-panel');
+  if (ffHome) ffHome.style.display = 'none'; // legacy placeholder — no longer used
+  applyModeToggleUI();
+  applyResultsFilterUI();
+
+  // Reset to the top-level filter whenever the game changes
+  _tournamentModeFilter = isFF ? 'squad' : 'scrims';
+  _tournamentWowVariant = 'all';
+
+  // Re-point the live tournaments listener at the right database (BGMI vs Free
+  // Fire) — this also triggers renderTournaments() once data arrives.
+  if (typeof attachTournamentListeners === 'function') attachTournamentListeners();
+  else renderTournaments();
+
+  // Re-point Find Squad list/labels at the right database
+  if (typeof refreshSquadRefForGame === 'function') refreshSquadRefForGame();
+  if (typeof updateFindSquadLabels === 'function') updateFindSquadLabels();
+
+  // Results: reload from the right database and re-render with the right filter
+  if (typeof loadResultsFromFirebase === 'function') {
+    loadResultsFromFirebase().then(() => {
+      const chip = document.querySelector('.results-filter .filter-chip[data-f="all"]');
+      if (chip) setFilter(chip, 'all'); else renderResults('all');
+    });
+  }
+}
+
+// Swap the Home-page mode toggle between BGMI's Scrims/WOW and Free Fire's
+// Squad Scrims/Solo Scrims — same markup, different labels/values.
+function applyModeToggleUI() {
+  const isFF = getActiveGame() === 'freefire';
+  const seg = document.querySelector('.mode-seg');
+  const wowRow = document.getElementById('wow-variant-row');
+  if (!seg) return;
+  if (isFF) {
+    seg.innerHTML = `
+      <div class="mode-seg-btn active" data-mode="squad" onclick="setTournamentMode(this,'squad')">Squad Scrims</div>
+      <div class="mode-seg-btn" data-mode="solo" onclick="setTournamentMode(this,'solo')">Solo Scrims</div>`;
+    if (wowRow) wowRow.classList.remove('open');
+  } else {
+    seg.innerHTML = `
+      <div class="mode-seg-btn active" data-mode="scrims" onclick="setTournamentMode(this,'scrims')">Scrims</div>
+      <div class="mode-seg-btn" data-mode="wow" onclick="setTournamentMode(this,'wow')">WOW</div>`;
+  }
+}
+
+// Swap the Results-page filter chips the same way
+function applyResultsFilterUI() {
+  const isFF = getActiveGame() === 'freefire';
+  const bar = document.querySelector('.results-filter');
+  if (!bar) return;
+  bar.innerHTML = isFF
+    ? `
+      <div class="filter-chip active" data-f="all" onclick="setFilter(this,'all')">All</div>
+      <div class="filter-chip" data-f="squad scrims" onclick="setFilter(this,'squad scrims')">Squad Scrims</div>
+      <div class="filter-chip" data-f="solo scrims" onclick="setFilter(this,'solo scrims')">Solo Scrims</div>`
+    : `
+      <div class="filter-chip active" data-f="all" onclick="setFilter(this,'all')">All</div>
+      <div class="filter-chip" data-f="scrims" onclick="setFilter(this,'scrims')">Scrims</div>
+      <div class="filter-chip" data-f="wow 2v2" onclick="setFilter(this,'wow 2v2')">WOW 2v2</div>
+      <div class="filter-chip" data-f="wow 3v3" onclick="setFilter(this,'wow 3v3')">WOW 3v3</div>
+      <div class="filter-chip" data-f="wow 4v4" onclick="setFilter(this,'wow 4v4')">WOW 4v4</div>`;
 }
 
 // ── GOOGLE SIGN UP ──────────────────────────────────────────
@@ -4263,17 +4370,26 @@ async function authLogin() {
       btn.disabled = false; btn.textContent = '🔐 LOGIN'; return;
     }
 
-    // Login success
+    // Login success — existing BGMI players from before Free Fire launch don't
+    // have a `game` field saved yet, so default them to BGMI (their existing game)
+    // and quietly write that back so we don't ask again.
+    let userGame = userData.game || null;
+    if (!userGame) {
+      userGame = 'bgmi';
+      try { await db.ref('users/' + emailKey + '/game').set('bgmi'); } catch(e) {}
+    }
     const mergedUser = {
       isGuest: false,
       username: userData.username,
       chatName: userData.chatName || generateGamerName(),
       bgmiId: userData.bgmiId || null,
       email: email,
-      googleUid: userData.googleUid || null
+      googleUid: userData.googleUid || null,
+      game: userGame
     };
     persistSession(mergedUser);
     applyLoggedInUser(mergedUser);
+    applyGameVisibility();
   } catch(e) {
     console.error('Login error:', e);
     showToast('❌ Login failed: ' + (e.message || 'Try again'));
@@ -4339,7 +4455,8 @@ async function authFinish() {
     bgmiId: bgmiId || null,
     email: currentUser.email || null,
     googleUid: currentUser.googleUid || null,
-    phone: phone
+    phone: phone,
+    game: null // new player — will pick BGMI or Free Fire next
   };
   currentUser = finishedUser;
 
@@ -4354,15 +4471,12 @@ async function authFinish() {
         email: currentUser.email || null,
         googleUid: currentUser.googleUid || null,
         phone: phone,
+        game: null,
         createdAt: Date.now()
       });
     } catch(e) { console.warn('Save failed:', e); }
   }
 
-  // Hide auth screen
-  const authScr = document.getElementById('auth-screen');
-  authScr.style.display = 'none';
-  authScr.classList.add('hidden');
   document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
   document.getElementById('auth-step-0').classList.add('active');
 
@@ -4370,13 +4484,13 @@ async function authFinish() {
   document.querySelectorAll('.profile-username').forEach(el => el.textContent = username);
   document.querySelector('.profile-avatar').textContent = initials;
   document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
-  // Chat shows chatName, profile shows username
-  const chatLabel = document.getElementById('chat-you-label');
-  if (chatLabel) chatLabel.textContent = chatName;
 
   persistSession(finishedUser);
   checkRegisteredChatAccess();
-  showToast('🎮 Welcome ' + username + "! You're in the zone!");
+  showToast('🎮 Welcome ' + username + "! One last step...");
+
+  // New player — always ask them to choose their game before entering the app
+  showGameChoiceScreen('signup');
 }
 
 // =====================================================================
@@ -4446,13 +4560,15 @@ window.onload = async function() {
       const snap = await db.ref('users/' + emailKey).once('value');
       const userData = snap.val();
       if (userData) {
+        if (!userData.game) { db.ref('users/' + emailKey + '/game').set('bgmi').catch(()=>{}); }
         applyLoggedInUser({
           isGuest: false,
           username: userData.username,
           chatName: userData.chatName || savedSession.chatName,
           bgmiId: userData.bgmiId || null,
           email: savedSession.email,
-          googleUid: userData.googleUid || null
+          googleUid: userData.googleUid || null,
+          game: userData.game || 'bgmi'
         }, true); // skip toast on silent restore
       } else {
         clearSession(); // account removed, fall through to auth screen
@@ -4541,72 +4657,96 @@ window.onload = async function() {
   // ---- Load results from Firebase ----
   await loadResultsFromFirebase();
 
-  // Chat — Firebase listener
-  initFirebaseChat();
-
   console.log('[BZ] results loaded — count:', results.length, results.map(r => r.name));
 
-  // NOTE: renderTournaments() is called by the db.ref('tournaments').on('value') listener above.
+  // NOTE: renderTournaments() is called by the getGameDb().ref('tournaments').on('value') listener above.
   renderResults();
 
   // ── RESTORE LAST SECTION (section persistence on reload) ──
   const lastPage = sessionStorage.getItem('bz_page');
-  if (lastPage && ['home','news','chat','results','dashboard'].includes(lastPage)) {
+  if (lastPage && ['home','news','results','dashboard'].includes(lastPage)) {
     switchPage(lastPage);
   }
 
   // ── HIDE LOADING SCREEN ──
   hideLoadingScreen();
+
+  // ── APPLY GAME-BASED VISIBILITY (BGMI vs Free Fire UI) ──
+  applyGameVisibility();
 };
 
 // ========= TOURNAMENT LISTENER — runs immediately, outside window.onload =========
 // This ensures tournaments always load even if auth or other async code above throws.
-(function() {
-  function parseTournament(t, i) {
-    let sched = t.matchSchedule;
-    if (sched && !Array.isArray(sched) && typeof sched === 'object') {
-      sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
-    }
-    if (!Array.isArray(sched) || sched.length === 0) {
-      sched = [
-        { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
-        ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
-      ].filter(m => m.time);
-    }
-    let pl = t.prizeList;
-    if (pl && !Array.isArray(pl) && typeof pl === 'object') {
-      pl = Object.keys(pl).sort((a,b) => Number(a)-Number(b)).map(k => pl[k]);
-    }
-    if (!Array.isArray(pl) || !pl.length) {
-      pl = t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [];
-    }
-    const total = t.maxTeams || 25;
-    return {
-      id: t._key,
-      num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
-      name: t.name || '',
-      date: t.date || '',
-      time: t.time || '',
-      matchSchedule: sched,
-      match1Title: t.match1Title || 'Match 1',
-      match1Time:  t.match1Time  || t.time || '',
-      match2Title: t.match2Title || 'Match 2',
-      match2Time:  t.match2Time  || '',
-      map:   t.map   || t.game   || '',
-      fee:   t.entryFee || t.fee || 'FREE',
-      prize: t.prize || '',
-      mode:     t.mode || '',
-      modeType: t.modeType || '',
-      slots: 0, total,
-      status: mapTournamentStatus(t.status),
-      prizeList: pl,
-      cardImageUrl: t.cardImageUrl || ''
-    };
+// Re-attachable so it can be re-pointed at db (BGMI) or dbFF (Free Fire) when the
+// player switches game via applyGameVisibility().
+let _tournamentsListenerRef = null;
+let _regCountsListenerRef = null;
+let _tournamentsListenerGame = null;
+let registrationCountsCache = {};
+
+function parseTournament(t, i) {
+  let sched = t.matchSchedule;
+  if (sched && !Array.isArray(sched) && typeof sched === 'object') {
+    sched = Object.keys(sched).sort((a,b) => Number(a)-Number(b)).map(k => sched[k]);
   }
+  if (!Array.isArray(sched) || sched.length === 0) {
+    sched = [
+      { title: t.match1Title || 'Match 1', time: t.match1Time || t.time || '' },
+      ...(t.match2Time ? [{ title: t.match2Title || 'Match 2', time: t.match2Time }] : [])
+    ].filter(m => m.time);
+  }
+  let pl = t.prizeList;
+  if (pl && !Array.isArray(pl) && typeof pl === 'object') {
+    pl = Object.keys(pl).sort((a,b) => Number(a)-Number(b)).map(k => pl[k]);
+  }
+  if (!Array.isArray(pl) || !pl.length) {
+    pl = t.prize1 ? [t.prize1, t.prize2, t.prize3].filter(Boolean) : [];
+  }
+  const total = t.maxTeams || 25;
+  return {
+    id: t._key,
+    num: t.num || ('MATCH #' + String(i+1).padStart(2,'0')),
+    name: t.name || '',
+    date: t.date || '',
+    time: t.time || '',
+    matchSchedule: sched,
+    match1Title: t.match1Title || 'Match 1',
+    match1Time:  t.match1Time  || t.time || '',
+    match2Title: t.match2Title || 'Match 2',
+    match2Time:  t.match2Time  || '',
+    map:   t.map   || t.game   || '',
+    fee:   t.entryFee || t.fee || 'FREE',
+    prize: t.prize || '',
+    mode:     t.mode || '',
+    modeType: t.modeType || '',
+    slots: 0, total,
+    status: mapTournamentStatus(t.status),
+    prizeList: pl,
+    cardImageUrl: t.cardImageUrl || ''
+  };
+}
 
-  let registrationCountsCache = {};
+// Attaches the live tournaments + registrationCounts listeners to whichever
+// database matches the player's currently-selected game. Safe to call
+// repeatedly — it no-ops if already attached to the right database, and
+// detaches cleanly from the previous one when the game changes.
+function attachTournamentListeners() {
+  const game = getActiveGame();
+  if (_tournamentsListenerGame === game && _tournamentsListenerRef) return; // already attached correctly
 
-  db.ref('tournaments').on('value', snap => {
+  if (_tournamentsListenerRef) _tournamentsListenerRef.off();
+  if (_regCountsListenerRef) _regCountsListenerRef.off();
+  registrationCountsCache = {};
+  tournaments = [];
+
+  const gdb = getGameDb();
+  _tournamentsListenerGame = game;
+  _tournamentsListenerRef = gdb.ref('tournaments');
+  _regCountsListenerRef = gdb.ref('registrationCounts');
+
+  showTournamentSkeleton();
+
+  _tournamentsListenerRef.on('value', snap => {
     const raw = [];
     snap.forEach(c => { raw.push({ _key: c.key, ...c.val() }); });
     const statusOrder = { upcoming: 0, live: 1, completed: 2, cancelled: 3 };
@@ -4623,7 +4763,7 @@ window.onload = async function() {
       }
       return parsed;
     });
-    console.log('[BZ] tournaments update — count:', tournaments.length, tournaments.map(t => t.name));
+    console.log('[BZ] tournaments update (' + game + ') — count:', tournaments.length, tournaments.map(t => t.name));
     renderTournaments();
     // Keep "My Matches" statuses live if the user currently has that tab open —
     // so an admin flipping a match to LIVE/COMPLETED/CANCELLED reflects instantly.
@@ -4639,7 +4779,7 @@ window.onload = async function() {
     }
   });
 
-  db.ref('registrationCounts').on('value', snap => {
+  _regCountsListenerRef.on('value', snap => {
     registrationCountsCache = {};
     snap.forEach(c => { registrationCountsCache[c.key] = c.val() || 0; });
     if (!tournaments.length) return;
@@ -4652,19 +4792,18 @@ window.onload = async function() {
     });
     if (changed) renderTournaments();
   });
-})();
+}
+
+// Kick off the initial listener attachment immediately (before window.onload),
+// so tournaments always load even if auth or other async code throws.
+attachTournamentListeners();
 
 // ========= NAVIGATION =========
 function switchPage(page) {
   // Always clear keyboard-open state on page switch
   document.body.classList.remove('keyboard-open');
-  // on-chat-page gates the nav-hiding CSS — only true when chat tab is active
-  document.body.classList.toggle('on-chat-page', page === 'chat');
   document.body.classList.toggle('on-dashboard-page', page === 'dashboard');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  // #chat-page has no class="page" so toggle it explicitly
-  const _chatPageEl = document.getElementById('chat-page');
-  if (_chatPageEl) _chatPageEl.classList.remove('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
   document.getElementById(page + '-page').classList.add('active');
@@ -4674,34 +4813,9 @@ function switchPage(page) {
   document.getElementById('content').scrollTop = 0;
   currentPage = page;
 
-  // Track if user is on chat page (used to hide bottom nav when keyboard opens)
-  if (page === 'chat') {
-    document.body.classList.add('on-chat-page');
-  } else {
-    document.body.classList.remove('on-chat-page');
-  }
-
   // Persist current section so reload returns to same tab
   try { sessionStorage.setItem('bz_page', page); } catch(e) {}
 
-  if (page === 'chat') {
-    const chatLabel = document.getElementById('chat-you-label');
-    if (chatLabel) chatLabel.textContent = currentUser.chatName || currentUser.username;
-    // Force input bar visible immediately for logged-in users — don't wait for listeners
-    if (!currentUser.isGuest && currentUser.email) {
-      const inputBar = document.getElementById('chat-input-bar');
-      const lockMsg  = document.getElementById('chat-locked-msg');
-      if (inputBar) inputBar.style.display = 'block';
-      if (lockMsg)  lockMsg.style.display  = 'none';
-    }
-    checkRegisteredChatAccess();
-    const _hn = document.getElementById('home-player-name'); if (_hn) _hn.textContent = currentUser.username;
-    if (!chatListenerAttached) initFirebaseChat();
-    setTimeout(() => {
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    }, 100);
-  }
   if (page === 'news') {
     loadSquadEntries();
   }
@@ -4932,6 +5046,10 @@ function renderTournaments() {
   }
   const filtered = tournaments.filter(t => {
     const m = (t.mode || '').toLowerCase();
+    if (getActiveGame() === 'freefire') {
+      if (_tournamentModeFilter === 'squad') return m.startsWith('squad');
+      return m.startsWith('solo');
+    }
     if (_tournamentModeFilter === 'scrims') return m.startsWith('scrims');
     // wow
     if (!m.startsWith('wow')) return false;
@@ -4939,9 +5057,11 @@ function renderTournaments() {
     return m.includes(_tournamentWowVariant);
   });
   if (!filtered.length) {
-    const label = _tournamentModeFilter === 'wow'
-      ? ('WOW ' + (_tournamentWowVariant === 'all' ? '' : _tournamentWowVariant)).trim()
-      : 'Scrims';
+    const label = getActiveGame() === 'freefire'
+      ? (_tournamentModeFilter === 'squad' ? 'Squad Scrims' : 'Solo Scrims')
+      : _tournamentModeFilter === 'wow'
+        ? ('WOW ' + (_tournamentWowVariant === 'all' ? '' : _tournamentWowVariant)).trim()
+        : 'Scrims';
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em">No ' + label + ' tournaments right now</div>';
     return;
   }
@@ -5072,7 +5192,7 @@ async function proceedToPayment() {
   if (!currentDetail) { showToast('⚠️ No tournament selected'); return; }
 
   // Slot full guard
-  const liveCountSnap = await db.ref('registrationCounts/' + currentDetail.id).once('value');
+  const liveCountSnap = await getGameDb().ref('registrationCounts/' + currentDetail.id).once('value');
   const liveCount = liveCountSnap.val() || 0;
   if (liveCount >= currentDetail.total) {
     showToast('🔒 Tournament is full — no more slots available');
@@ -5086,7 +5206,7 @@ async function proceedToPayment() {
 
   try {
     // Duplicate check in confirmed registrations
-    const existingSnap = await db.ref('registrations/' + currentDetail.id).once('value');
+    const existingSnap = await getGameDb().ref('registrations/' + currentDetail.id).once('value');
     if (existingSnap.exists()) {
       const submittedPhone = '+91' + phone1;
       const submittedEmail = email1.toLowerCase();
@@ -5110,7 +5230,7 @@ async function proceedToPayment() {
     }
 
     // Also check pending requests
-    const pendingSnap = await db.ref('pendingRegistrations/' + currentDetail.id).once('value');
+    const pendingSnap = await getGameDb().ref('pendingRegistrations/' + currentDetail.id).once('value');
     if (pendingSnap.exists()) {
       const submittedPhone = '+91' + phone1;
       const submittedEmail = email1.toLowerCase();
@@ -5207,7 +5327,7 @@ async function confirmPayNow() {
 
   // 1: Save to pendingRegistrations
   try {
-    await db.ref('pendingRegistrations/' + t.id).push({
+    await getGameDb().ref('pendingRegistrations/' + t.id).push({
       tournamentId:   t.id,
       tournamentName: t.name,
       teamName:       d.name,
@@ -5275,60 +5395,8 @@ function closeModal() {
   showHome();
 }
 
-// ========= CHAT — Firebase Realtime Database =========
+// ========= Shared chat helpers (used by tournament chat) =========
 const profanity = ['fuck','shit','bastard','ass','bitch'];
-let chatListenerAttached = false;
-// Unique session key stored in memory so own messages are always recognized
-const SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
-
-function initFirebaseChat() {
-  const container = document.getElementById('chat-messages');
-
-  // Listen for pinned message from admin
-  db.ref('pinnedMessage').on('value', snap => {
-    const banner = document.getElementById('pinned-banner');
-    const textEl = document.getElementById('pinned-msg-text');
-    if (!banner || !textEl) return;
-    if (snap.exists() && snap.val() && snap.val().text) {
-      textEl.textContent = snap.val().text;
-      banner.style.display = 'block';
-    } else {
-      banner.style.display = 'none';
-      textEl.textContent = '';
-    }
-  });
-
-  // Listen for last 60 messages and any new ones in real time
-  chatRef.limitToLast(60).on('child_added', snapshot => {
-    const m = snapshot.val();
-    if (!m) return;
-
-    const myName = currentUser.chatName || currentUser.username;
-    m.own = (m.sessionId === SESSION_ID)
-         || (myName && m.user === myName)
-         || (currentUser.email && m.userEmail === currentUser.email);
-
-    addMessageToDOM(m, true);
-  });
-
-  chatListenerAttached = true;
-}
-
-function addMessageToDOM(m, scroll) {
-  const container = document.getElementById('chat-messages');
-  if (!container) return;
-  const div = document.createElement('div');
-  div.className = 'chat-msg' + (m.own ? ' own' : '');
-  div.innerHTML = `
-    <div class="msg-avatar" style="background:${m.color}22;border:1px solid ${m.color}44;color:${m.color}">${m.initials}</div>
-    <div class="msg-content">
-      <div class="msg-sender" style="color:${m.own ? 'var(--accent-orange)' : m.color}">${m.user}</div>
-      <div class="msg-bubble">${escapeHTML(m.text)}</div>
-      <div class="msg-time">${m.time}</div>
-    </div>`;
-  container.appendChild(div);
-  if (scroll) container.scrollTop = container.scrollHeight;
-}
 
 function escapeHTML(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -5369,64 +5437,6 @@ function autoGrowChat(el) {
 
   el.style.height = '40px';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-let _isSending = false;
-async function sendMessage() {
-  if (_isSending) return;
-  if (currentUser.isGuest) {
-    showToast('🔒 Sign up to chat');
-    setTimeout(() => showAuthScreen(), 600);
-    return;
-  }
-  _isSending = true;
-  const input = document.getElementById('chat-input');
-  const raw = input.value.trim();
-  if (!raw) { _isSending = false; return; }
-  const clean = filterProfanity(raw);
-  input.value = '';
-  input.style.height = '40px'; // reset textarea height after send
-  autoGrowChat(input);
-  // Keep focus on input so keyboard stays open and bar stays put
-  input.focus();
-
-  const username = currentUser.chatName || currentUser.username || generateGamerName();
-  const initials = username.slice(0, 2).toUpperCase();
-  const now = new Date();
-  const hours = now.getHours();
-  const mins = String(now.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  const time = (hours % 12 || 12) + ':' + mins + ' ' + ampm;
-
-  // Deterministic color from username
-  const gamerColors = ['#ff7800','#00ff9d','#00cfff','#ff3a6e','#a78bfa','#ffd700','#ff6b35','#39ff14'];
-  let hash = 0;
-  for (let c of username) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
-  const userColor = gamerColors[hash % gamerColors.length];
-
-  try {
-    await chatRef.push({
-      user: username,
-      sessionId: SESSION_ID,
-      userEmail: currentUser.email || null,
-      color: userColor,
-      initials: initials,
-      text: clean,
-      time: time,
-      ts: firebase.database.ServerValue.TIMESTAMP
-    });
-  } catch(e) {
-    showToast('❌ Failed to send — check connection');
-    console.error('Chat send error:', e);
-  } finally {
-    _isSending = false;
-  }
-}
-
-function addEmoji(e) {
-  const input = document.getElementById('chat-input');
-  input.value += e;
-  input.focus();
 }
 
 // ========= TERMS & CONDITIONS (skill-based platform info) =========
@@ -5492,8 +5502,6 @@ async function saveProfile() {
     document.querySelectorAll('.profile-username').forEach(el => el.textContent = newUsername);
     document.querySelector('.profile-avatar').textContent = initials;
     document.querySelectorAll('.profile-id').forEach(el => el.textContent = currentUser.email || '');
-    const chatLabel = document.getElementById('chat-you-label');
-    if (chatLabel) chatLabel.textContent = newUsername;
 
     showToast('✅ Profile updated!');
     closeEditProfile();
@@ -5543,7 +5551,7 @@ async function loadMyMatches() {
 
   try {
     // Search registrations across all tournaments for this user's email
-    const regSnap = await db.ref('registrations').once('value');
+    const regSnap = await getGameDb().ref('registrations').once('value');
     const myRegs = [];
     regSnap.forEach(tourneyNode => {
       const tourneyId = tourneyNode.key;
@@ -5619,7 +5627,7 @@ const TCHAT_SESSION_ID = Date.now().toString(36) + Math.random().toString(36).sl
 // in the order teams were registered (confirmed registrations, oldest first).
 async function getMyTeamSlotInfo(tournamentId) {
   try {
-    const snap = await db.ref('registrations/' + tournamentId).orderByChild('ts').once('value');
+    const snap = await getGameDb().ref('registrations/' + tournamentId).orderByChild('ts').once('value');
     const list = [];
     snap.forEach(node => {
       const r = node.val() || {};
@@ -5691,7 +5699,7 @@ async function openAllTeamDrops() {
 
   let regsSnap;
   try {
-    regsSnap = await db.ref('registrations/' + tid).once('value');
+    regsSnap = await getGameDb().ref('registrations/' + tid).once('value');
   } catch (e) {
     showToast('⚠️ Could not load team drops');
     return;
@@ -5794,7 +5802,7 @@ function openTournamentChat(tournamentId, tournamentName) {
 
   // Detach old listeners
   if (tchatListener && activeTournamentChatId) {
-    db.ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
+    getGameDb().ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
   }
   if (tchatPinnedListener) {
     db.ref('pinnedMessage').off('value', tchatPinnedListener);
@@ -5816,13 +5824,13 @@ function openTournamentChat(tournamentId, tournamentName) {
   }
 
   // Tournament-specific pinned room info
-  tchatPinnedListener = db.ref('tournamentChats/' + tournamentId + '/pinnedMessage').on('value', snap => {
+  tchatPinnedListener = getGameDb().ref('tournamentChats/' + tournamentId + '/pinnedMessage').on('value', snap => {
     tchatPinnedRawVal = (snap.exists() && snap.val() && snap.val().text) ? snap.val() : null;
     renderTchatPinnedBanner();
   });
 
   // Load messages for this tournament
-  const msgsRef = db.ref('tournamentChats/' + tournamentId + '/messages');
+  const msgsRef = getGameDb().ref('tournamentChats/' + tournamentId + '/messages');
   tchatListener = msgsRef.limitToLast(60).on('child_added', snapshot => {
     const m = snapshot.val();
     if (!m) return;
@@ -5870,11 +5878,11 @@ function closeTournamentChat() {
   overlay.style.bottom = '';
   // Detach listeners to save bandwidth
   if (tchatListener && activeTournamentChatId) {
-    db.ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
+    getGameDb().ref('tournamentChats/' + activeTournamentChatId + '/messages').off('child_added', tchatListener);
     tchatListener = null;
   }
   if (tchatPinnedListener) {
-    db.ref('tournamentChats/' + (activeTournamentChatId || '_') + '/pinnedMessage').off('value', tchatPinnedListener);
+    getGameDb().ref('tournamentChats/' + (activeTournamentChatId || '_') + '/pinnedMessage').off('value', tchatPinnedListener);
     tchatPinnedListener = null;
   }
   activeTournamentChatId = null;
@@ -5939,7 +5947,7 @@ async function sendTournamentMessage() {
   const userColor = gamerColors[hash % gamerColors.length];
 
   try {
-    await db.ref('tournamentChats/' + activeTournamentChatId + '/messages').push({
+    await getGameDb().ref('tournamentChats/' + activeTournamentChatId + '/messages').push({
       user: username,
       sessionId: TCHAT_SESSION_ID,
       userEmail: currentUser.email || null,
@@ -5960,7 +5968,7 @@ async function sendTournamentMessage() {
 // ========= RESULTS =========
 async function loadResultsFromFirebase() {
   try {
-    const rSnap = await db.ref('results').once('value');
+    const rSnap = await getGameDb().ref('results').once('value');
     const rArr = [];
     rSnap.forEach(c => { rArr.push({ _key: c.key, ...c.val() }); });
     rArr.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -6196,22 +6204,60 @@ function showToast(msg) {
 
 
 // ========= FIND SQUAD — Firebase Realtime Database =========
-const squadRef = db.ref('findSquad');
+// BGMI find-squad entries live in the main (old) database; Free Fire entries
+// live in the separate Free Fire database. Same UI, different backend per game.
 let squadEntries = [];
 let currentSquadFilter = 'all';
 let currentSquadType = 'team'; // 'team' or 'player'
+let _squadListenerRef = null;    // currently-attached ref, so we can .off() it on game switch
+let _squadListenerGame = null;   // which game the attached listener belongs to
+
+function getActiveGame() { return currentUser.game || 'bgmi'; }
+function getGameDb() { return getActiveGame() === 'freefire' ? dbFF : db; }
+function squadRef() { return getGameDb().ref('findSquad'); }
 
 function loadSquadEntries() {
   const list = document.getElementById('squad-list');
+  const game = getActiveGame();
+
+  // Re-point the listener if the game changed since we last attached one
+  if (_squadListenerRef && _squadListenerGame !== game) {
+    _squadListenerRef.off();
+    _squadListenerRef = null;
+  }
+  if (_squadListenerRef) return; // already listening for the current game
+
   list.innerHTML = '<div class="fs-empty"><div class="fs-empty-icon">📡</div><div class="fs-empty-text">Loading entries...</div></div>';
 
-  squadRef.orderByChild('ts').limitToLast(60).on('value', snapshot => {
+  _squadListenerRef = squadRef().orderByChild('ts').limitToLast(60);
+  _squadListenerGame = game;
+  _squadListenerRef.on('value', snapshot => {
     squadEntries = [];
     snapshot.forEach(child => {
       squadEntries.unshift({ id: child.key, ...child.val() });
     });
     renderSquadEntries();
   });
+}
+
+// Called from applyGameVisibility() whenever the selected game changes
+function refreshSquadRefForGame() {
+  const game = getActiveGame();
+  if (_squadListenerRef && _squadListenerGame !== game) {
+    _squadListenerRef.off();
+    _squadListenerRef = null;
+    squadEntries = [];
+  }
+  if (currentPage === 'news') loadSquadEntries();
+}
+
+// Keep the Find Squad page's copy in sync with the selected game
+function updateFindSquadLabels() {
+  const isFF = getActiveGame() === 'freefire';
+  const sub = document.querySelector('#news-page .page-brand-sub');
+  if (sub) sub.textContent = isFF ? 'find squad · connect with Free Fire teams & players' : 'find squad · connect with teams & players';
+  const nameLabel = document.getElementById('fs-label-name');
+  if (nameLabel) nameLabel.innerHTML = (isFF ? 'Free Fire UID' : 'BGMI ID') + ' <span class="fs-req">*</span>';
 }
 
 function renderSquadEntries() {
@@ -6267,7 +6313,9 @@ function setSquadFilter(el, val) {
 
 // ─── TEAM DROP DETAILS (team name, mobile, drop location per map) ───────────
 function teamDetailsComplete(td) {
-  return !!(td && td.teamName && td.mobile && td.erangel && td.miramar && td.rondo);
+  if (!td) return false;
+  if (getActiveGame() === 'freefire') return !!(td.teamName && td.mobile && td.ffUid);
+  return !!(td.teamName && td.mobile && td.erangel && td.miramar && td.rondo);
 }
 
 function updateTeamDetailUI() {
@@ -6282,7 +6330,7 @@ function persistTeamDetailsLocal(td) {
   try {
     const emailKey = (currentUser.email || '').replace(/[.#$[\]]/g, '_');
     if (!emailKey) return;
-    localStorage.setItem('bz_team_details_' + emailKey, JSON.stringify(td));
+    localStorage.setItem('bz_team_details_bgmi_' + emailKey, JSON.stringify(td));
   } catch(e) {}
 }
 
@@ -6292,21 +6340,22 @@ async function loadTeamDetails() {
   // One-time cleanup of the old shared (non-namespaced) cache key from a previous version
   try { localStorage.removeItem('bz_team_details'); } catch(e) {}
   myTeamDetails = null;
-  // Fast path: local cache scoped to THIS user's email, so UI doesn't flash
+  const cacheKey = 'bz_team_details_' + getActiveGame() + '_' + emailKey;
+  // Fast path: local cache scoped to THIS user's email + game, so UI doesn't flash
   try {
-    const raw = localStorage.getItem('bz_team_details_' + emailKey);
+    const raw = localStorage.getItem(cacheKey);
     if (raw) { myTeamDetails = JSON.parse(raw); updateTeamDetailUI(); }
   } catch(e) {}
-  // Source of truth: Firebase
+  // Source of truth: Firebase (BGMI → main db, Free Fire → Free Fire db)
   try {
-    const snap = await db.ref('teamDetails/' + emailKey).once('value');
+    const snap = await getGameDb().ref('teamDetails/' + emailKey).once('value');
     if (snap.exists()) {
       myTeamDetails = snap.val();
-      persistTeamDetailsLocal(myTeamDetails);
+      try { localStorage.setItem(cacheKey, JSON.stringify(myTeamDetails)); } catch(e) {}
     } else {
       // No record for this account — never fall back to another user's cached data
       myTeamDetails = null;
-      try { localStorage.removeItem('bz_team_details_' + emailKey); } catch(e) {}
+      try { localStorage.removeItem(cacheKey); } catch(e) {}
     }
   } catch(e) { console.warn('Team details load failed:', e); }
   updateTeamDetailUI();
@@ -6314,10 +6363,11 @@ async function loadTeamDetails() {
 
 function openTeamDetailModal() {
   if (currentUser.isGuest || !currentUser.email) {
-    showToast('🔒 Sign up to set your team drop details');
+    showToast('🔒 Sign up to set your team details');
     setTimeout(() => showAuthScreen(), 600);
     return;
   }
+  if (getActiveGame() === 'freefire') { openFreeFireTeamDetailModal(); return; }
   const td = myTeamDetails || {};
   document.getElementById('td-teamname').value = td.teamName || '';
   document.getElementById('td-mobile').value = td.mobile || '';
@@ -6325,6 +6375,46 @@ function openTeamDetailModal() {
   document.getElementById('td-miramar').value = td.miramar || '';
   document.getElementById('td-rondo').value = td.rondo || '';
   document.getElementById('team-detail-overlay').classList.add('open');
+}
+
+// ─── FREE FIRE — MY SQUAD DETAILS (team name, UID, mobile) — saved to Free Fire db ───
+function openFreeFireTeamDetailModal() {
+  const td = myTeamDetails || {};
+  document.getElementById('ff-td-teamname').value = td.teamName || '';
+  document.getElementById('ff-td-uid').value = td.ffUid || '';
+  document.getElementById('ff-td-mobile').value = td.mobile || '';
+  document.getElementById('ff-team-detail-overlay').classList.add('open');
+}
+
+function closeFreeFireTeamDetailModal() {
+  document.getElementById('ff-team-detail-overlay').classList.remove('open');
+}
+
+async function saveFreeFireTeamDetails() {
+  const teamName = document.getElementById('ff-td-teamname').value.trim();
+  const ffUid    = document.getElementById('ff-td-uid').value.trim();
+  const mobile   = document.getElementById('ff-td-mobile').value.trim();
+
+  if (!teamName) { showToast('⚠️ Enter your team name'); return; }
+  if (!ffUid) { showToast('⚠️ Enter your Free Fire UID'); return; }
+  if (!mobile || mobile.length !== 10) { showToast('⚠️ Enter a valid 10-digit mobile number'); return; }
+
+  const btn = document.getElementById('ff-td-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'SAVING...'; }
+
+  const td = { teamName, ffUid, mobile, updatedAt: Date.now() };
+  try {
+    const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
+    await dbFF.ref('teamDetails/' + emailKey).set(td);
+    myTeamDetails = td;
+    try { localStorage.setItem('bz_team_details_freefire_' + emailKey, JSON.stringify(td)); } catch(e) {}
+    updateTeamDetailUI();
+    closeFreeFireTeamDetailModal();
+    showToast('✅ Squad details saved!');
+  } catch(e) {
+    showToast('⚠️ Could not save: ' + (e.message || 'Check connection'));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Save Squad Details'; }
 }
 
 function closeTeamDetailModal() {
@@ -6369,7 +6459,7 @@ function openSquadForm(type) {
   document.getElementById('fs-form-sub').textContent = isTeam ? 'Fill in details so players can find your team' : 'Fill in details so teams can find you';
   document.getElementById('fs-field-teamname').style.display = isTeam ? '' : 'none';
   document.getElementById('fs-field-slots').style.display = isTeam ? '' : 'none';
-  document.getElementById('fs-label-name').innerHTML = 'BGMI ID <span class="fs-req">*</span>';
+  document.getElementById('fs-label-name').innerHTML = (getActiveGame() === 'freefire' ? 'Free Fire UID' : 'BGMI ID') + ' <span class="fs-req">*</span>';
   document.getElementById('fs-label-role').innerHTML = isTeam ? 'Role Needed <span class="fs-req">*</span>' : 'Your Role <span class="fs-req">*</span>';
   document.getElementById('fs-label-timing').innerHTML = isTeam ? 'Required Playing Time <span class="fs-req">*</span>' : 'Your Playing Time <span class="fs-req">*</span>';
   document.getElementById('fs-timing').placeholder = isTeam ? 'e.g. 8 PM – 11 PM daily' : 'e.g. 9 PM – 12 AM daily';
@@ -6406,7 +6496,7 @@ function submitSquadEntry() {
   const slots = document.getElementById('fs-slots').value;
 
   if (isTeam && !teamname) { showToast('Enter team name'); return; }
-  if (!name) { showToast('Enter your BGMI ID'); return; }
+  if (!name) { showToast('Enter your ' + (getActiveGame() === 'freefire' ? 'Free Fire UID' : 'BGMI ID')); return; }
   if (!role) { showToast('Select a role'); return; }
   if (!timing) { showToast('Enter playing time'); return; }
   if (!contact || contact.length < 10) { showToast('Enter valid WhatsApp number'); return; }
@@ -6426,7 +6516,7 @@ function submitSquadEntry() {
   if (isTeam) { entry.teamname = teamname; entry.slots = parseInt(slots); }
   if (about) entry.about = about;
 
-  squadRef.push(entry).then(() => {
+  squadRef().push(entry).then(() => {
     btn.textContent = '⚡ POST ENTRY';
     btn.disabled = false;
     closeSquadForm();
@@ -6459,13 +6549,11 @@ function getTimeAgo(ts) {
 
   function chatInputFocused() {
     const a = document.activeElement;
-    return a && (a.id === 'chat-input' || a.id === 'tchat-input');
+    return a && a.id === 'tchat-input';
   }
 
   function scrollMsgsToBottom(delay) {
     setTimeout(() => {
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
       const tmsgs = document.getElementById('tchat-messages');
       if (tmsgs) tmsgs.scrollTop = tmsgs.scrollHeight;
     }, delay || 80);
@@ -6475,12 +6563,6 @@ function getTimeAgo(ts) {
     if (!window.visualViewport) return;
     const vvHeight = window.visualViewport.height;
     const vvTop    = window.visualViewport.offsetTop;
-
-    // #chat-page is position:fixed inset:0 — no manual resize needed, just scroll to bottom
-    const chatPage = document.getElementById('chat-page');
-    if (chatPage && chatPage.classList.contains('active')) {
-      scrollMsgsToBottom(80);
-    }
 
     // Tournament chat overlay
     const overlay = document.getElementById('tchat-overlay');
@@ -6493,7 +6575,6 @@ function getTimeAgo(ts) {
   }
 
   function resetLayout() {
-    // #chat-page CSS handles itself — no inline style reset needed
     const overlay = document.getElementById('tchat-overlay');
     if (overlay) {
       overlay.style.top    = '';
@@ -6544,4 +6625,3 @@ function getTimeAgo(ts) {
 </script>
 </body>
 </html>
-

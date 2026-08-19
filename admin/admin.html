@@ -471,9 +471,26 @@ body::after {
       <label>Password</label>
       <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <div class="field">
+      <label>Game</label>
+      <div id="login-game-toggle" style="display:flex;gap:10px;margin-top:4px">
+        <div class="login-game-opt active" data-game="bgmi" onclick="setLoginGame('bgmi')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:12px;border:1px solid rgba(255,120,0,0.3);cursor:pointer;transition:all 0.15s">
+          <img src="https://upload.wikimedia.org/wikipedia/en/6/63/Battleground_Mobile_India.webp?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.15)">
+          <span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:0.08em;color:#f0f2f5">BGMI</span>
+        </div>
+        <div class="login-game-opt" data-game="freefire" onclick="setLoginGame('freefire')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.15s">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDTdoQHm89cqAnKrbH1YktAnA3TwgB7YKVgtIFMxsotw&s" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.15)">
+          <span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:0.08em;color:#f0f2f5">FREE FIRE</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#7a8699;margin-top:6px;font-family:'Share Tech Mono',monospace">Data will be read/written to the selected game's database</div>
+    </div>
     <button class="btn-primary" id="login-btn" onclick="doLogin()">🔓 Enter Admin Zone</button>
   </div>
 </div>
+<style>
+.login-game-opt.active { border-color: #ff7800 !important; background: rgba(255,120,0,0.08); }
+</style>
 
 <!-- ===== ADMIN APP ===== -->
 <div id="admin-app">
@@ -488,7 +505,7 @@ body::after {
   <div class="admin-tabs">
     <button class="tab-btn active" onclick="switchTab('tournaments')">🏆 Tournaments</button>
     <button class="tab-btn" onclick="switchTab('results')">🥇 Results</button>
-    <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="tab-btn" onclick="switchTab('chat')">📌 Tournament Pin</button>
     <button class="tab-btn" onclick="switchTab('registrations')">📋 Registrations</button>
     <button class="tab-btn" onclick="switchTab('requests')" id="requests-tab-btn">📥 Requests <span id="req-badge" style="display:none;background:var(--accent-red);color:#fff;font-size:9px;font-family:var(--font-display);font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
@@ -729,44 +746,6 @@ body::after {
   <!-- ===== CHAT TAB ===== -->
   <div id="tab-chat" class="tab-panel">
 
-    <!-- PIN ROOM MESSAGE CARD — GLOBAL CHAT -->
-    <div class="section-card" style="border-color:rgba(255,120,0,0.25);background:linear-gradient(135deg,rgba(255,80,0,0.07) 0%,rgba(255,180,0,0.03) 100%)">
-      <div class="section-card-header">
-        <div class="section-card-title" style="color:var(--accent-orange)">📌 Pin to Global Chat</div>
-        <div id="pin-live-badge" style="display:none;background:rgba(255,120,0,0.15);border:1px solid rgba(255,120,0,0.4);border-radius:20px;padding:3px 10px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--accent-orange);letter-spacing:0.1em;animation:pulseGlow 1.5s ease-in-out infinite">● LIVE PIN</div>
-      </div>
-      <div class="section-card-body">
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6">
-          Broadcasts Room ID &amp; Password to the <strong style="color:var(--text-primary)">Global Chat Lobby</strong> visible to all players.
-        </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div class="field" style="margin-bottom:0">
-            <label>🏠 Room ID</label>
-            <input type="text" id="pin-room-id" placeholder="e.g. BGMI123456" maxlength="30" style="font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:0.08em">
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label>🔑 Room Password</label>
-            <input type="text" id="pin-room-pass" placeholder="e.g. battle99" maxlength="30" style="font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:0.08em">
-          </div>
-        </div>
-        <div class="field">
-          <label>📝 Extra Message <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--text-muted)">(optional)</span></label>
-          <input type="text" id="pin-extra" placeholder="e.g. Match starts in 5 mins! Map: Erangel" maxlength="80">
-        </div>
-        <div id="pin-preview-wrap" style="display:none;margin-bottom:14px;border-radius:10px;overflow:hidden">
-          <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Preview</div>
-          <div style="background:linear-gradient(135deg,rgba(255,80,0,0.14) 0%,rgba(255,180,0,0.08) 100%);border:2px solid rgba(255,120,0,0.5);border-radius:10px;padding:14px 16px">
-            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.18em;color:var(--accent-orange);text-transform:uppercase;margin-bottom:8px">📌 ROOM INFO</div>
-            <div id="pin-preview-text" style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:#fff;line-height:1.7;white-space:pre-wrap"></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn-primary" onclick="pinRoomMessage()" style="max-width:220px;background:var(--accent-orange)">📌 Pin to Global Chat</button>
-          <button class="btn-secondary" onclick="clearPinnedMessage()" id="clear-pin-btn" style="display:none">✕ Clear Pin</button>
-        </div>
-      </div>
-    </div>
-
     <!-- PIN ROOM MESSAGE CARD — TOURNAMENT CHAT -->
     <div class="section-card" style="border-color:rgba(0,255,157,0.25);background:linear-gradient(135deg,rgba(0,255,157,0.05) 0%,rgba(0,180,100,0.02) 100%)">
       <div class="section-card-header">
@@ -807,23 +786,6 @@ body::after {
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-primary" onclick="pinTournamentMessage()" style="max-width:240px;background:var(--accent-green);color:#000">📌 Pin to Tournament Chat</button>
           <button class="btn-secondary" onclick="clearTournamentPin()" id="tpin-clear-btn" style="display:none">✕ Clear Pin</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Messages list -->
-    <div class="section-card">
-      <div class="section-card-header">
-        <div class="section-card-title">Latest 50 Chat Messages</div>
-        <div style="display:flex;gap:8px">
-          <button class="action-btn edit" onclick="loadChatAdmin()">🔄 Refresh</button>
-          <button class="action-btn delete" onclick="clearChat()">🗑 Clear All</button>
-        </div>
-      </div>
-      <div id="chat-admin-list">
-        <div class="empty-state">
-          <div class="empty-state-icon">💬</div>
-          <div class="empty-state-text">Loading messages…</div>
         </div>
       </div>
     </div>
@@ -954,14 +916,43 @@ const firebaseConfig = {
   measurementId: "G-RRKPCPNBMP"
 };
 
-let db, chatRef, tournamentsRef, resultsRef;
+// Free Fire — separate Firebase project. Selected on the login screen; all
+// admin reads/writes (tournaments, results, registrations, chat, etc.) get
+// pointed at this database instead of the main one when "Free Fire" is picked.
+const firebaseConfigFF = {
+  apiKey: "AIzaSyBUmSHqTil8R2vHo5A0odZyVk-AYoUPqnw",
+  authDomain: "freefiredata-1197c.firebaseapp.com",
+  // ⚠️ TODO: no databaseURL was provided for this project — this is a guessed
+  // default. Confirm the real URL in Firebase Console → Realtime Database and
+  // replace it here (and in index.html) if it differs.
+  databaseURL: "https://freefiredata-1197c-default-rtdb.firebaseio.com",
+  projectId: "freefiredata-1197c",
+  storageBucket: "freefiredata-1197c.firebasestorage.app",
+  messagingSenderId: "165564522717",
+  appId: "1:165564522717:web:479775f1b7c309beb0fb34",
+  measurementId: "G-XMYHE1K7RL"
+};
+
+let db, tournamentsRef, resultsRef;
+let selectedAdminGame = 'bgmi'; // set via the login screen's game toggle
+
+function setLoginGame(game) {
+  selectedAdminGame = game;
+  document.querySelectorAll('.login-game-opt').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-game') === game);
+  });
+}
 
 function initFirebase() {
   try {
     if (typeof firebase === 'undefined') throw new Error('Firebase SDK not loaded');
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    chatRef = db.ref('chat');
+    // The Free Fire app is registered under a named app instance so it can
+    // coexist with the default (BGMI) app.
+    let ffApp = firebase.apps.find(a => a.name === 'freefire');
+    if (!ffApp) ffApp = firebase.initializeApp(firebaseConfigFF, 'freefire');
+
+    db = (selectedAdminGame === 'freefire') ? ffApp.database() : firebase.database();
     tournamentsRef = db.ref('tournaments');
     resultsRef = db.ref('results');
     return true;
@@ -998,21 +989,65 @@ function doLogin() {
     }
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('admin-app').classList.add('visible');
+    updateAdminGameBadge();
+    applyAdminGameModeOptions();
     // Kick off the tournaments fetch FIRST — the "Load From Tournament" dropdown on the
     // Results tab depends on it, so we don't want it queued behind chat/results/etc.
     loadTournamentsAdmin();
-    loadChatAdmin();
-    loadPinnedMessageAdmin();
     loadTournamentPinDropdown();
     loadResultsAdmin();
     initTournamentFormDefaults();
     // Listen for pending requests badge
     startRequestsBadgeListener();
-    showToast('✅ Welcome back, Admin!');
+    showToast('✅ Welcome back, Admin! Editing ' + (selectedAdminGame === 'freefire' ? 'Free Fire' : 'BGMI') + ' data.');
   } else {
     showToast('❌ Wrong credentials');
     document.getElementById('login-pass').value = '';
   }
+}
+
+// Shows a small badge in the admin header so it's always obvious which
+// game's database is currently being edited.
+function updateAdminGameBadge() {
+  let badge = document.getElementById('admin-game-badge');
+  const header = document.querySelector('.admin-header');
+  if (!badge && header) {
+    badge = document.createElement('div');
+    badge.id = 'admin-game-badge';
+    badge.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-family:"Orbitron",monospace;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;';
+    header.appendChild(badge);
+  }
+  if (!badge) return;
+  const isFF = selectedAdminGame === 'freefire';
+  badge.textContent = isFF ? '🔥 FREE FIRE DB' : '🏆 BGMI DB';
+  badge.style.background = isFF ? 'rgba(255,80,0,0.12)' : 'rgba(255,120,0,0.12)';
+  badge.style.color = isFF ? '#ff6a1a' : '#ff9500';
+  badge.style.border = '1px solid ' + (isFF ? 'rgba(255,80,0,0.35)' : 'rgba(255,120,0,0.35)');
+}
+
+function applyAdminGameModeOptions() {
+  const isFF = selectedAdminGame === 'freefire';
+  const optsHTML = isFF
+    ? `<option value="SQUAD SCRIMS">SQUAD SCRIMS</option>
+       <option value="SOLO SCRIMS">SOLO SCRIMS</option>
+       <option value="OTHER">OTHER</option>`
+    : `<option value="SCRIMS">SCRIMS</option>
+       <option value="WOW 2v2">WOW 2v2</option>
+       <option value="WOW 3v3">WOW 3v3</option>
+       <option value="WOW 4v4">WOW 4v4</option>
+       <option value="OTHER">OTHER</option>`;
+  ['t-mode', 'r-mode'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) sel.innerHTML = optsHTML;
+  });
+}
+
+// Default Mode value used when resetting forms — game-dependent
+function defaultModeValue() {
+  return selectedAdminGame === 'freefire' ? 'SQUAD SCRIMS' : 'SCRIMS';
+}
+function presetModeList() {
+  return selectedAdminGame === 'freefire' ? ['SQUAD SCRIMS','SOLO SCRIMS'] : ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
 }
 
 function doLogout() {
@@ -1030,7 +1065,7 @@ function switchTab(tab) {
   event.currentTarget.classList.add('active');
   if (tab === 'tournaments') loadTournamentsAdmin();
   if (tab === 'results') loadResultsAdmin();
-  if (tab === 'chat') { loadChatAdmin(); loadPinnedMessageAdmin(); loadTournamentPinDropdown(); }
+  if (tab === 'chat') { loadTournamentPinDropdown(); }
   if (tab === 'registrations') loadRegistrationsAdmin();
   if (tab === 'requests') loadRequestsAdmin();
 }
@@ -1179,7 +1214,7 @@ async function submitTournament() {
     }
   });
 
-  const modeSel = document.getElementById('t-mode').value || 'SCRIMS';
+  const modeSel = document.getElementById('t-mode').value || defaultModeValue();
   const mode = modeSel === 'OTHER'
     ? (document.getElementById('t-mode-custom').value.trim() || 'OTHER')
     : modeSel;
@@ -1254,7 +1289,7 @@ function resetTournamentForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('t-status').value = 'UPCOMING';
-  const mSel = document.getElementById('t-mode'); if (mSel) mSel.value = 'SCRIMS';
+  const mSel = document.getElementById('t-mode'); if (mSel) mSel.value = defaultModeValue();
   const mCustom = document.getElementById('t-mode-custom'); if (mCustom) mCustom.value = '';
   toggleModeCustom();
   const ci = document.getElementById('t-card-img'); if (ci) ci.value = '';
@@ -1274,7 +1309,7 @@ function editTournament(id) {
   document.getElementById('t-entry').value      = t.entryFee || '';
   document.getElementById('t-maxteams').value   = t.maxTeams || '';
   document.getElementById('t-status').value     = t.status || 'UPCOMING';
-  const presetModes = ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
+  const presetModes = presetModeList();
   const mSel = document.getElementById('t-mode');
   const mCustom = document.getElementById('t-mode-custom');
   if (mSel) {
@@ -1285,7 +1320,7 @@ function editTournament(id) {
       mSel.value = 'OTHER';
       if (mCustom) mCustom.value = t.mode;
     } else {
-      mSel.value = 'SCRIMS';
+      mSel.value = defaultModeValue();
       if (mCustom) mCustom.value = '';
     }
     toggleModeCustom();
@@ -1635,7 +1670,7 @@ async function onResultTournamentSelected() {
   document.getElementById('r-time').value = t.time || '';
   if (t.maxTeams) document.getElementById('r-teams').value = t.maxTeams;
 
-  const presetModesR = ['SCRIMS', 'WOW 2v2', 'WOW 3v3', 'WOW 4v4'];
+  const presetModesR = presetModeList();
   const rmSel = document.getElementById('r-mode');
   const rmCustom = document.getElementById('r-mode-custom');
   if (rmSel) {
@@ -1646,7 +1681,7 @@ async function onResultTournamentSelected() {
       rmSel.value = 'OTHER';
       if (rmCustom) rmCustom.value = t.mode;
     } else {
-      rmSel.value = 'SCRIMS';
+      rmSel.value = defaultModeValue();
       if (rmCustom) rmCustom.value = '';
     }
     toggleResultModeCustom();
@@ -1696,7 +1731,7 @@ async function submitResult() {
   const winner = lb.length > 0 ? lb[0].team : '';
   const totalKills = lb.reduce((sum, row) => sum + (row.kills || 0), 0);
 
-  const rModeSel = document.getElementById('r-mode').value || 'SCRIMS';
+  const rModeSel = document.getElementById('r-mode').value || defaultModeValue();
   const rMode = rModeSel === 'OTHER'
     ? (document.getElementById('r-mode-custom').value.trim() || 'OTHER')
     : rModeSel;
@@ -1740,7 +1775,7 @@ function resetResultForm() {
   ['r-name','r-date','r-time','r-teams','r-prize','r-summary'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  const rmSel = document.getElementById('r-mode'); if (rmSel) rmSel.value = 'SCRIMS';
+  const rmSel = document.getElementById('r-mode'); if (rmSel) rmSel.value = defaultModeValue();
   const rmCustom = document.getElementById('r-mode-custom'); if (rmCustom) rmCustom.value = '';
   toggleResultModeCustom();
   clearTeamRows();
@@ -1754,7 +1789,7 @@ function editResult(id) {
   document.getElementById('r-name').value = r.name || '';
   document.getElementById('r-date').value = r.date || '';
   document.getElementById('r-time').value = r.time || '';
-  const presetModesR = ['SCRIMS','WOW 2v2','WOW 3v3','WOW 4v4'];
+  const presetModesR = presetModeList();
   const rmSel = document.getElementById('r-mode');
   const rmCustom = document.getElementById('r-mode-custom');
   if (rmSel) {
@@ -1765,7 +1800,7 @@ function editResult(id) {
       rmSel.value = 'OTHER';
       if (rmCustom) rmCustom.value = r.mode;
     } else {
-      rmSel.value = 'SCRIMS';
+      rmSel.value = defaultModeValue();
       if (rmCustom) rmCustom.value = '';
     }
     toggleResultModeCustom();
@@ -2521,77 +2556,10 @@ function agrApplyToForm() {
   document.getElementById('result-form-card').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ===== PIN ROOM MESSAGE =====
-function buildPinText() {
-  var roomId   = (document.getElementById('pin-room-id').value || '').trim();
-  var roomPass = (document.getElementById('pin-room-pass').value || '').trim();
-  var extra    = (document.getElementById('pin-extra').value || '').trim();
-  var text = '';
-  if (roomId)   text += 'Room ID   : ' + roomId + '\n';
-  if (roomPass) text += 'Password  : ' + roomPass + '\n';
-  if (extra)    text += '\n' + extra;
-  return text.trim();
-}
-
-function updatePinPreview() {
-  const text = buildPinText();
-  const wrap = document.getElementById('pin-preview-wrap');
-  const el   = document.getElementById('pin-preview-text');
-  if (!wrap || !el) return;
-  if (text) { el.textContent = text; wrap.style.display = 'block'; }
-  else { wrap.style.display = 'none'; }
-}
-
 // Live preview as user types
 document.addEventListener('input', function(e) {
-  if (['pin-room-id','pin-room-pass','pin-extra'].includes(e.target.id)) updatePinPreview();
   if (['tpin-room-id','tpin-room-pass','tpin-extra'].includes(e.target.id)) updateTpinPreview();
 });
-
-async function pinRoomMessage() {
-  if (!db) { showToast('❌ Firebase not connected'); return; }
-  const text = buildPinText();
-  if (!text) { showToast('⚠️ Enter at least Room ID or Password'); return; }
-  try {
-    await db.ref('pinnedMessage').set({ text, ts: Date.now() });
-    showToast('📌 Room info pinned to chat!');
-    document.getElementById('clear-pin-btn').style.display = 'inline-block';
-    document.getElementById('pin-live-badge').style.display = 'block';
-  } catch(e) { showToast('❌ ' + e.message); }
-}
-
-async function clearPinnedMessage() {
-  if (!db) return;
-  try {
-    await db.ref('pinnedMessage').remove();
-    showToast('✕ Pin cleared');
-    document.getElementById('clear-pin-btn').style.display = 'none';
-    document.getElementById('pin-live-badge').style.display = 'none';
-    document.getElementById('pin-preview-wrap').style.display = 'none';
-    document.getElementById('pin-room-id').value = '';
-    document.getElementById('pin-room-pass').value = '';
-    document.getElementById('pin-extra').value = '';
-  } catch(e) { showToast('❌ ' + e.message); }
-}
-
-function loadPinnedMessageAdmin() {
-  if (!db) return;
-  db.ref('pinnedMessage').once('value', snap => {
-    if (snap.exists() && snap.val() && snap.val().text) {
-      document.getElementById('clear-pin-btn').style.display = 'inline-block';
-      document.getElementById('pin-live-badge').style.display = 'block';
-      // Parse back to fill fields
-      const raw = snap.val().text;
-      const roomIdMatch  = raw.match(/Room ID\s*:\s*(.+)/);
-      const passMatch    = raw.match(/Password\s*:\s*(.+)/);
-      if (roomIdMatch) document.getElementById('pin-room-id').value  = roomIdMatch[1].trim();
-      if (passMatch)   document.getElementById('pin-room-pass').value = passMatch[1].trim();
-      var extraStart = raw.indexOf('\n\n');
-      if (extraStart !== -1) document.getElementById('pin-extra').value = raw.slice(extraStart + 2).trim();
-      updatePinPreview();
-    }
-  });
-}
 
 // ===== TOURNAMENT PIN =====
 // Populate tournament dropdown when chat tab is opened
@@ -2689,57 +2657,6 @@ document.addEventListener('change', function(e) {
     }
   });
 });
-
-// ===== CHAT ADMIN =====
-function loadChatAdmin() {
-  if (!chatRef) return;
-  chatRef.limitToLast(50).once('value', snapshot => {
-    const msgs = [];
-    snapshot.forEach(child => msgs.unshift({ id: child.key, ...child.val() }));
-    renderChatAdmin(msgs);
-  });
-}
-
-function renderChatAdmin(msgs) {
-  const list = document.getElementById('chat-admin-list');
-  if (!msgs.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-text">No messages yet</div></div>';
-    return;
-  }
-  let html = '<table class="news-table"><thead><tr><th>User</th><th>Message</th><th>Time</th><th></th></tr></thead><tbody>';
-  msgs.forEach(m => {
-    html += `<tr>
-      <td style="font-weight:700;color:${escHTML(m.color||'#ff7800')}">${escHTML(m.user||'Unknown')}</td>
-      <td style="max-width:320px;word-break:break-word">${escHTML(m.text||'')}</td>
-      <td style="font-family:var(--font-mono);font-size:11px;white-space:nowrap">${escHTML(m.time||'')}</td>
-      <td><button class="action-btn delete" onclick="deleteChatMsg('${m.id}')">🗑</button></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  list.innerHTML = html;
-}
-
-async function deleteChatMsg(id) {
-  if (!confirm('Delete this message?')) return;
-  try {
-    await chatRef.child(id).remove();
-    showToast('🗑 Message deleted');
-    loadChatAdmin();
-  } catch(e) {
-    showToast('❌ ' + e.message);
-  }
-}
-
-async function clearChat() {
-  if (!confirm('Clear ALL chat messages? This cannot be undone!')) return;
-  try {
-    await chatRef.remove();
-    showToast('🗑 Chat cleared');
-    loadChatAdmin();
-  } catch(e) {
-    showToast('❌ ' + e.message);
-  }
-}
 
 // ===== REQUESTS ADMIN (Pending Registrations) =====
 let allRequestsData = [];
