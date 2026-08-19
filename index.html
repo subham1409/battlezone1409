@@ -290,7 +290,7 @@ body {
   font-size: 13px;
   line-height: 1;
   background: linear-gradient(145deg, rgba(255,120,0,0.2), rgba(255,120,0,0.04));
-  border: 1.5px solid rgba(255,120,0,0.5);
+  border: none;
   box-shadow: 0 0 12px rgba(255,120,0,0.22), inset 0 0 8px rgba(255,120,0,0.12);
   transition: transform 0.15s;
 }
@@ -3049,7 +3049,7 @@ button:active, .nav-item:active { transform: scale(0.95); }
 
         <div class="header-icon-group">
         <button class="team-detail-btn" id="team-detail-btn" onclick="openTeamDetailModal()" aria-label="My team details">
-          <span class="tdb-icon">🛡️<span class="team-detail-dot" id="team-detail-dot"></span></span>
+          <span class="tdb-icon"><img class="game-logo-icon" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR13Bga8wAHZ1_w6_shQ-uL4Akv789XQav1_DtNjhQwyg&s" alt="My Team"><span class="team-detail-dot" id="team-detail-dot"></span></span>
           <span class="tdb-label">My Team</span>
         </button>
 
@@ -3262,18 +3262,21 @@ button:active, .nav-item:active { transform: scale(0.95); }
                 <input type="tel" class="form-input" placeholder="9876543210" id="phone1-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone1-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone1-wrap').style.borderColor='rgba(255,255,255,0.07)'">
               </div>
             </div>
-            <div class="field-group" style="margin-bottom:10px">
+            <!-- Phone 2 / Email fields kept in the DOM (hidden) so account email still
+                 backs duplicate-checks & slot lookups — registration form only visibly
+                 asks for Team Name + Mobile Number, per requirements. -->
+            <div class="field-group" style="margin-bottom:0;display:none">
               <div class="form-label">Phone Number 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
               <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="phone2-wrap">
                 <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
                 <input type="tel" class="form-input" placeholder="9876543210" id="phone2-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone2-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone2-wrap').style.borderColor='rgba(255,255,255,0.07)'">
               </div>
             </div>
-            <div class="field-group" style="margin-bottom:10px">
+            <div class="field-group" style="margin-bottom:0;display:none">
               <div class="form-label">Email <span style="color:var(--accent-red);font-size:11px">*</span> <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(auto-filled from your account)</span></div>
               <input type="email" class="form-input" id="email1-input" readonly style="opacity:0.7;cursor:not-allowed">
             </div>
-            <div class="field-group">
+            <div class="field-group" style="display:none">
               <div class="form-label">Email 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
               <input type="email" class="form-input" placeholder="player2@example.com" id="email2-input">
             </div>
@@ -3526,11 +3529,6 @@ button:active, .nav-item:active { transform: scale(0.95); }
         <div class="fs-field">
           <div class="fs-field-label">Team Name <span class="fs-req">*</span></div>
           <input type="text" class="fs-input" id="ff-td-teamname" placeholder="e.g. Fire Squad" maxlength="30">
-        </div>
-
-        <div class="fs-field">
-          <div class="fs-field-label">Free Fire UID <span class="fs-req">*</span></div>
-          <input type="text" class="fs-input" id="ff-td-uid" placeholder="e.g. 123456789" maxlength="20" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
         </div>
 
         <div class="fs-field">
@@ -3956,7 +3954,7 @@ function generateGamerName() {
 }
 
 let currentUser = { isGuest: true, username: generateGamerName(), chatName: null, bgmiId: null, email: null, game: null };
-let myTeamDetails = null; // { teamName, mobile, erangel, miramar, rondo } — set via Team Drop Details modal (BGMI) or {teamName, mobile, ffUid} (Free Fire)
+let myTeamDetails = null; // { teamName, mobile, erangel, miramar, rondo } — set via Team Drop Details modal (BGMI) or {teamName, mobile} (Free Fire)
 
 // ── SESSION PERSISTENCE ──────────────────────────────────────
 // Save session to localStorage so page refresh doesn't log out user
@@ -6314,7 +6312,7 @@ function setSquadFilter(el, val) {
 // ─── TEAM DROP DETAILS (team name, mobile, drop location per map) ───────────
 function teamDetailsComplete(td) {
   if (!td) return false;
-  if (getActiveGame() === 'freefire') return !!(td.teamName && td.mobile && td.ffUid);
+  if (getActiveGame() === 'freefire') return !!(td.teamName && td.mobile);
   return !!(td.teamName && td.mobile && td.erangel && td.miramar && td.rondo);
 }
 
@@ -6381,7 +6379,6 @@ function openTeamDetailModal() {
 function openFreeFireTeamDetailModal() {
   const td = myTeamDetails || {};
   document.getElementById('ff-td-teamname').value = td.teamName || '';
-  document.getElementById('ff-td-uid').value = td.ffUid || '';
   document.getElementById('ff-td-mobile').value = td.mobile || '';
   document.getElementById('ff-team-detail-overlay').classList.add('open');
 }
@@ -6392,17 +6389,15 @@ function closeFreeFireTeamDetailModal() {
 
 async function saveFreeFireTeamDetails() {
   const teamName = document.getElementById('ff-td-teamname').value.trim();
-  const ffUid    = document.getElementById('ff-td-uid').value.trim();
   const mobile   = document.getElementById('ff-td-mobile').value.trim();
 
   if (!teamName) { showToast('⚠️ Enter your team name'); return; }
-  if (!ffUid) { showToast('⚠️ Enter your Free Fire UID'); return; }
   if (!mobile || mobile.length !== 10) { showToast('⚠️ Enter a valid 10-digit mobile number'); return; }
 
   const btn = document.getElementById('ff-td-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'SAVING...'; }
 
-  const td = { teamName, ffUid, mobile, updatedAt: Date.now() };
+  const td = { teamName, mobile, updatedAt: Date.now() };
   try {
     const emailKey = currentUser.email.replace(/[.#$[\]]/g, '_');
     await dbFF.ref('teamDetails/' + emailKey).set(td);
