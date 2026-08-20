@@ -5615,9 +5615,10 @@ let tchatMyTeamSlotInfo = null;    // { teamName, slot } for the current user in
 const TCHAT_SESSION_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 // Works out the current user's Team Name + Slot Number for a tournament.
-// Slot numbering: first 3 slots are reserved by the admin, so the 1st
-// confirmed registrant gets slot 4, the 2nd gets slot 5, and so on —
-// in the order teams were registered (confirmed registrations, oldest first).
+// Slot numbering: BGMI reserves the first 3 slots for the admin, so the 1st
+// confirmed registrant gets slot 4, the 2nd gets slot 5, and so on. Free Fire
+// has no reserved slots, so its 1st confirmed registrant gets slot 1.
+// Either way it's counted in the order teams were registered (oldest first).
 async function getMyTeamSlotInfo(tournamentId) {
   try {
     const snap = await getGameDb().ref('registrations/' + tournamentId).orderByChild('ts').once('value');
@@ -5639,7 +5640,8 @@ async function getMyTeamSlotInfo(tournamentId) {
       }
     });
     if (myIndex === -1) return null;
-    return { teamName: myTeamName, slot: myIndex + 4 };
+    const slotStart = getActiveGame() === 'freefire' ? 1 : 4;
+    return { teamName: myTeamName, slot: myIndex + slotStart };
   } catch (e) {
     console.warn('getMyTeamSlotInfo error:', e);
     return null;
@@ -5786,8 +5788,9 @@ function openTournamentChat(tournamentId, tournamentName) {
   const isRegistered = registeredTournamentIds.has(tournamentId);
   document.getElementById('tchat-input-bar').style.display  = isRegistered ? 'block' : 'none';
   document.getElementById('tchat-locked-msg').style.display = isRegistered ? 'none'  : 'flex';
+  // Drop-location bar is a BGMI-only feature (Free Fire has no per-map drop tracking)
   const dropBarEl = document.getElementById('tchat-drop-bar');
-  if (dropBarEl) dropBarEl.style.display = isRegistered ? 'flex' : 'none';
+  if (dropBarEl) dropBarEl.style.display = (isRegistered && getActiveGame() !== 'freefire') ? 'flex' : 'none';
 
   // Clear old messages
   document.getElementById('tchat-messages').innerHTML = '';
