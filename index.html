@@ -3262,10 +3262,10 @@ button:active, .nav-item:active { transform: scale(0.95); }
                 <input type="tel" class="form-input" placeholder="9876543210" id="phone1-input" maxlength="10" style="border:none;border-radius:0;background:transparent;padding-left:10px" oninput="this.value=this.value.replace(/\D/g,'')" onfocus="document.getElementById('phone1-wrap').style.borderColor='rgba(255,120,0,0.4)'" onblur="document.getElementById('phone1-wrap').style.borderColor='rgba(255,255,255,0.07)'">
               </div>
             </div>
-            <!-- Phone 2 / Email fields kept in the DOM (hidden) so account email still
-                 backs duplicate-checks & slot lookups — registration form only visibly
-                 asks for Team Name + Mobile Number, per requirements. -->
-            <div class="field-group" style="margin-bottom:0;display:none">
+            <!-- Email fields kept in the DOM (hidden) — email1 is auto-filled from the
+                 account and still backs duplicate-checks & slot lookups; email2 is never
+                 asked for. Registration form visibly asks for Team Name + Phone + Phone 2 (optional). -->
+            <div class="field-group" style="margin-bottom:0">
               <div class="form-label">Phone Number 2 <span style="color:var(--text-muted);font-size:10px;font-weight:500;text-transform:none;letter-spacing:0">(Optional)</span></div>
               <div style="display:flex;align-items:center;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s" id="phone2-wrap">
                 <span style="padding:12px 10px 12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0">🇮🇳 +91</span>
@@ -5282,10 +5282,6 @@ function showPaymentModal() {
           <span style="font-size:12px;color:var(--text-secondary)">Phone</span>
           <span style="font-size:12px;font-weight:700;color:var(--accent-green)">+91${escapeHTML(d.phone1)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:12px;color:var(--text-secondary)">Email</span>
-          <span style="font-size:12px;font-weight:700;color:var(--text-primary)">${escapeHTML(d.email1)}</span>
-        </div>
         <div style="height:1px;background:var(--border);margin:10px 0"></div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--text-primary)">Entry Fee</span>
@@ -5344,17 +5340,16 @@ async function confirmPayNow() {
   }
 
   // 2: Build WhatsApp message
-  const waNum = '918849110467'; // ← your WhatsApp number (country code + number, no +)
+  // Free Fire registrations go to the Free Fire number; BGMI (default) goes to the main number.
+  const waNum = getActiveGame() === 'freefire' ? '919537422590' : '918849110467';
   const msg = [
     '🎮 *BATTLEZONE TOURNAMENT REGISTRATION*',
     '',
     '🏆 Tournament: ' + t.name,
     '👥 Team Name: ' + d.name,
     '📞 Phone: +91' + d.phone1 + (d.phone2 ? ' / +91' + d.phone2 : ''),
-    '📧 Email: ' + d.email1 + (d.email2 ? ' / ' + d.email2 : ''),
     '💰 Entry Fee: ' + fee,
     '',
-    '✅ Please confirm payment receipt and approve our registration!',
     '📅 Submitted: ' + timeStr
   ].join('\n');
 

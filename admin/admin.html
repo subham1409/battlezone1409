@@ -1478,8 +1478,13 @@ const INPUT_NAME = 'background:var(--bg-secondary);border:1px solid rgba(255,255
 const DISP_BASE = 'font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--text-secondary);text-align:center';
 
 // Standard placement-points table (BGMI/PMCO style): rank -> points. 9th and below = 0.
-const PLACEMENT_POINTS = {1:10,2:6,3:5,4:4,5:3,6:2,7:1,8:1};
-function placePts(rank) { return PLACEMENT_POINTS[rank] || 0; }
+const PLACEMENT_POINTS_BGMI = {1:10,2:6,3:5,4:4,5:3,6:2,7:1,8:1};
+// Free Fire esports placement-points table (Booyah points, FFWS/FFIC style): rank -> points. 11th and below = 0.
+const PLACEMENT_POINTS_FREEFIRE = {1:12,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1};
+function placePts(rank) {
+  const table = (typeof selectedAdminGame !== 'undefined' && selectedAdminGame === 'freefire') ? PLACEMENT_POINTS_FREEFIRE : PLACEMENT_POINTS_BGMI;
+  return table[rank] || 0;
+}
 
 function addResultTeamRow(data) {
   teamRowCount++;
