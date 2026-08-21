@@ -16,6 +16,10 @@
     {
       "src": "admin/admin.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "user data/user.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -26,6 +30,10 @@
     {
       "src": "/admin/admin.html",
       "dest": "/admin/admin.html"
+    },
+    {
+      "src": "/user-data/user.html",
+      "dest": "/user data/user.html"
     },
     {
       "src": "/",
